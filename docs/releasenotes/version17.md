@@ -5,6 +5,16 @@
 
 ## v17.8.0
 
+- OCRmyPDF no longer silently corrupts a non-embedded CID (CJK) text layer when
+  producing PDF/A ({issue}`1561`). PDF/A requires all fonts to be embedded, so
+  Ghostscript substitutes and re-embeds non-embedded CID fonts — such as the OCR
+  text layer Adobe Acrobat adds to scanned CJK documents — which mangles the
+  text and destroys searchability. OCRmyPDF now detects non-embedded CID fonts
+  before conversion: with `--output-type auto` (the default) it produces a
+  regular PDF and preserves the existing text layer, and with an explicit
+  `--output-type pdfa*` it stops with an error rather than emit corrupted
+  output. Use `--output-type pdf` to keep the text layer, or `--force-ocr` to
+  rebuild it with embedded fonts.
 - Writing the output PDF to standard output (`ocrmypdf input.pdf -`) is now
   protected against corruption at the operating system level. Previously
   OCRmyPDF relied on no in-process code — third-party libraries, plugins, or

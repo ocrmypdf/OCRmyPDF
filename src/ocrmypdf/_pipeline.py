@@ -36,6 +36,7 @@ from ocrmypdf.exceptions import (
     DpiError,
     EncryptedPdfError,
     InputFileError,
+    NonEmbeddedFontsError,
     PriorOcrFoundError,
     TaggedPDFError,
     UnsupportedImageFormatError,
@@ -43,6 +44,7 @@ from ocrmypdf.exceptions import (
 from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution, safe_symlink
 from ocrmypdf.pdfa import (
     file_claims_pdfa,
+    find_nonembedded_cid_fonts,
     generate_pdfa_ps,
     speculative_pdfa_conversion,
 )
@@ -977,6 +979,12 @@ def convert_to_pdfa(input_pdf: Path, input_ps_stub: Path, context: PdfContext) -
     # pikepdf can deal with this, but we make the world a better place by
     # stamping them out as soon as possible.
     with pikepdf.open(input_pdf) as pdf_file:
+        # Ghostscript would substitute and re-embed any non-embedded CID font to
+        # satisfy PDF/A, corrupting CJK text (e.g. an Acrobat OCR layer) in the
+        # process. Refuse rather than silently damage the user's text layer.
+        nonembedded = find_nonembedded_cid_fonts(pdf_file)
+        if nonembedded:
+            raise NonEmbeddedFontsError(nonembedded)
         if repair_docinfo_nuls(pdf_file):
             pdf_file.save(fix_docinfo_file)
         else:
@@ -1088,6 +1096,21 @@ def try_auto_pdfa(input_pdf: Path, context: PdfContext) -> tuple[Path, str]:
         is 'pdfa' if PDF/A was achieved, 'pdf' otherwise
     """
     from ocrmypdf._exec import verapdf
+
+    # Non-embedded CID fonts cannot be made PDF/A without Ghostscript font
+    # substitution that corrupts CID/CJK text. Rather than risk an existing
+    # text layer, downgrade to a regular PDF (the same outcome as any other
+    # case where best-effort PDF/A is not achievable).
+    with pikepdf.open(input_pdf) as pdf_file:
+        nonembedded = find_nonembedded_cid_fonts(pdf_file)
+    if nonembedded:
+        log.info(
+            "Auto mode: input has non-embedded CID fonts (%s) that cannot be "
+            "converted to PDF/A without corrupting the text; outputting a "
+            "regular PDF. Use --output-type pdf to select this explicitly.",
+            ', '.join(sorted(nonembedded)),
+        )
+        return (input_pdf, 'pdf')
 
     # If verapdf available, try speculative conversion with validation
     if verapdf.available():

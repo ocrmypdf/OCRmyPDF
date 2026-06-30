@@ -139,6 +139,37 @@ class TaggedPDFError(InputFileError):
     )
 
 
+class NonEmbeddedFontsError(InputFileError):
+    """Input has non-embedded CID fonts that PDF/A conversion would corrupt.
+
+    PDF/A requires all fonts to be embedded. Ghostscript substitutes and embeds
+    a replacement for non-embedded CID (CJK) fonts, which corrupts the
+    character-to-Unicode mapping and silently destroys an existing text layer
+    (commonly an Adobe Acrobat CJK OCR layer). OCRmyPDF refuses to produce such
+    output rather than damage the user's data
+    (see https://github.com/ocrmypdf/OCRmyPDF/issues/1561).
+    """
+
+    def __init__(self, fonts: set[str]):
+        """Build guidance naming the offending fonts."""
+        super().__init__()
+        font_list = ', '.join(sorted(fonts))
+        self.message = dedent(
+            f"""\
+            The input PDF contains non-embedded CID (character ID) fonts: {font_list}.
+
+            PDF/A requires all fonts to be embedded. Converting to PDF/A would
+            make Ghostscript substitute and embed replacement fonts, which
+            corrupts CID (e.g. CJK/Chinese-Japanese-Korean) text and silently
+            destroys an existing text layer such as one produced by Adobe Acrobat.
+
+            Use --output-type pdf to keep the existing text layer intact without
+            PDF/A conversion, or --force-ocr to discard the existing layer and
+            rebuild it with embedded fonts.
+            """
+        )
+
+
 class ColorConversionNeededError(BadArgsError):
     """PDF needs color conversion to a standard color space.
 

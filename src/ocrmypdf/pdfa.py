@@ -137,6 +137,65 @@ def file_claims_pdfa(filename: Path):
     return pdfa_dict
 
 
+def _cid_font_is_embedded(type0_font: Dictionary) -> bool:
+    """Return True if a Type0 font's CID descendant carries embedded glyphs."""
+    for descendant in type0_font.get(Name.DescendantFonts, []):
+        descriptor = descendant.get(Name.FontDescriptor, None)
+        if descriptor is not None and any(
+            key in descriptor for key in (Name.FontFile, Name.FontFile2, Name.FontFile3)
+        ):
+            return True
+    return False
+
+
+def find_nonembedded_cid_fonts(pdf: Pdf) -> set[str]:
+    """Find CID-keyed (Type0) fonts that lack embedded glyph data.
+
+    PDF/A requires every font to be embedded. When Ghostscript converts a PDF
+    to PDF/A it must substitute and embed a replacement for any non-embedded
+    font. For CID-keyed fonts -- which is how CJK text is encoded, including the
+    OCR text layers produced by Adobe Acrobat -- this substitution routinely
+    corrupts the character-to-Unicode mapping, silently destroying the
+    searchable text. Detecting these fonts lets the caller refuse PDF/A
+    conversion rather than emit corrupted output.
+
+    Simple (non-CID) non-embedded fonts are not reported: Ghostscript
+    substitutes standard encodings for them without corrupting the text, and
+    they are far too common to treat as conversion blockers.
+
+    Args:
+        pdf: An open ``pikepdf.Pdf`` to scan.
+
+    Returns:
+        The set of ``BaseFont`` names of non-embedded CID fonts found.
+    """
+    found: set[str] = set()
+
+    def scan_resources(resources, depth: int = 0) -> None:
+        if resources is None or depth > 10:
+            return
+        fonts = resources.get(Name.Font, None)
+        if fonts is not None:
+            for font in fonts.values():
+                try:
+                    if font.get(Name.Subtype) != Name.Type0:
+                        continue
+                    if not _cid_font_is_embedded(font):
+                        basefont = str(font.get(Name.BaseFont, '/(unnamed)'))
+                        found.add(basefont.lstrip('/'))
+                except (AttributeError, TypeError, KeyError):
+                    continue
+        xobjects = resources.get(Name.XObject, None)
+        if xobjects is not None:
+            for xobj in xobjects.values():
+                if xobj.get(Name.Subtype) == Name.Form and Name.Resources in xobj:
+                    scan_resources(xobj[Name.Resources], depth + 1)
+
+    for page in pdf.pages:
+        scan_resources(page.get(Name.Resources, None))
+    return found
+
+
 def _load_srgb_icc_profile() -> bytes:
     """Load the sRGB ICC profile from package data."""
     return (package_files('ocrmypdf.data') / SRGB_ICC_PROFILE_NAME).read_bytes()
@@ -191,12 +250,14 @@ def add_srgb_output_intent(pdf: Pdf) -> None:
     icc_stream[Name.N] = 3  # RGB has 3 components
 
     # Create OutputIntent dictionary
-    output_intent = Dictionary({
-        '/Type': Name.OutputIntent,
-        '/S': Name('/GTS_PDFA1'),
-        '/OutputConditionIdentifier': 'sRGB',
-        '/DestOutputProfile': icc_stream,
-    })
+    output_intent = Dictionary(
+        {
+            '/Type': Name.OutputIntent,
+            '/S': Name('/GTS_PDFA1'),
+            '/OutputConditionIdentifier': 'sRGB',
+            '/DestOutputProfile': icc_stream,
+        }
+    )
 
     # Add to catalog's OutputIntents array
     if Name.OutputIntents not in pdf.Root:

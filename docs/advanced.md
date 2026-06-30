@@ -523,6 +523,36 @@ OCRmyPDF can produce PDF/A compliant output for long-term archival. The
 | `pdf` | Standard PDF, no PDF/A conversion |
 | `none` | No output file (useful with `--sidecar`) |
 
+### Non-embedded fonts and PDF/A
+
+:::{versionadded} 17.8.0
+OCRmyPDF now refuses to corrupt non-embedded CID text layers during PDF/A
+conversion.
+:::
+
+PDF/A requires every font to be embedded. If your input already has a text
+layer that uses *non-embedded* CID fonts — most commonly a CJK
+(Chinese-Japanese-Korean) OCR layer
+produced by Adobe Acrobat, which relies on the reader's system fonts —
+Ghostscript would have to substitute and re-embed a replacement font to make
+the file PDF/A. For CID-keyed (CJK) fonts this routinely corrupts the
+character-to-Unicode mapping, so the text silently becomes garbage or stops
+being searchable even though the page still *looks* correct.
+
+Rather than emit corrupted output, OCRmyPDF detects this situation and:
+
+- with `--output-type auto` (the default), produces a regular PDF instead of
+  PDF/A, preserving the existing text layer exactly;
+- with an explicit `--output-type pdfa` (or `pdfa-1`/`pdfa-2`/`pdfa-3`), stops
+  with an error.
+
+This is a Ghostscript limitation that OCRmyPDF cannot repair, because a
+non-embedded font cannot be made PDF/A-compliant without re-embedding it. To
+keep the existing text layer, use `--output-type pdf`. To produce PDF/A anyway,
+re-run OCR with `--force-ocr`, which discards the original text layer and
+rebuilds it with embedded fonts. Text layers whose fonts are *already embedded*
+are converted to PDF/A normally.
+
 ### Speculative PDF/A conversion
 
 :::{versionadded} 17.0.0
