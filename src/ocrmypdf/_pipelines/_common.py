@@ -489,7 +489,7 @@ def postprocess(
         else:
             pdf_out = pdf_file
     if context.options.output_type == 'auto':
-        # Best effort PDF/A - never uses Ghostscript
+        # Best effort PDF/A - may use Ghostscript as a last resort
         pdf_out, actual_type = try_auto_pdfa(pdf_out, context)
         # Store actual output type for reporting
         context.options.extra_attrs['_actual_output_type'] = actual_type

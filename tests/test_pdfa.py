@@ -205,6 +205,7 @@ def test_auto_degrades_when_ghostscript_raises(resources, outpdf, monkeypatch):
     from ocrmypdf.exceptions import ColorConversionNeededError
 
     monkeypatch.setattr('ocrmypdf._exec.verapdf.available', lambda: False)
+    monkeypatch.setattr('ocrmypdf._exec.ghostscript.available', lambda: True)
 
     def boom(*args, **kwargs):
         raise ColorConversionNeededError()
@@ -219,6 +220,7 @@ def test_auto_degrades_when_ghostscript_raises(resources, outpdf, monkeypatch):
         'auto',
     )
     assert exitcode == ExitCode.ok
+    assert outpdf.exists()
     assert not file_claims_pdfa(outpdf)['pass']
 
 
