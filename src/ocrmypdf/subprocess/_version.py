@@ -62,12 +62,18 @@ def get_version(
             f"Could not find program '{program}' on the PATH"
         ) from e
 
-    match = re.match(regex, output.strip())
-    if not match:
+    # Some tools (e.g. veraPDF launched on a recent JDK) print warnings before
+    # the version line, so scan each line rather than only the start of output.
+    version = None
+    for line in output.splitlines():
+        match = re.match(regex, line.strip())
+        if match:
+            version = match.group(1)
+            break
+    if version is None:
         raise MissingDependencyError(
             f"The program '{program}' did not report its version. "
             f"Message was:\n{output}"
         )
-    version = match.group(1)
 
     return version
