@@ -150,6 +150,78 @@ def test_auto_downgrades_nonembedded_cid_font_to_pdf(nonembedded_cid_pdf, outpdf
         assert find_nonembedded_cid_fonts(pdf)
 
 
+def test_auto_falls_back_to_ghostscript_for_pdfa(resources, outpdf, monkeypatch):
+    """Auto mode produces PDF/A via Ghostscript when the cheap path can't."""
+    # Force the speculative (veraPDF) path off so the fallback is exercised.
+    monkeypatch.setattr('ocrmypdf._exec.verapdf.available', lambda: False)
+    check_ocrmypdf(
+        resources / 'francais.pdf',
+        outpdf,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
+        '--output-type',
+        'auto',
+    )
+    assert file_claims_pdfa(outpdf)['pass']
+
+
+def test_auto_outputs_pdf_when_ghostscript_unavailable(resources, outpdf, monkeypatch):
+    """With neither veraPDF nor Ghostscript, auto outputs a plain PDF."""
+    monkeypatch.setattr('ocrmypdf._exec.verapdf.available', lambda: False)
+    monkeypatch.setattr('ocrmypdf._exec.ghostscript.available', lambda: False)
+    check_ocrmypdf(
+        resources / 'francais.pdf',
+        outpdf,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
+        '--output-type',
+        'auto',
+    )
+    assert not file_claims_pdfa(outpdf)['pass']
+
+
+def test_auto_degrades_when_ghostscript_cannot_make_pdfa(
+    resources, outpdf, monkeypatch
+):
+    """If Ghostscript produces non-PDF/A output, auto keeps a plain PDF (no error)."""
+    monkeypatch.setattr('ocrmypdf._exec.verapdf.available', lambda: False)
+    exitcode = run_ocrmypdf_api(
+        resources / 'francais.pdf',
+        outpdf,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
+        '--plugin',
+        'tests/plugins/gs_pdfa_failure.py',
+        '--output-type',
+        'auto',
+    )
+    assert exitcode == ExitCode.ok
+    assert outpdf.exists()
+    assert not file_claims_pdfa(outpdf)['pass']
+
+
+def test_auto_degrades_when_ghostscript_raises(resources, outpdf, monkeypatch):
+    """A Ghostscript conversion exception in auto mode degrades to plain PDF."""
+    from ocrmypdf.exceptions import ColorConversionNeededError
+
+    monkeypatch.setattr('ocrmypdf._exec.verapdf.available', lambda: False)
+
+    def boom(*args, **kwargs):
+        raise ColorConversionNeededError()
+
+    monkeypatch.setattr('ocrmypdf._pipeline.convert_to_pdfa', boom)
+    exitcode = run_ocrmypdf_api(
+        resources / 'francais.pdf',
+        outpdf,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
+        '--output-type',
+        'auto',
+    )
+    assert exitcode == ExitCode.ok
+    assert not file_claims_pdfa(outpdf)['pass']
+
+
 @pytest.mark.parametrize('optimize', (0, 3))
 @pytest.mark.parametrize('pdfa_level', (1, 2, 3))
 def test_pdfa(resources, outpdf, optimize, pdfa_level):

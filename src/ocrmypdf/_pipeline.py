@@ -32,12 +32,14 @@ from ocrmypdf._options import OcrOptions, ProcessingMode, TaggedPdfMode
 from ocrmypdf._pageboxes import log_box_repairs, repair_page_boxes
 from ocrmypdf._stdoutprotect import get_protected_stdout_fd
 from ocrmypdf.exceptions import (
+    ColorConversionNeededError,
     DigitalSignatureError,
     DpiError,
     EncryptedPdfError,
     InputFileError,
     NonEmbeddedFontsError,
     PriorOcrFoundError,
+    SubprocessOutputError,
     TaggedPDFError,
     UnsupportedImageFormatError,
 )
@@ -1078,14 +1080,46 @@ def try_speculative_pdfa(input_pdf: Path, context: PdfContext) -> Path | None:
         return None
 
 
+def _ghostscript_pdfa_fallback(input_pdf: Path, context: PdfContext) -> Path | None:
+    """Best-effort PDF/A conversion via Ghostscript for 'auto' output type.
+
+    Returns the converted PDF/A path, or None if Ghostscript is unavailable,
+    fails, or cannot produce valid PDF/A. Never raises: 'auto' mode degrades to
+    a regular PDF instead of erroring or emitting corrupted output.
+
+    Args:
+        input_pdf: Path to the PDF to convert.
+        context: The PDF context.
+    """
+    from ocrmypdf._exec import ghostscript
+
+    if not ghostscript.available():
+        return None
+    try:
+        ps_stub = generate_postscript_stub(context)
+        gs_out = convert_to_pdfa(input_pdf, ps_stub, context)
+    except (
+        SubprocessOutputError,
+        ColorConversionNeededError,
+        NonEmbeddedFontsError,
+    ) as e:
+        log.info('Auto mode: Ghostscript could not produce PDF/A (%s)', e)
+        return None
+    if not file_claims_pdfa(gs_out)['pass']:
+        log.info('Auto mode: Ghostscript output is not valid PDF/A')
+        return None
+    return gs_out
+
+
 def try_auto_pdfa(input_pdf: Path, context: PdfContext) -> tuple[Path, str]:
     """Best-effort PDF/A for 'auto' output type.
 
-    This function attempts to produce PDF/A without requiring Ghostscript:
-    1. If verapdf is available, tries speculative conversion with validation
-    2. Without verapdf, passes through as PDF/A if safe (input already PDF/A
-       or force-ocr was used)
-    3. Falls back to regular PDF if neither condition is met
+    Order of attempts, first success wins:
+    1. Non-embedded CID fonts -> regular PDF (Ghostscript would corrupt them).
+    2. Speculative conversion validated by verapdf (no Ghostscript).
+    3. Without verapdf, pass through if already PDF/A or rebuilt with force-ocr.
+    4. Ghostscript conversion (best-effort; failures fall through).
+    5. Regular PDF if none of the above produced PDF/A.
 
     Args:
         input_pdf: Path to the PDF to convert
@@ -1112,25 +1146,27 @@ def try_auto_pdfa(input_pdf: Path, context: PdfContext) -> tuple[Path, str]:
         )
         return (input_pdf, 'pdf')
 
-    # If verapdf available, try speculative conversion with validation
+    # Cheap path: speculative conversion validated by verapdf (no Ghostscript).
     if verapdf.available():
         result = try_speculative_pdfa(input_pdf, context)
         if result is not None:
             return (result, 'pdfa')
-        # verapdf validation failed - fall through to regular PDF
-        log.info(
-            'Auto mode: speculative PDF/A validation failed, outputting regular PDF'
-        )
-        return (input_pdf, 'pdf')
-
-    # Without verapdf, check if we can pass through as PDF/A
-    if _is_safe_pdfa(input_pdf, context.options):
-        # Pass through as-is (no modifications needed)
+        log.info('Auto mode: speculative PDF/A validation failed')
+    elif _is_safe_pdfa(input_pdf, context.options):
+        # No verapdf, but the input is already PDF/A or was rebuilt with
+        # --force-ocr, so we can pass it through without Ghostscript.
         log.info('Auto mode: passing through as PDF/A (input already compliant)')
         return (input_pdf, 'pdfa')
 
-    # Fall through to regular PDF
-    log.info('Auto mode: no verapdf available and input is not PDF/A, outputting PDF')
+    # Fall back to Ghostscript to produce real PDF/A (v16 behavior). Best-effort:
+    # if Ghostscript is unavailable or cannot safely produce PDF/A, keep a
+    # regular PDF rather than error.
+    gs_out = _ghostscript_pdfa_fallback(input_pdf, context)
+    if gs_out is not None:
+        log.info('Auto mode: produced PDF/A via Ghostscript')
+        return (gs_out, 'pdfa')
+
+    log.info('Auto mode: could not produce PDF/A, outputting regular PDF')
     return (input_pdf, 'pdf')
 
 
