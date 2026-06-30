@@ -566,9 +566,12 @@ fast "speculative" PDF/A conversion that avoids Ghostscript when possible:
 3. If validation passes, Ghostscript is skipped entirely
 4. If validation fails or verapdf is unavailable, falls back to Ghostscript
 
-This approach is faster and avoids some Ghostscript limitations (such as
-image transcoding), but only works for PDFs that are already "mostly"
-PDF/A compliant.
+This fast path avoids some Ghostscript limitations (such as image
+transcoding) and is used whenever it can produce valid PDF/A. When it
+cannot — for example when veraPDF is not installed, or the input needs real
+conversion — `auto` falls back to Ghostscript so that it still produces
+PDF/A by default, matching OCRmyPDF 16 and earlier. If even Ghostscript
+cannot safely produce PDF/A, `auto` outputs a regular PDF instead of failing.
 
 ### PDF/A conversion flow
 

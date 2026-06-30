@@ -5,6 +5,18 @@
 
 ## v17.8.0
 
+- `--output-type auto` (the default) again produces PDF/A whenever it can,
+  matching OCRmyPDF 16's "PDF/A by default" behavior. It first tries the fast
+  Ghostscript-free conversion (validated by veraPDF when available) and now
+  falls back to Ghostscript when that cannot produce PDF/A, only emitting a
+  regular PDF when even Ghostscript cannot safely convert (for example, an
+  input with non-embedded CID/CJK fonts, per {issue}`1561`). A consequence is
+  that the default path may once again invoke Ghostscript, which is slower and
+  may transcode images; use `--output-type pdf` to skip PDF/A conversion
+  entirely.
+- Fixed detection of veraPDF 1.30.0 and newer: recent builds print JVM
+  warnings before their version string, which caused OCRmyPDF to report
+  veraPDF as unavailable and skip the fast PDF/A path.
 - OCRmyPDF no longer silently corrupts a non-embedded CID (CJK) text layer when
   producing PDF/A ({issue}`1561`). PDF/A requires all fonts to be embedded, so
   Ghostscript substitutes and re-embeds non-embedded CID fonts — such as the OCR
