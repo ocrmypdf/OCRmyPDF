@@ -130,7 +130,7 @@ class TesseractOptions(BaseModel):
             metavar='PSM',
             choices=range(0, 14),
             dest=f'{namespace}_pagesegmode',
-            help="Set Tesseract page segmentation mode (see tesseract --help).",
+            help="Set Tesseract page segmentation mode (see tesseract --help-extra).",
         )
 
         tess.add_argument(
