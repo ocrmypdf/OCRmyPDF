@@ -3,8 +3,30 @@
 
 # v17
 
-## v17.9.1
+## v17.10.0
 
+- The `watcher.py` watched-folder helper (the `watcher` extra) has been
+  modernized and security-hardened:
+    - It now uses `watchfiles` instead of `watchdog`. Installing
+      `ocrmypdf[watcher]` now pulls in `watchfiles`; native OS filesystem
+      notifications are used by default, with `OCR_USE_POLLING=1` to force
+      polling.
+    - It enforces a "Harvard architecture" separation between data and code:
+      at startup it refuses to run (exit code 9) if the input, output or
+      archive directory overlaps any Python interpreter path (`sys.path`,
+      the virtual environment, site-packages, or `$PATH`), if
+      `OCR_JSON_SETTINGS` points at a file inside a data directory or one that
+      is group/world-writable, or if it specifies a plugin located inside a
+      data directory.
+    - At runtime it no longer follows symlinks or processes non-regular files
+      (fifos, devices, etc.) in the watched directory, and refuses to write
+      output onto a destination occupied by a non-regular file.
+
+  See the "Watcher security model" section of the batch processing
+  documentation for details. Existing
+  deployments where the data directories are kept separate from the application
+  are unaffected; deployments that co-located data with the interpreter or its
+  environment will need to relocate one or the other.
 - Ghostscript 10.7.0 and later are no longer treated as affected by the JPEG
   passthrough truncation bug, which Ghostscript fixed in 10.07.0
   ({issue}`1726`). The version check had no upper bound, so users on a fixed

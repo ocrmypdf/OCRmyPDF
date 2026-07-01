@@ -159,6 +159,30 @@ header-rows: 1
 One could configure a networked scanner or scanning computer to drop
 files in the watched folder.
 
+### Watcher security model
+
+`watcher.py` treats the input, output and archive directories as *data
+only* — they may be writable by less-privileged users, but code must never
+live in or be executed from them (a "Harvard architecture"). To enforce this,
+the watcher validates its configuration at startup and refuses to run
+(exiting with code 9, *invalid configuration*) if any of these conditions is
+violated:
+
+* Any of the input, output or archive directories overlaps a Python
+  interpreter path — `sys.executable`, `sys.path`, the virtual environment,
+  the site-packages directories, or any directory on `$PATH`. This prevents
+  an attacker who can write to a data directory from modifying the interpreter
+  or the code that runs.
+* `OCR_JSON_SETTINGS` names a file that lives inside a data directory, or that
+  is group- or world-writable. Keep the settings file outside the data
+  directories and restrict it to owner-only write access (e.g. `chmod 600`).
+* `OCR_JSON_SETTINGS` specifies a plugin (a `.py` path) located inside a data
+  directory.
+
+At runtime the watcher also refuses to follow symlinks or process non-regular
+files (such as fifos or devices) in the input directory, and refuses to write
+output onto a destination occupied by a non-regular file.
+
 ### Watched folders with Docker
 
 The watcher service is included in the OCRmyPDF Docker image. To run it:
@@ -214,9 +238,10 @@ it to a OCRed PDF in `/output/`, and move the processed original to
   - A JSON string specifying any other arguments for `ocrmypdf.ocr`
 :::
 
-This service relies on polling to check for changes to the filesystem.
-It may not be suitable for some environments, such as filesystems shared
-on a slow network.
+This service uses native operating system filesystem notifications to detect
+changes. On some environments, such as filesystems shared on a slow network,
+these notifications may be unreliable; set `OCR_USE_POLLING=1` to fall back to
+polling in that case.
 
 A configuration manager such as Docker Compose could be used to ensure
 that the service is always available.
