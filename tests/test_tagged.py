@@ -54,10 +54,14 @@ def test_tagged_pdf_mode_ignore_with_skip_text(resources, outpdf, caplog):
         outpdf,
         tagged_pdf_mode='ignore',
         skip_text=True,  # Tagged PDF has text, so skip pages with text
+        # output_type=pdf avoids the Ghostscript PDF/A step, whose treatment of
+        # the structure tree is version-dependent (Ghostscript >= 10 discards it,
+        # 9.x preserves it). We only want to assert OCRmyPDF's own behavior here.
+        output_type='pdf',
         plugins=['tests/plugins/tesseract_noop.py'],
     )
     assert 'structural markup' in caplog.text
-    # skip-text leaves the text pages untouched, so the structure tree remains valid
+    # skip-text leaves the text pages untouched, so OCRmyPDF keeps the structure tree
     with pikepdf.open(outpdf) as pdf:
         assert Name.StructTreeRoot in pdf.Root
 

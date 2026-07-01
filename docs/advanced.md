@@ -135,6 +135,16 @@ OCRmyPDF cannot rebuild a structure tree to match newly recognized text. When
 the structure tree no longer corresponds to the page content, so it is discarded.
 `--mode skip` leaves text pages untouched, so their structural markup is preserved.
 
+:::{note}
+Preservation under `--mode skip` only holds when the output is not converted to
+PDF/A. PDF/A conversion is performed by Ghostscript, and Ghostscript 10.x discards
+the structure tree during conversion (Ghostscript 9.x preserved it). Because the
+default `--output-type auto` may fall back to Ghostscript, use
+`--output-type pdf` if you need to guarantee that a Tagged PDF's structural markup
+survives. For best results, install veraPDF so that speculative PDF/A
+conversion can sidestep this issue entirely in most real cases.
+:::
+
 ### Time and image size limits
 
 By default, OCRmyPDF permits tesseract to run for three minutes (180
