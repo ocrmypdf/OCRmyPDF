@@ -23,6 +23,8 @@ from dotenv import load_dotenv
 from watchdog.events import PatternMatchingEventHandler
 from watchdog.observers import Observer
 from watchdog.observers.polling import PollingObserver
+import re
+import os
 
 import ocrmypdf
 
@@ -152,8 +154,51 @@ class HandleObserverEvent(PatternMatchingEventHandler):
 
     def on_any_event(self, event):
         if event.event_type in ['created']:
-            execute_ocrmypdf(file_path=Path(event.src_path), **self._settings)
+            try:
+                execute_ocrmypdf(file_path=Path(event.src_path), **self._settings)
+            except Exception as e:
+                # 1. Extract error message and truncate at the first hyphen (as requested)
+                raw_error = str(e).split('-')[0].strip()
 
+                # 2. Remove invalid filename characters and limit length
+                safe_reason = re.sub(r'[^\w\s-]', '', raw_error)
+                if len(safe_reason) > 60:
+                    safe_reason = safe_reason[:57] + "..."
+
+                # 3. Apply the exact same output directory logic as successful processing
+                original_path = Path(event.src_path)
+                basename = original_path.name
+                output_dir = self._settings.get('output_dir', Path('/output'))
+                use_year_month = self._settings.get('output_dir_year_month', False)
+
+                if use_year_month:
+                    today = dt.datetime.today()
+                    target_dir = output_dir / str(today.year) / f'{today.month:02d}'
+                    target_dir.mkdir(parents=True, exist_ok=True)
+                else:
+                    target_dir = output_dir
+
+                # 4. Construct new filename with error reason appended before extension
+                stem = original_path.stem
+                suffix = original_path.suffix
+                new_name = f"{stem}_{safe_reason}{suffix}"
+                target_path = target_dir / new_name
+
+                # 5. Avoid overwriting (append a counter if file already exists)
+                counter = 1
+                while target_path.exists():
+                    new_name = f"{stem}_{safe_reason}_{counter}{suffix}"
+                    target_path = target_dir / new_name
+                    counter += 1
+
+                # 6. Move file to output directory and log the event
+                try:
+                    time.sleep(2)  # Allow SMB/Windows Explorer cache to propagate before move
+                    shutil.move(str(original_path), str(target_path))
+                    os.utime(target_path)                  # updates mtime/atime → forces SMB client refresh
+                    log.warning(f"Moved failed OCR file {original_path.name} -> {target_path.name}: {safe_reason}")
+                except Exception as move_err:
+                    log.error(f"Failed to move file {original_path.name} to output directory: {move_err}")
 
 @app.default
 def main(
