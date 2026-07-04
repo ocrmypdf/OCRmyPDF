@@ -13,6 +13,7 @@ import pytest
 from ocrmypdf._watcher_security import (
     WatcherConfigError,
     assert_data_dirs_isolated,
+    assert_no_watch_loop,
     assert_plugins_safe,
     assert_settings_file_safe,
     is_safe_regular_file,
@@ -92,6 +93,56 @@ def test_assert_data_dirs_isolated_follows_symlinked_data_dir(tmp_path):
     data.symlink_to(critical_dir, target_is_directory=True)
     with pytest.raises(WatcherConfigError):
         assert_data_dirs_isolated({'input': data}, [critical_dir])
+
+
+@pytest.mark.parametrize('which', ['output', 'archive'])
+@pytest.mark.parametrize('nesting', ['direct_child', 'deep', 'equal'])
+def test_assert_no_watch_loop_rejects_dir_under_input(tmp_path, which, nesting):
+    input_dir = tmp_path / 'input'
+    input_dir.mkdir()
+    outside = tmp_path / 'outside'
+    outside.mkdir()
+
+    if nesting == 'direct_child':
+        looped = input_dir / which
+    elif nesting == 'deep':
+        looped = input_dir / 'a' / 'b' / which
+    else:  # equal
+        looped = input_dir
+
+    output_dir = looped if which == 'output' else outside
+    archive_dir = looped if which == 'archive' else outside
+    with pytest.raises(WatcherConfigError):
+        assert_no_watch_loop(input_dir, output_dir, archive_dir)
+
+
+def test_assert_no_watch_loop_allows_disjoint(tmp_path):
+    input_dir = tmp_path / 'input'
+    input_dir.mkdir()
+    assert_no_watch_loop(
+        input_dir, tmp_path / 'output', tmp_path / 'archive'
+    )  # no raise
+
+
+def test_assert_no_watch_loop_allows_input_under_output(tmp_path):
+    # input nested under output is fine: output writes are not seen by the watch.
+    output_dir = tmp_path / 'output'
+    output_dir.mkdir()
+    input_dir = output_dir / 'input'
+    input_dir.mkdir()
+    assert_no_watch_loop(input_dir, output_dir, tmp_path / 'archive')  # no raise
+
+
+def test_assert_no_watch_loop_follows_symlinked_output(tmp_path):
+    # An output dir that is a symlink pointing back inside input must be caught.
+    input_dir = tmp_path / 'input'
+    input_dir.mkdir()
+    real_target = input_dir / 'results'
+    real_target.mkdir()
+    output_dir = tmp_path / 'output'
+    output_dir.symlink_to(real_target, target_is_directory=True)
+    with pytest.raises(WatcherConfigError):
+        assert_no_watch_loop(input_dir, output_dir, tmp_path / 'archive')
 
 
 def test_is_safe_regular_file_accepts_regular(tmp_path):

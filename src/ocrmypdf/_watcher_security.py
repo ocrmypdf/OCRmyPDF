@@ -139,6 +139,30 @@ def assert_data_dirs_isolated(
                 )
 
 
+def assert_no_watch_loop(input_dir: Path, output_dir: Path, archive_dir: Path) -> None:
+    """Refuse configurations that would feed OCR output back into the watcher.
+
+    The input directory is watched recursively, so if the output or archive
+    directory is the input directory itself or a descendant of it, every file
+    OCRmyPDF writes there -- and every original moved there on success -- would
+    be detected as a new input file and processed again, forming an endless
+    loop. ``is_relative_to`` is reflexive, so this also rejects the case where
+    the directories are identical.
+
+    Raises:
+        WatcherConfigError: If output or archive is inside the input directory.
+    """
+    input_norm = _norm(input_dir)
+    for label, directory in (('output', output_dir), ('archive', archive_dir)):
+        if _norm(directory).is_relative_to(input_norm):
+            raise WatcherConfigError(
+                f"Refusing to run: the {label} directory {directory} is inside "
+                f"the watched input directory {input_dir}. OCRmyPDF output written "
+                f"there would be detected as new input and reprocessed endlessly. "
+                f"Choose a {label} directory outside the input directory."
+            )
+
+
 def is_safe_regular_file(path: Path, within_dir: Path) -> bool:
     """Return True if ``path`` is a real regular file inside ``within_dir``.
 

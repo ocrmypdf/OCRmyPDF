@@ -17,7 +17,9 @@
       the virtual environment, site-packages, or `$PATH`), if
       `OCR_JSON_SETTINGS` points at a file inside a data directory or one that
       is group/world-writable, or if it specifies a plugin located inside a
-      data directory.
+      data directory. It also refuses to run when the output or archive
+      directory is the input directory or a subdirectory of it, which would
+      otherwise cause OCRmyPDF output to be reprocessed in an endless loop.
     - At runtime it no longer follows symlinks or processes non-regular files
       (fifos, devices, etc.) in the watched directory, and refuses to write
       output onto a destination occupied by a non-regular file.

@@ -179,6 +179,12 @@ violated:
 * `OCR_JSON_SETTINGS` specifies a plugin (a `.py` path) located inside a data
   directory.
 
+* The output or archive directory is the input directory or a subdirectory of
+  it. Because the input directory is watched recursively, OCRmyPDF output (and
+  archived originals) written there would be detected as new input and
+  reprocessed endlessly. Keep the output and archive directories outside the
+  input directory.
+
 At runtime the watcher also refuses to follow symlinks or process non-regular
 files (such as fifos or devices) in the input directory, and refuses to write
 output onto a destination occupied by a non-regular file.

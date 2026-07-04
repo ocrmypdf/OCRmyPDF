@@ -28,6 +28,7 @@ import ocrmypdf
 from ocrmypdf._watcher_security import (
     WatcherConfigError,
     assert_data_dirs_isolated,
+    assert_no_watch_loop,
     assert_plugins_safe,
     assert_settings_file_safe,
     is_safe_regular_file,
@@ -314,6 +315,10 @@ def main(
             {'input': input_dir, 'output': output_dir, 'archive': archive_dir},
             resolve_critical_paths(),
         )
+
+        # The input directory is watched recursively, so output/archive must not
+        # live under it or OCR output would be reprocessed forever.
+        assert_no_watch_loop(input_dir, output_dir, archive_dir)
 
         if ocr_json_settings and Path(ocr_json_settings).exists():
             settings_path = Path(ocr_json_settings)

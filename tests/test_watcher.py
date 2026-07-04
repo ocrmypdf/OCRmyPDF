@@ -91,6 +91,21 @@ def test_watcher_aborts_when_input_dir_in_code_zone(tmp_path):
     assert proc.wait(timeout=30) == 9  # ExitCode.invalid_config
 
 
+def test_watcher_aborts_when_output_under_input(tmp_path):
+    # Output nested inside the watched input directory would loop forever.
+    input_dir = tmp_path / 'input'
+    input_dir.mkdir()
+    output_dir = input_dir / 'output'
+    output_dir.mkdir()
+    processed_dir = tmp_path / 'processed'
+    processed_dir.mkdir()
+    work_dir = tmp_path / 'work'
+    work_dir.mkdir()
+
+    proc = _spawn_watcher(input_dir, output_dir, processed_dir, work_dir)
+    assert proc.wait(timeout=30) == 9
+
+
 def test_watcher_rejects_world_writable_settings_file(data_dirs, tmp_path):
     input_dir, output_dir, processed_dir, work_dir = data_dirs
     settings = tmp_path / 'settings.json'
