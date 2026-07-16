@@ -74,6 +74,11 @@ def wait_for_file_ready(
             with pikepdf.Pdf.open(file_path) as pdf:
                 log.debug(f"{file_path} ready with {pdf.pages} pages")
                 return True
+        except pikepdf.PasswordError as e:
+            # Retrying will not produce the password, so give up right away
+            log.error(f"File {file_path} is password protected, skipping")
+            log.debug("Exception was", exc_info=e)
+            return False
         except (FileNotFoundError, OSError) as e:
             log.info(f"File {file_path} is not ready yet")
             log.debug("Exception was", exc_info=e)
@@ -152,7 +157,14 @@ class HandleObserverEvent(PatternMatchingEventHandler):
 
     def on_any_event(self, event):
         if event.event_type in ['created']:
-            execute_ocrmypdf(file_path=Path(event.src_path), **self._settings)
+            try:
+                execute_ocrmypdf(file_path=Path(event.src_path), **self._settings)
+            except Exception:  # noqa: BLE001
+                # An unhandled exception would kill the watchdog observer
+                # thread, leaving the watcher running but blind to new files.
+                log.exception(
+                    f"Error while processing {event.src_path} - watcher will continue"
+                )
 
 
 @app.default
