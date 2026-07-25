@@ -15,7 +15,7 @@ from ocrmypdf._concurrent import NullProgressBar, SerialExecutor
 from ocrmypdf._exec.tesseract import TesseractVersion
 from ocrmypdf._options import OcrOptions
 from ocrmypdf.api import create_options, setup_plugin_infrastructure
-from ocrmypdf.cli import get_parser
+from ocrmypdf.cli import get_options_and_plugins, get_parser
 from ocrmypdf.exceptions import BadArgsError, MissingDependencyError
 from ocrmypdf.pdfinfo import PdfInfo
 
@@ -92,6 +92,26 @@ def test_mutex_options():
 def test_optimizing(caplog):
     vd.check_options(*make_opts_pm(optimize=0, png_quality=18, jpeg_quality=10))
     assert 'will be ignored because' in caplog.text
+
+
+def test_jpeg_quality_cli_flag_reaches_options():
+    """--jpeg-quality/--jpg-quality must actually reach OcrOptions.jpg_quality.
+
+    Regression test: namespace_to_options() only copied argparse attributes that
+    are literal OcrOptions.model_fields keys. The parsed CLI value lives under
+    'jpeg_quality' (the argparse dest), but the real model field is 'jpg_quality'
+    ('jpeg_quality' is only a compatibility property, absent from model_fields), so
+    the CLI value fell into extra_attrs and was silently dropped. This bug was not
+    caught by test_optimizing above because make_opts_pm()/create_options() build
+    OcrOptions directly from kwargs, never exercising CLI argument parsing.
+    """
+    opts, _pm = get_options_and_plugins(args=['--jpeg-quality', '42', 'a.pdf', 'b.pdf'])
+    assert opts.jpg_quality == 42
+
+    opts2, _pm2 = get_options_and_plugins(
+        args=['--jpg-quality', '17', 'a.pdf', 'b.pdf']
+    )
+    assert opts2.jpg_quality == 17
 
 
 def test_pillow_options():

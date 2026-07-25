@@ -530,6 +530,13 @@ def namespace_to_options(ns) -> OcrOptions:
     if 'work_folder' in extra_attrs and 'input_file' not in known_fields:
         known_fields['input_file'] = '/dev/null'  # Placeholder
 
+    # 'jpeg_quality' is the argparse dest for --jpeg-quality/--jpg-quality, but the
+    # OcrOptions model field is 'jpg_quality' ('jpeg_quality' is only a compatibility
+    # property, so it's absent from model_fields and would otherwise be dropped into
+    # extra_attrs and silently ignored).
+    if 'jpeg_quality' in extra_attrs and 'jpg_quality' not in known_fields:
+        known_fields['jpg_quality'] = extra_attrs.pop('jpeg_quality')
+
     instance = OcrOptions(**known_fields)
     instance.extra_attrs = extra_attrs
     return instance
