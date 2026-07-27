@@ -18,6 +18,7 @@ from ocrmypdf.font.font_provider import (
     BuiltinFontProvider,
     ChainedFontProvider,
     FontProvider,
+    GlyphSearchingFontProvider,
 )
 from ocrmypdf.font.multi_font_manager import MultiFontManager
 from ocrmypdf.font.system_font_provider import SystemFontProvider
@@ -25,6 +26,7 @@ from ocrmypdf.font.system_font_provider import SystemFontProvider
 __all__ = [
     "FontManager",
     "FontProvider",
+    "GlyphSearchingFontProvider",
     "BuiltinFontProvider",
     "ChainedFontProvider",
     "MultiFontManager",

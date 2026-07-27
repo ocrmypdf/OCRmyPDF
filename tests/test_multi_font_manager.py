@@ -569,3 +569,117 @@ def test_missing_font_warning_explains_consequences(font_dir, caplog):
     # the text stays searchable but renders blank when highlighted.
     assert 'searchable' in msg.lower()
     assert 'highlight' in msg.lower() or 'select' in msg.lower()
+
+
+# --- Coverage-driven last-resort font search (#1722) ---
+
+
+class _FakeProviderWithSearch(_FakeFontProvider):
+    """FontProvider that can also search unlisted fonts by glyph coverage."""
+
+    def __init__(self, fonts, searchable):
+        super().__init__(fonts)
+        self._searchable = searchable
+        self.search_calls: list[str] = []
+
+    def find_font_with_glyphs(self, text):
+        self.search_calls.append(text)
+        for name, font in self._searchable.items():
+            hb = font.get_hb_font()
+            if all(hb.get_nominal_glyph(ord(c)) for c in text):
+                self._fonts[name] = font  # discovered fonts become resolvable
+                return name, font
+        return None
+
+
+def test_unlisted_font_found_by_coverage_search():
+    """A script outside FALLBACK_FONTS is rendered if the font is installed."""
+    searchable = {'NotoSansCherokee-Regular': _FakeFontManager('Cherokee.ttf', 'ᏣᎳᎩ')}
+    provider = _FakeProviderWithSearch({}, searchable)
+    manager = MultiFontManager(font_provider=provider)
+
+    font = manager.select_font_for_word('ᏣᎳᎩ', None)
+
+    assert font.font_path.name == 'Cherokee.ttf'
+    assert provider.search_calls == ['ᏣᎳᎩ']
+
+
+def test_coverage_search_result_is_cached():
+    """The expensive coverage search runs once per distinct word."""
+    searchable = {'NotoSansCherokee-Regular': _FakeFontManager('Cherokee.ttf', 'ᏣᎳᎩ')}
+    provider = _FakeProviderWithSearch({}, searchable)
+    manager = MultiFontManager(font_provider=provider)
+
+    manager.select_font_for_word('ᏣᎳᎩ', None)
+    manager.select_font_for_word('ᏣᎳᎩ', None)
+
+    assert len(provider.search_calls) == 1
+
+
+def test_named_fonts_take_precedence_over_coverage_search():
+    """The coverage search is a last resort, not a substitute for named fonts."""
+    fonts = {'NotoSans-Regular': _FakeFontManager('NotoSans.ttf', 'abc')}
+    searchable = {'NotoSansMono-Regular': _FakeFontManager('NotoSansMono.ttf', 'abc')}
+    provider = _FakeProviderWithSearch(fonts, searchable)
+    manager = MultiFontManager(font_provider=provider)
+
+    font = manager.select_font_for_word('abc', None)
+
+    assert font.font_path.name == 'NotoSans.ttf'
+    assert provider.search_calls == []
+
+
+def test_provider_without_coverage_search_still_falls_back():
+    """Providers predating find_font_with_glyphs() keep working (duck-typed)."""
+    manager = MultiFontManager(font_provider=_FakeFontProvider({}))
+    font = manager.select_font_for_word('ᏣᎳᎩ', None)
+    assert font.font_path.name == 'Occulta.ttf'
+
+
+def test_missing_font_warning_names_the_missing_characters(font_dir, caplog):
+    """The warning must identify what could not be rendered (#1722).
+
+    The user's real question is "which font package do I install?" — naming the
+    offending codepoints and their Unicode names answers it even for scripts
+    OCRmyPDF has no language mapping for.
+    """
+    manager = MultiFontManager(font_provider=BuiltinFontProvider(font_dir))
+
+    with caplog.at_level(logging.WARNING):
+        manager.select_font_for_word('ᏣᎳᎩ', None)
+
+    msg = caplog.text
+    assert 'U+13E3' in msg  # CHEROKEE LETTER TSA
+    assert 'CHEROKEE' in msg.upper()
+
+
+def test_missing_character_warning_ignores_covered_characters(font_dir, caplog):
+    """Only the uncoverable characters are reported, not the whole word."""
+    manager = MultiFontManager(font_provider=BuiltinFontProvider(font_dir))
+
+    with caplog.at_level(logging.WARNING):
+        manager.select_font_for_word('aᏣb', None)
+
+    msg = caplog.text
+    assert 'U+13E3' in msg
+    assert 'U+0061' not in msg  # 'a' is covered by the builtin Latin font
+
+
+def test_mixed_script_word_warning_does_not_advise_installing_fonts(caplog):
+    """A word no single font covers is reported as such, not as a missing font.
+
+    Every character here has an installed font; telling the user to install
+    more would be wrong advice and is exactly the confusion behind #1722.
+    """
+    fonts = {'NotoSans-Regular': _FakeFontManager('NotoSans.ttf', 'ab')}
+    searchable = {'NotoSansCherokee-Regular': _FakeFontManager('Cherokee.ttf', 'Ꮳ')}
+    manager = MultiFontManager(font_provider=_FakeProviderWithSearch(fonts, searchable))
+
+    with caplog.at_level(logging.WARNING):
+        font = manager.select_font_for_word('aᏣb', None)
+
+    assert font.font_path.name == 'Occulta.ttf'
+    msg = caplog.text
+    assert 'mixing scripts' in msg
+    assert 'will not help' in msg
+    assert 'U+' not in msg  # no codepoints to blame; nothing to install

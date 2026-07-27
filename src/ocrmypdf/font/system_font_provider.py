@@ -209,6 +209,13 @@ class SystemFontProvider:
         self._not_found: set[str] = set()
         # Cached font directories (computed lazily)
         self._font_dirs: list[Path] | None = None
+        # Cached (logical name, path) of every Noto face on the system, in the
+        # order the coverage search should try them (computed lazily)
+        self._noto_candidates: list[tuple[str, Path]] | None = None
+        # Memoized results of find_font_with_glyphs(), keyed by codepoint set
+        self._coverage_cache: dict[frozenset[int], str | None] = {}
+        # Font files that failed to load, so we only complain about them once
+        self._unloadable: set[Path] = set()
 
     def _get_platform(self) -> str:
         """Get the current platform identifier.
@@ -350,6 +357,145 @@ class SystemFontProvider:
         if best is not None:
             log.debug("Found system font %s at %s (variant match)", font_name, best[1])
             return best[1]
+        return None
+
+    @staticmethod
+    def _family_base(stem: str) -> str | None:
+        """Get the Noto family base a filename stem is the Regular face of.
+
+        Args:
+            stem: Filename without extension, e.g. 'NotoSansCherokee-Regular'
+
+        Returns:
+            The family base ('NotoSansCherokee') or None if the stem is not a
+            Noto font, or is a weight/slope variant such as '-Bold' or
+            '-Italic' that should not stand in for the family.
+        """
+        head = stem.split('[', 1)[0]  # drop variable-font axes, e.g. '[wght]'
+        if head.endswith('-Regular'):
+            head = head[: -len('-Regular')]
+        elif head.endswith('-VF'):
+            head = head[: -len('-VF')]
+        elif '-' in head:
+            return None
+        return head if head.startswith('Noto') else None
+
+    @classmethod
+    def _candidate_sort_key(cls, base: str) -> tuple[int, int, str]:
+        """Rank a family base for the coverage search.
+
+        Sans comes before serif before everything else, and plain families come
+        ahead of their narrower UI and Mono cousins.
+        """
+        if base.startswith('NotoSans'):
+            family_rank = 0
+        elif base.startswith('NotoSerif'):
+            family_rank = 1
+        else:
+            family_rank = 2
+        narrow_use = base.endswith('UI') or base.startswith('NotoSansMono')
+        return (family_rank, int(narrow_use), base)
+
+    def _get_noto_candidates(self) -> list[tuple[str, Path]]:
+        """Enumerate every Noto family installed on the system.
+
+        Scans each font directory once and keeps the best-ranked file per
+        family, so a family present in several directories or in several
+        variants contributes a single candidate.
+
+        Returns:
+            List of (logical font name, path) in the order to try them.
+        """
+        if self._noto_candidates is not None:
+            return self._noto_candidates
+
+        best: dict[str, tuple[int, Path]] = {}
+        for font_dir in self._get_font_dirs():
+            if not font_dir.exists():
+                continue
+            try:
+                paths = sorted(font_dir.rglob('Noto*'))
+            except OSError:
+                # Skip directories we can't read
+                continue
+            for path in paths:
+                if path.suffix.lower() not in self._FONT_EXTENSIONS:
+                    continue
+                base = self._family_base(path.stem)
+                if base is None:
+                    continue
+                kind = self._classify_variant(path.stem, base)
+                if kind is None:
+                    continue
+                rank = self._VARIANT_RANK[kind]
+                if base not in best or rank < best[base][0]:
+                    best[base] = (rank, path)
+
+        self._noto_candidates = [
+            (f'{base}-Regular', path)
+            for base, (_rank, path) in sorted(
+                best.items(), key=lambda item: self._candidate_sort_key(item[0])
+            )
+        ]
+        return self._noto_candidates
+
+    def find_font_with_glyphs(self, text: str) -> tuple[str, FontManager] | None:
+        """Find any installed Noto font that covers every character in text.
+
+        ``NOTO_FONT_PATTERNS`` enumerates the couple dozen scripts OCRmyPDF
+        knows by name, but systems ship far more: macOS alone installs around a
+        hundred script-specific Noto faces in
+        ``/System/Library/Fonts/Supplemental``. This is the last resort that
+        makes those usable, so a document is only rendered glyphless when no
+        installed font can actually cover it. See issue #1722.
+
+        This walks every Noto face on the system and is therefore expensive;
+        results are memoized, and callers should only reach it after the named
+        fonts have failed.
+
+        Args:
+            text: Text that the returned font must fully cover
+
+        Returns:
+            (logical font name, FontManager) of the first covering font, or
+            None if nothing installed covers the text.
+        """
+        if not text:
+            return None
+        needed = frozenset(ord(c) for c in text)
+
+        if needed in self._coverage_cache:
+            cached_name = self._coverage_cache[needed]
+            if cached_name is None:
+                return None
+            if cached := self._font_cache.get(cached_name):
+                return cached_name, cached
+
+        for font_name, path in self._get_noto_candidates():
+            font = self._font_cache.get(font_name)
+            if font is None:
+                if path in self._unloadable:
+                    continue
+                try:
+                    font = FontManager(path)
+                except Exception as e:
+                    log.debug("Skipping unreadable font %s: %s", path, e)
+                    self._unloadable.add(path)
+                    continue
+            if all(font.has_glyph(cp) for cp in needed):
+                # Keep only fonts we actually use; the rest are released so a
+                # full scan doesn't retain every font file on the system.
+                self._font_cache[font_name] = font
+                self._not_found.discard(font_name)
+                self._coverage_cache[needed] = font_name
+                log.debug(
+                    "Found system font %s at %s (glyph coverage match)",
+                    font_name,
+                    path,
+                )
+                return font_name, font
+
+        self._coverage_cache[needed] = None
         return None
 
     def get_font(self, font_name: str) -> FontManager | None:

@@ -3,6 +3,27 @@
 
 # v17
 
+## v17.9.0
+
+- OCRmyPDF now uses any Noto font installed on the system, not just the two
+  dozen script families it knows by name ({issue}`1722`). Previously a document
+  in, say, Cherokee or Vai was rendered with the glyphless fallback font even
+  though the matching font was installed — a common situation on macOS, which
+  ships around a hundred script-specific Noto faces. When the named fonts
+  cannot cover a word, OCRmyPDF now searches the installed fonts for one that
+  can.
+- The "no installed font has glyphs" warning now names the characters it could
+  not render, with their codepoints and Unicode names, so it is clear which
+  font to install. Text that mixes scripts no single font covers is now
+  reported as such, instead of advising the user to install fonts they may
+  already have.
+- Fixed the macOS font installation instructions, which recommended a Homebrew
+  package (`font-noto`) that does not exist ({issue}`1722`). Homebrew has no
+  single Noto package; each family is a separate cask. The Fedora package name
+  was also corrected to `google-noto-fonts-all`.
+- Font providers may now implement the optional `GlyphSearchingFontProvider`
+  protocol to participate in coverage-based font search.
+
 ## v17.8.1
 
 - Improved the `--tesseract-pagesegmode` help text to point to

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from ocrmypdf.font.font_manager import FontManager
 
@@ -48,6 +48,34 @@ class FontProvider(Protocol):
 
         Returns:
             FontManager for the glyphless fallback font (Occulta.ttf)
+        """
+        ...
+
+
+@runtime_checkable
+class GlyphSearchingFontProvider(Protocol):
+    """Optional capability: find a font by glyph coverage rather than by name.
+
+    A provider only knows a limited set of logical font names, but it may have
+    access to many more fonts than it can name (e.g. the ~100 script-specific
+    Noto faces macOS installs). Implementing this lets MultiFontManager use
+    them as a last resort instead of falling back to glyphless rendering.
+
+    Providers that do not implement this are used as-is; the capability is
+    detected at runtime with ``isinstance``.
+    """
+
+    def find_font_with_glyphs(self, text: str) -> tuple[str, FontManager] | None:
+        """Find a font that has glyphs for every character in text.
+
+        The returned name must subsequently resolve through ``get_font()``, so
+        that callers can cache the selection by name.
+
+        Args:
+            text: Text the font must fully cover
+
+        Returns:
+            (logical font name, FontManager), or None if no font covers text
         """
         ...
 
@@ -119,6 +147,18 @@ class BuiltinFontProvider:
         """Get the glyphless fallback font."""
         return self._fonts['Occulta']
 
+    def find_font_with_glyphs(self, text: str) -> tuple[str, FontManager] | None:
+        """Find a bundled font that covers text, ignoring glyphless Occulta."""
+        if not text:
+            return None
+        codepoints = {ord(c) for c in text}
+        for name, font in self._fonts.items():
+            if name == 'Occulta':
+                continue
+            if all(font.has_glyph(cp) for cp in codepoints):
+                return name, font
+        return None
+
 
 class ChainedFontProvider:
     """Font provider that tries multiple providers in order.
@@ -169,6 +209,25 @@ class ChainedFontProvider:
                     seen.add(name)
                     result.append(name)
         return result
+
+    def find_font_with_glyphs(self, text: str) -> tuple[str, FontManager] | None:
+        """Ask each capable provider in turn for a font that covers text.
+
+        Providers that don't implement the search are skipped.
+
+        Args:
+            text: Text the font must fully cover
+
+        Returns:
+            (logical font name, FontManager) from the first provider with a
+            match, or None if no provider found one
+        """
+        for provider in self.providers:
+            if not isinstance(provider, GlyphSearchingFontProvider):
+                continue
+            if found := provider.find_font_with_glyphs(text):
+                return found
+        return None
 
     def get_fallback_font(self) -> FontManager:
         """Get the glyphless fallback font.

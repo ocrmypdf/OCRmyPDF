@@ -10,6 +10,7 @@ language hints and glyph coverage analysis.
 from __future__ import annotations
 
 import logging
+import unicodedata
 from pathlib import Path
 
 from ocrmypdf.font.font_manager import FontManager
@@ -17,6 +18,7 @@ from ocrmypdf.font.font_provider import (
     BuiltinFontProvider,
     ChainedFontProvider,
     FontProvider,
+    GlyphSearchingFontProvider,
 )
 from ocrmypdf.font.system_font_provider import SystemFontProvider
 
@@ -33,8 +35,16 @@ class MultiFontManager:
     Font selection strategy:
     1. Try language-preferred font (if language hint available)
     2. Try fallback fonts in order by glyph coverage
-    3. Fall back to Occulta.ttf (glyphless fallback)
+    3. Ask the provider for any installed font that covers the text
+    4. Fall back to Occulta.ttf (glyphless fallback)
     """
+
+    # How many uncoverable characters to name in the missing-font warning
+    MAX_REPORTED_CHARS = 3
+
+    # How many characters of a word to look up individually when composing that
+    # warning; each lookup may scan every font installed on the system
+    MAX_EXAMINED_CHARS = 8
 
     # Language to font mapping
     # Keys are ISO 639-2/3 codes or Tesseract language codes
@@ -173,6 +183,9 @@ class MultiFontManager:
         self._selection_cache: dict[tuple[str, str | None], str] = {}
         # Track whether we've warned about missing fonts (warn once per script)
         self._warned_scripts: set[str] = set()
+        # Fonts found by glyph coverage rather than by name, tried before
+        # repeating the (expensive) provider search
+        self._discovered_fonts: list[str] = []
 
     @property
     def fonts(self) -> dict[str, FontManager]:
@@ -208,7 +221,8 @@ class MultiFontManager:
         Uses a hybrid approach:
         1. Language-based selection (if language hint available)
         2. Ordered fallback through available fonts by glyph coverage
-        3. Final fallback to Occulta.ttf (glyphless)
+        3. Provider search over every installed font, by glyph coverage
+        4. Final fallback to Occulta.ttf (glyphless)
 
         Args:
             word_text: The text content of the word
@@ -233,18 +247,49 @@ class MultiFontManager:
             if result := self._try_font(preferred, word_text, cache_key):
                 return result
 
-        # Phase 2: Try fallback fonts in order
-        for font_name in self.FALLBACK_FONTS:
+        # Phase 2: Try fallback fonts in order, then anything a previous
+        # coverage search turned up
+        for font_name in [*self.FALLBACK_FONTS, *self._discovered_fonts]:
             if font_name in tried_fonts:
                 continue
+            tried_fonts.add(font_name)
             if result := self._try_font(font_name, word_text, cache_key):
                 return result
 
-        # Phase 3: Glyphless fallback (always succeeds)
+        # Phase 3: Ask the provider to search every installed font. The named
+        # families cover common scripts only, but systems ship many more (macOS
+        # installs ~100 Noto faces), and those should be used before giving up
+        # on rendering the text at all. See issue #1722.
+        if found := self._search_font_by_coverage(word_text):
+            font_name, font = found
+            self._selection_cache[cache_key] = font_name
+            return font
+
+        # Phase 4: Glyphless fallback (always succeeds)
         # Warn if we're falling back for non-ASCII text (likely missing font)
         self._warn_missing_font(word_text, line_language)
         self._selection_cache[cache_key] = 'Occulta'
         return self.font_provider.get_fallback_font()
+
+    def _search_font_by_coverage(self, text: str) -> tuple[str, FontManager] | None:
+        """Search the provider for any font covering text, if it supports it.
+
+        Args:
+            text: Text the font must fully cover
+
+        Returns:
+            (font name, FontManager), or None if unsupported or nothing matched
+        """
+        provider = self.font_provider
+        if not isinstance(provider, GlyphSearchingFontProvider):
+            return None
+        found = provider.find_font_with_glyphs(text)
+        if found is None:
+            return None
+        font_name, _font = found
+        if font_name not in self._discovered_fonts:
+            self._discovered_fonts.append(font_name)
+        return found
 
     def _warn_missing_font(self, word_text: str, line_language: str | None) -> None:
         """Warn user about missing font for non-Latin text.
@@ -264,25 +309,96 @@ class MultiFontManager:
 
         self._warned_scripts.add(warn_key)
 
+        uncoverable = self._uncoverable_characters(word_text)
+        if not uncoverable:
+            # Every character has a font, but no single font has them all.
+            # Telling the user to install fonts would be wrong advice here.
+            log.warning(
+                "Text mixing scripts that no single installed font covers (%r) "
+                "was added as an invisible text layer: it stays searchable and "
+                "copyable, but appears blank when highlighted in a PDF viewer. "
+                "Installing more fonts will not help; OCRmyPDF uses one font "
+                "per word.",
+                word_text,
+            )
+            return
+
+        missing = self._describe_characters(uncoverable)
         if line_language and line_language in self.LANGUAGE_FONT_MAP:
             font_family = self.LANGUAGE_FONT_MAP[line_language].removesuffix('-Regular')
             log.warning(
-                "No installed font has glyphs for the detected '%s' text, so "
-                "it was added as an invisible text layer: it stays searchable "
+                "No installed font has glyphs for the detected '%s' text (%s), "
+                "so it was added as an invisible text layer: it stays searchable "
                 "and copyable, but appears blank when highlighted in a PDF "
                 "viewer. Install the %s font family (via your OS package "
                 "manager or https://fonts.google.com/noto) for full rendering.",
                 line_language,
+                missing,
                 font_family,
             )
         else:
             log.warning(
-                "No installed font has glyphs for some of the detected text, "
-                "so it was added as an invisible text layer: it stays "
+                "No installed font has glyphs for some of the detected text "
+                "(%s), so it was added as an invisible text layer: it stays "
                 "searchable and copyable, but appears blank when highlighted "
-                "in a PDF viewer. Install the matching Noto fonts "
-                "(https://fonts.google.com/noto) for full rendering."
+                "in a PDF viewer. Install a Noto font covering that script "
+                "(https://fonts.google.com/noto) for full rendering.",
+                missing,
             )
+
+    def _uncoverable_characters(self, word_text: str) -> list[str]:
+        """Find the characters of word_text that no installed font can render.
+
+        Args:
+            word_text: The word that fell back to glyphless rendering
+
+        Returns:
+            The distinct uncoverable characters, in order of first appearance,
+            considering at most MAX_EXAMINED_CHARS of them
+        """
+        candidates = [
+            char
+            for char in dict.fromkeys(word_text)  # de-duplicate, keep order
+            if not char.isspace() and not self._is_char_renderable(char)
+        ]
+        # The named fonts missed these, but the provider may still have a font
+        # for them, so confirm before telling the user to install anything. The
+        # search walks every installed font, hence the cap on how many
+        # characters we are willing to look up for one warning.
+        return [
+            char
+            for char in candidates[: self.MAX_EXAMINED_CHARS]
+            if self._search_font_by_coverage(char) is None
+        ]
+
+    def _describe_characters(self, chars: list[str]) -> str:
+        """Describe characters by codepoint and Unicode name.
+
+        Naming the codepoints tells the user which font to install even for
+        scripts OCRmyPDF has no language mapping for, which the generic
+        "install the matching Noto fonts" advice did not. See issue #1722.
+
+        Args:
+            chars: Characters to describe
+
+        Returns:
+            Human-readable description, truncated to MAX_REPORTED_CHARS
+        """
+        described = ", ".join(
+            f"{char!r} U+{ord(char):04X} {unicodedata.name(char, 'unnamed character')}"
+            for char in chars[: self.MAX_REPORTED_CHARS]
+        )
+        if len(chars) > self.MAX_REPORTED_CHARS:
+            described += f", and {len(chars) - self.MAX_REPORTED_CHARS} more"
+        return described
+
+    def _is_char_renderable(self, char: str) -> bool:
+        """Check whether any font already known to us has a glyph for char."""
+        for font_name in [*self.FALLBACK_FONTS, *self._discovered_fonts]:
+            font = self.font_provider.get_font(font_name)
+            if font is not None and self._has_all_glyphs(font, char):
+                return True
+        return False
 
     def _has_all_glyphs(self, font: FontManager, text: str) -> bool:
         """Check if a font has glyphs for all characters in text.

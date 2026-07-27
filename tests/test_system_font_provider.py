@@ -363,6 +363,140 @@ class TestSystemFontProviderVariableFonts:
         assert provider.get_font('NotoSansSC-Regular') is None
 
 
+class TestSystemFontProviderUnlistedFamilies:
+    """Test the coverage-driven search over Noto families we don't enumerate.
+
+    ``NOTO_FONT_PATTERNS`` names only the couple dozen most common scripts, but
+    macOS ships ~100 script-specific Noto fonts and Homebrew/Linux distros offer
+    even more. Those fonts must still be usable when the enumerated families
+    cannot cover the text. See issue #1722.
+    """
+
+    @pytest.fixture
+    def real_font_bytes(self):
+        """Bytes of a real, loadable font covering ASCII."""
+        font_path = (
+            Path(__file__).parent.parent
+            / "src"
+            / "ocrmypdf"
+            / "data"
+            / "NotoSans-Regular.ttf"
+        )
+        if not font_path.exists():
+            pytest.skip("Builtin font not available")
+        return font_path.read_bytes()
+
+    def _provider_for(self, tmp_path, filenames, real_font_bytes):
+        """Build a provider whose only font dir is tmp_path with given files."""
+        for name in filenames:
+            (tmp_path / name).write_bytes(real_font_bytes)
+        provider = SystemFontProvider()
+        provider._font_dirs = [tmp_path]
+        return provider
+
+    def test_finds_unlisted_family_by_coverage(self, tmp_path, real_font_bytes):
+        """A Noto family absent from NOTO_FONT_PATTERNS is still usable."""
+        provider = self._provider_for(
+            tmp_path, ['NotoSansCherokee-Regular.ttf'], real_font_bytes
+        )
+        assert 'NotoSansCherokee-Regular' not in provider.NOTO_FONT_PATTERNS
+        found = provider.find_font_with_glyphs('A')
+        assert found is not None
+        name, font = found
+        assert name == 'NotoSansCherokee-Regular'
+        assert font.font_path.name == 'NotoSansCherokee-Regular.ttf'
+
+    def test_finds_unlisted_variable_family(self, tmp_path, real_font_bytes):
+        """Bracketed variable filenames are eligible for the coverage search."""
+        provider = self._provider_for(
+            tmp_path, ['NotoSansVithkuqi[wght].ttf'], real_font_bytes
+        )
+        found = provider.find_font_with_glyphs('A')
+        assert found is not None
+        assert found[0] == 'NotoSansVithkuqi-Regular'
+
+    def test_discovered_font_resolves_by_logical_name(self, tmp_path, real_font_bytes):
+        """A font found by coverage is afterwards reachable via get_font()."""
+        provider = self._provider_for(
+            tmp_path, ['NotoSansCherokee-Regular.ttf'], real_font_bytes
+        )
+        name, font = provider.find_font_with_glyphs('A')
+        assert provider.get_font(name) is font
+
+    def test_negative_cache_does_not_block_discovery(self, tmp_path, real_font_bytes):
+        """A prior failed get_font() must not hide a later coverage match."""
+        provider = self._provider_for(
+            tmp_path, ['NotoSansCherokee-Regular.ttf'], real_font_bytes
+        )
+        assert provider.get_font('NotoSansCherokee-Regular') is None  # not listed
+        name, font = provider.find_font_with_glyphs('A')
+        assert provider.get_font(name) is font
+
+    def test_skips_bold_and_italic_styles(self, tmp_path, real_font_bytes):
+        """Only Regular/variable faces are candidates, never Bold or Italic."""
+        provider = self._provider_for(
+            tmp_path,
+            [
+                'NotoSansCherokee-Bold.ttf',
+                'NotoSansCherokee-Italic.ttf',
+                'NotoSans-Italic[wdth,wght].ttf',
+            ],
+            real_font_bytes,
+        )
+        assert provider.find_font_with_glyphs('A') is None
+
+    def test_ignores_non_noto_fonts(self, tmp_path, real_font_bytes):
+        """Non-Noto system fonts are not enlisted by the coverage search."""
+        provider = self._provider_for(
+            tmp_path, ['DejaVuSans.ttf', 'Arial.ttf'], real_font_bytes
+        )
+        assert provider.find_font_with_glyphs('A') is None
+
+    def test_returns_none_when_no_font_covers_text(self, tmp_path, real_font_bytes):
+        """Text no installed font covers yields no match rather than a wrong one."""
+        provider = self._provider_for(
+            tmp_path, ['NotoSansCherokee-Regular.ttf'], real_font_bytes
+        )
+        # U+13A3 CHEROKEE LETTER O is absent from the Latin font's cmap.
+        assert provider.find_font_with_glyphs('Ꭳ') is None
+
+    def test_empty_text_does_not_match(self, tmp_path, real_font_bytes):
+        """Empty text has nothing to cover, so no font is claimed for it."""
+        provider = self._provider_for(
+            tmp_path, ['NotoSansCherokee-Regular.ttf'], real_font_bytes
+        )
+        assert provider.find_font_with_glyphs('') is None
+
+    def test_unloadable_font_file_is_skipped(self, tmp_path, real_font_bytes):
+        """A corrupt font file does not abort the search for a usable one."""
+        (tmp_path / 'NotoSansBroken-Regular.ttf').write_bytes(b'not a font')
+        provider = self._provider_for(
+            tmp_path, ['NotoSansCherokee-Regular.ttf'], real_font_bytes
+        )
+        found = provider.find_font_with_glyphs('A')
+        assert found is not None
+        assert found[0] == 'NotoSansCherokee-Regular'
+
+    @pytest.mark.parametrize(
+        'stem,expected',
+        [
+            ('NotoSansCherokee-Regular', 'NotoSansCherokee'),
+            ('NotoSansCherokee[wght]', 'NotoSansCherokee'),
+            ('NotoSansArabic[wdth,wght]', 'NotoSansArabic'),
+            ('NotoSansCJKsc-VF', 'NotoSansCJKsc'),
+            ('NotoMusic', 'NotoMusic'),
+            ('NotoSansCJK-Regular', 'NotoSansCJK'),
+            ('NotoSans-Bold', None),
+            ('NotoSans-Italic[wdth,wght]', None),
+            ('NotoSans-SemiCondensedBlackItalic', None),
+            ('DejaVuSans-Regular', None),
+        ],
+    )
+    def test_family_base_parsing(self, stem, expected):
+        """Filename stems map to family bases, rejecting non-Regular styles."""
+        assert SystemFontProvider._family_base(stem) == expected
+
+
 # --- ChainedFontProvider Tests ---
 
 
@@ -507,3 +641,49 @@ class TestChainedFontProviderIntegration:
 
         # Chain should have at least as many fonts as builtin
         assert chain_fonts >= builtin_fonts
+
+
+class TestChainedFontProviderCoverageSearch:
+    """Test that the chain delegates the coverage search to its members."""
+
+    class _Searchable:
+        """Provider stub that reports one findable font."""
+
+        def __init__(self, result):
+            self.result = result
+            self.calls = 0
+
+        def get_font(self, name):
+            return None
+
+        def get_available_fonts(self):
+            return []
+
+        def get_fallback_font(self):
+            raise NotImplementedError
+
+        def find_font_with_glyphs(self, text):
+            self.calls += 1
+            return self.result
+
+    def test_delegates_to_first_provider_that_finds_a_font(self):
+        """The first provider with a match wins; later ones are not consulted."""
+        first = self._Searchable(('NotoSansX-Regular', MagicMock()))
+        second = self._Searchable(('NotoSansY-Regular', MagicMock()))
+        chain = ChainedFontProvider([first, second])
+
+        assert chain.find_font_with_glyphs('x')[0] == 'NotoSansX-Regular'
+        assert second.calls == 0
+
+    def test_skips_providers_without_the_capability(self):
+        """Providers lacking find_font_with_glyphs() are skipped, not fatal."""
+        legacy = MagicMock(spec=['get_font', 'get_available_fonts'])
+        searchable = self._Searchable(('NotoSansX-Regular', MagicMock()))
+        chain = ChainedFontProvider([legacy, searchable])
+
+        assert chain.find_font_with_glyphs('x')[0] == 'NotoSansX-Regular'
+
+    def test_returns_none_when_nothing_matches(self):
+        """No provider matching yields None so the caller can use Occulta."""
+        chain = ChainedFontProvider([self._Searchable(None)])
+        assert chain.find_font_with_glyphs('x') is None

@@ -663,9 +663,25 @@ provides text shaping for proper multilingual support. These replace the
 legacy hOCR-based renderer. Install with: `pip install fpdf2 uharfbuzz`
 
 **fonts-noto** (or an equivalent comprehensive font package) is recommended
-for proper text rendering, especially for non-Latin scripts. On Debian/Ubuntu:
-`apt install fonts-noto`. On Fedora: `dnf install google-noto-fonts-common`.
-On macOS with Homebrew: `brew install font-noto`.
+for proper text rendering, especially for non-Latin scripts. OCRmyPDF bundles
+a Latin font only, and discovers the rest from the fonts installed on your
+system.
+
+- Debian/Ubuntu: `apt install fonts-noto`
+- Fedora: `dnf install google-noto-fonts-all`
+- macOS with Homebrew: Homebrew has no single Noto package; each family is a
+  separate cask. Install at least
+  `brew install --cask font-noto-sans font-noto-serif`, plus a cask per
+  additional script you OCR, for example
+  `brew install --cask font-noto-sans-arabic font-noto-sans-cjk`. Run
+  `brew search font-noto` to list them all.
+
+If OCRmyPDF warns that no installed font has glyphs for some of the text, the
+message names the characters it could not render, for example
+`'Ꮳ' U+13E3 CHEROKEE LETTER TSA`. Install the Noto font for that script — here,
+`fonts-noto-core` on Debian or `font-noto-sans-cherokee` on Homebrew. The text
+layer remains searchable and copyable either way; only its appearance when
+highlighted in a PDF viewer is affected.
 
 **pypdfium2**, if present, provides fast PDF page rasterization using
 the pdfium library (the same library used by Google Chrome). It is

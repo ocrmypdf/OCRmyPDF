@@ -47,7 +47,9 @@ OCRmyPDF has the following runtime dependencies:
 **For text rendering** (expressing OCR results in PDF):
 - `fpdf2` (Python package) - Required for text layer rendering
 - `uharfbuzz` (Python package) - Required for text layer rendering
-- `font-noto` (system package) - Recommended for text layer rendering
+- Noto fonts (system package) - Recommended for text layer rendering.
+  `fonts-noto` on Debian/Ubuntu, `google-noto-fonts-all` on Fedora; Homebrew
+  has no single Noto package, only per-family casks such as `font-noto-sans`.
 
 **Other dependencies**:
 - `unpaper` (system binary) - Optional, enables `--clean` and `--clean-final`
