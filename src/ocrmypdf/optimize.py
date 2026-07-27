@@ -449,12 +449,12 @@ def convert_to_jbig2(
 
 
 def _optimize_jpeg(
-    xref: Xref, in_jpg: Path, opt_jpg: Path, jpg_quality: int
+    xref: Xref, in_jpg: Path, opt_jpg: Path, jpeg_quality: int
 ) -> tuple[Xref, Path | None]:
     with Image.open(in_jpg) as im:
         save_kwargs: dict[str, Any] = {'optimize': True}
-        if isinstance(jpg_quality, int) and 0 < jpg_quality <= 100:
-            save_kwargs['quality'] = jpg_quality
+        if isinstance(jpeg_quality, int) and 0 < jpeg_quality <= 100:
+            save_kwargs['quality'] = jpeg_quality
         im.save(opt_jpg, **save_kwargs)
 
     if opt_jpg.stat().st_size > in_jpg.stat().st_size:
@@ -473,7 +473,7 @@ def transcode_jpegs(
         for xref in jpegs:
             in_jpg = jpg_name(root, xref)
             opt_jpg = in_jpg.with_suffix('.opt.jpg')
-            yield xref, in_jpg, opt_jpg, options.jpg_quality
+            yield xref, in_jpg, opt_jpg, options.jpeg_quality
 
     def finish_jpeg(result: tuple[Xref, Path | None], pbar: ProgressBar):
         xref, opt_jpg = result
@@ -703,8 +703,8 @@ def optimize(
         safe_symlink(input_file, output_file)
         return output_file
 
-    if not options.jpg_quality:
-        options.jpg_quality = DEFAULT_JPEG_QUALITY if options.optimize < 3 else 40
+    if not options.jpeg_quality:
+        options.jpeg_quality = DEFAULT_JPEG_QUALITY if options.optimize < 3 else 40
     if not options.png_quality:
         options.png_quality = DEFAULT_PNG_QUALITY if options.optimize < 3 else 30
 
@@ -766,7 +766,7 @@ def main(infile, outfile, level, jobs=1):
         output_file=outfile,  # Required field
         jobs=jobs,
         optimize=int(level),
-        jpg_quality=0,  # Use default
+        jpeg_quality=0,  # Use default
         png_quality=0,
         jbig2_threshold=0.85,
         quiet=True,

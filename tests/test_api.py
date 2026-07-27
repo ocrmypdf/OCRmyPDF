@@ -79,6 +79,45 @@ def test_language_parameter_mapped_to_languages():
     assert options.languages == ['eng', 'spa']
 
 
+def test_jpeg_quality_parameter_reaches_options():
+    """The canonical 'jpeg_quality' API parameter must reach OcrOptions.
+
+    Regression test for GitHub issue #1723: --jpeg-quality was silently
+    dropped by the CLI's namespace_to_options() because the OcrOptions field
+    was named jpg_quality. create_options(), used by the Python API, has the
+    same field-name matching logic and is affected the same way when passed
+    the alias name.
+    """
+    from ocrmypdf.api import create_options, setup_plugin_infrastructure
+    from ocrmypdf.cli import get_parser
+
+    setup_plugin_infrastructure()
+    parser = get_parser()
+
+    options = create_options(
+        input_file='test.pdf', output_file='output.pdf', parser=parser, jpeg_quality=10
+    )
+    assert options.jpeg_quality == 10
+
+
+def test_jpg_quality_parameter_deprecated_alias():
+    """The old 'jpg_quality' API parameter still works but warns."""
+    from ocrmypdf.api import create_options, setup_plugin_infrastructure
+    from ocrmypdf.cli import get_parser
+
+    setup_plugin_infrastructure()
+    parser = get_parser()
+
+    with pytest.warns(UserWarning, match='jpg_quality'):
+        options = create_options(
+            input_file='test.pdf',
+            output_file='output.pdf',
+            parser=parser,
+            jpg_quality=42,
+        )
+    assert options.jpeg_quality == 42
+
+
 def test_stream_api(resources: Path):
     in_ = (resources / 'graph.pdf').open('rb')
     out = BytesIO()

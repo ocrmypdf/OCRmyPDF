@@ -207,19 +207,19 @@ class OcrOptions(BaseModel):
 
     # Optimization
     optimize: int = 1
-    jpg_quality: int | None = None
+    jpeg_quality: int | None = None
     png_quality: int | None = None
 
-    # Compatibility alias for plugins that expect jpeg_quality
+    # Deprecated compatibility alias for code that still uses the old field name
     @property
-    def jpeg_quality(self):
-        """Compatibility alias for jpg_quality."""
-        return self.jpg_quality
+    def jpg_quality(self):
+        """Deprecated compatibility alias for jpeg_quality."""
+        return self.jpeg_quality
 
-    @jpeg_quality.setter
-    def jpeg_quality(self, value):
-        """Compatibility alias for jpg_quality."""
-        self.jpg_quality = value
+    @jpg_quality.setter
+    def jpg_quality(self, value):
+        """Deprecated compatibility alias for jpeg_quality."""
+        self.jpeg_quality = value
 
     # Output behavior
     no_overwrite: bool = False
@@ -640,12 +640,6 @@ class OcrOptions(BaseModel):
                 # 'optimize' field maps to 'level' in OptimizeOptions
                 if 'optimize' in OcrOptions.model_fields:
                     value = self.optimize
-                    if value is not None:
-                        kwargs[field_name] = _convert_value(value)
-            elif namespace == 'optimize' and field_name == 'jpeg_quality':
-                # jpg_quality maps to jpeg_quality
-                if 'jpg_quality' in OcrOptions.model_fields:
-                    value = self.jpg_quality
                     if value is not None:
                         kwargs[field_name] = _convert_value(value)
 

@@ -17,6 +17,7 @@ from PIL import Image, ImageDraw
 from ocrmypdf import optimize as opt
 from ocrmypdf._exec import jbig2enc, pngquant
 from ocrmypdf._exec.ghostscript import rasterize_pdf
+from ocrmypdf.cli import get_options_and_plugins
 from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution
 from ocrmypdf.optimize import PdfImage, extract_image_filter
 from ocrmypdf.pluginspec import GhostscriptRasterDevice
@@ -79,6 +80,28 @@ def test_jpg_png_params(resources, outpdf):
         '--plugin',
         'tests/plugins/tesseract_noop.py',
     )
+
+
+def test_jpeg_quality_cli_flag_reaches_options(resources, outpdf):
+    # Regression test for #1723: --jpeg-quality was silently dropped by
+    # namespace_to_options() because the argparse dest ('jpeg_quality') did
+    # not match the OcrOptions field it was checked against.
+    input_ = fspath(resources / 'c02-22.pdf')
+    options, _pm = get_options_and_plugins(
+        ['--jpeg-quality', '10', input_, fspath(outpdf)]
+    )
+    assert options.jpeg_quality == 10
+
+
+def test_jpg_quality_cli_alias_reaches_options(resources, outpdf):
+    # --jpg-quality is a hidden alias for --jpeg-quality (same argparse dest).
+    input_ = fspath(resources / 'c02-22.pdf')
+    options, _pm = get_options_and_plugins(
+        ['--jpg-quality', '42', input_, fspath(outpdf)]
+    )
+    assert options.jpeg_quality == 42
+    # The old field name is still readable as a deprecated compatibility alias.
+    assert options.jpg_quality == 42
 
 
 @needs_jbig2enc

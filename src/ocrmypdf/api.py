@@ -345,6 +345,23 @@ def _remap_language_to_languages(options_kwargs: dict) -> None:
         del options_kwargs['language']
 
 
+def _remap_jpg_quality_to_jpeg_quality(options_kwargs: dict) -> None:
+    """Map the deprecated 'jpg_quality' parameter to 'jpeg_quality'.
+
+    'jpg_quality' was the original API parameter name. 'jpeg_quality' is the
+    canonical OcrOptions field, matching the primary --jpeg-quality CLI flag.
+    Prefer an explicitly-given 'jpeg_quality' if both are set.
+    """
+    if 'jpg_quality' not in options_kwargs:
+        return
+    old_value = options_kwargs.pop('jpg_quality')
+    if old_value is None:
+        return
+    warn("ocrmypdf.ocr(jpg_quality=...) is deprecated, use jpeg_quality= instead.")
+    if options_kwargs.get('jpeg_quality') is None:
+        options_kwargs['jpeg_quality'] = old_value
+
+
 def create_options(
     *, input_file: PathOrIO, output_file: PathOrIO, parser: ArgumentParser, **kwargs
 ) -> OcrOptions:
@@ -368,6 +385,9 @@ def create_options(
 
     # Map API parameter 'language' to OcrOptions field 'languages'
     _remap_language_to_languages(options_kwargs)
+
+    # Map deprecated 'jpg_quality' parameter to 'jpeg_quality'
+    _remap_jpg_quality_to_jpeg_quality(options_kwargs)
 
     # Set input and output files
     options_kwargs['input_file'] = input_file
@@ -448,7 +468,8 @@ def ocr(
     redo_ocr: bool | None = None,
     skip_big: float | None = None,
     optimize: int | None = None,
-    jpg_quality: int | None = None,
+    jpeg_quality: int | None = None,
+    jpg_quality: int | None = None,  # Deprecated, use jpeg_quality instead
     png_quality: int | None = None,
     jbig2_lossy: bool | None = None,
     jbig2_page_group_size: int | None = None,
@@ -511,7 +532,8 @@ def ocr(  # noqa: D417
     redo_ocr: bool | None = None,  # Legacy, use mode='redo' instead
     skip_big: float | None = None,
     optimize: int | None = None,
-    jpg_quality: int | None = None,
+    jpeg_quality: int | None = None,
+    jpg_quality: int | None = None,  # Deprecated, use jpeg_quality instead
     png_quality: int | None = None,
     jbig2_lossy: bool | None = None,  # Deprecated, ignored
     jbig2_page_group_size: int | None = None,  # Deprecated, ignored
@@ -883,7 +905,7 @@ def _hocr_to_ocr_pdf(  # noqa: D417
     jobs: int | None = None,
     use_threads: bool | None = None,
     optimize: int | None = None,
-    jpg_quality: int | None = None,
+    jpeg_quality: int | None = None,
     png_quality: int | None = None,
     jbig2_lossy: bool | None = None,  # Deprecated, ignored
     jbig2_page_group_size: int | None = None,  # Deprecated, ignored

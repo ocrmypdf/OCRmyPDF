@@ -89,8 +89,15 @@ def test_mutex_options():
         make_ocr_opts(redo_ocr=True, force_ocr=True)
 
 
-def test_optimizing(caplog):
-    vd.check_options(*make_opts_pm(optimize=0, png_quality=18, jpeg_quality=10))
+def test_optimizing_png_quality_warns(caplog):
+    vd.check_options(*make_opts_pm(optimize=0, png_quality=18))
+    assert 'will be ignored because' in caplog.text
+
+
+def test_optimizing_jpeg_quality_warns(caplog):
+    # Isolated from png_quality so this actually exercises the jpeg_quality
+    # path rather than being confounded by png_quality also being set.
+    vd.check_options(*make_opts_pm(optimize=0, jpeg_quality=10))
     assert 'will be ignored because' in caplog.text
 
 
