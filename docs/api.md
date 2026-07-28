@@ -95,9 +95,11 @@ from multiprocessing import Process
 import ocrmypdf
 from ocrmypdf import OcrOptions
 
+
 def ocrmypdf_process():
     options = OcrOptions(input_file='input.pdf', output_file='output.pdf')
     ocrmypdf.ocr(options)
+
 
 def call_ocrmypdf_from_my_app():
     p = Process(target=ocrmypdf_process)

@@ -120,6 +120,7 @@ A plugin may provide the following hooks. Hooks must be decorated with
 ```python
 from ocrmypdf import hookimpl
 
+
 @hookimpl
 def add_options(parser):
     pass
@@ -205,12 +206,11 @@ from ocrmypdf._options import OcrOptions
 
 ```python
 # Before (v16 and earlier)
-def check_options(options: argparse.Namespace) -> None:
-    ...
+def check_options(options: argparse.Namespace) -> None: ...
+
 
 # After (v17+)
-def check_options(options: OcrOptions) -> None:
-    ...
+def check_options(options: OcrOptions) -> None: ...
 ```
 
 **Attribute access unchanged:**
@@ -228,6 +228,7 @@ options.tesseract_timeout
 # Before (v16 pattern - no longer recommended)
 def check_options(options):
     options.some_computed_value = compute_value(options)
+
 
 # After (v17 pattern - compute at point of use)
 def some_function(options):
@@ -336,19 +337,17 @@ from ocrmypdf import OcrElement, OcrClass, BoundingBox
 
 # OcrElement - represents any OCR structural unit
 page = OcrElement(
-    ocr_class=OcrClass.PAGE,
-    bbox=BoundingBox(0, 0, 612, 792),
-    children=[...]
+    ocr_class=OcrClass.PAGE, bbox=BoundingBox(0, 0, 612, 792), children=[...]
 )
 
 # BoundingBox - axis-aligned bounding box (left, top, right, bottom)
 bbox = BoundingBox(left=100, top=50, right=300, bottom=80)
 
 # OcrClass - constants for element types
-OcrClass.PAGE      # "ocr_page"
-OcrClass.LINE      # "ocr_line"
-OcrClass.WORD      # "ocrx_word"
-OcrClass.PARAGRAPH # "ocr_par"
+OcrClass.PAGE  # "ocr_page"
+OcrClass.LINE  # "ocr_line"
+OcrClass.WORD  # "ocrx_word"
+OcrClass.PARAGRAPH  # "ocr_par"
 ```
 
 **Navigating the tree:**
@@ -378,6 +377,7 @@ from pathlib import Path
 from ocrmypdf.pluginspec import OcrEngine
 from ocrmypdf import OcrElement, OcrClass, BoundingBox
 
+
 class MyOcrEngine(OcrEngine):
     def generate_ocr(
         self,
@@ -402,10 +402,10 @@ class MyOcrEngine(OcrEngine):
                             text="Hello",
                         ),
                         # ... more words
-                    ]
+                    ],
                 ),
                 # ... more lines
-            ]
+            ],
         )
 
     def supports_generate_ocr(self) -> bool:
