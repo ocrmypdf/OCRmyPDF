@@ -208,12 +208,14 @@ def check_options(options):
                 "--output-type pdf to avoid Ghostscript, or use --force-ocr "
                 "(or --mode force) to discard existing text."
             )
-        if gs_version >= Version('10.6.0'):
+        if ghostscript.jpeg_truncation_bug(gs_version):
             log.warning(
                 "Ghostscript %s contains JPEG encoding errors that may corrupt "
-                "images. OCRmyPDF will attempt to mitigate, but versions 10.6.0+ "
-                "are strongly not recommended until this is fixed upstream.",
+                "images. OCRmyPDF will attempt to mitigate, but this version is "
+                "strongly not recommended. Please upgrade to Ghostscript %s or "
+                "later, which fixes this.",
                 gs_version,
+                ghostscript.GS_JPEG_TRUNCATION_FIXED,
             )
         if options.output_type == 'pdfa':
             options.output_type = 'pdfa-2'
@@ -446,9 +448,13 @@ def generate_pdfa(
         stop_on_error=stop_on_soft_error,
     )
 
+    # Record that Ghostscript produced this file, so the optimizer knows whether
+    # its JPEG re-encoding workaround is needed. Paths that bypass Ghostscript
+    # (--output-type pdf, successful speculative PDF/A conversion) never set this.
+    context.options.extra_attrs[ghostscript.GS_GENERATED_PDFA] = True
+
     # Repair JPEG corruption caused by Ghostscript 10.6.x
-    gs_version = ghostscript.version()
-    if gs_version >= Version('10.6.0') and len(pdf_pages) == 1:
+    if ghostscript.jpeg_truncation_bug() and len(pdf_pages) == 1:
         input_pdf = Path(pdf_pages[0])
         _repair_gs106_jpeg_corruption(input_pdf, Path(output_file))
 

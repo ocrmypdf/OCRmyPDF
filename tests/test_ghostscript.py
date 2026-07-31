@@ -7,6 +7,7 @@ import logging
 import secrets
 import subprocess
 import sys
+import zlib
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -15,6 +16,7 @@ import pytest
 from packaging.version import Version
 from PIL import Image, UnidentifiedImageError
 
+from ocrmypdf import _validation as vd
 from ocrmypdf._exec import ghostscript
 from ocrmypdf._exec.ghostscript import DuplicateFilter, rasterize_pdf
 from ocrmypdf.builtin_plugins.ghostscript import (
@@ -27,6 +29,7 @@ from ocrmypdf.helpers import Resolution
 from ocrmypdf.pluginspec import GhostscriptRasterDevice
 
 from .conftest import check_ocrmypdf, run_ocrmypdf_api
+from .test_validation import make_opts_pm
 
 # pylint: disable=redefined-outer-name
 
@@ -735,6 +738,107 @@ class TestGs106JpegCorruptionRepair:
         repaired = _repair_gs106_jpeg_corruption(source_path, damaged_path)
         assert repaired is False, "Should not repair truncation > 15 bytes"
         assert "JPEG corruption detected" not in caplog.text
+
+
+def _dctdecode_streams(pdf_path) -> list[bytes]:
+    """Return the raw JPEG bytes of every DCTDecode image in a PDF.
+
+    Ghostscript and the optimizer may wrap a JPEG in Flate, so undo that first to
+    compare the JPEG payloads themselves.
+    """
+    jpegs = []
+    with pikepdf.open(pdf_path) as pdf:
+        for obj in pdf.objects:
+            if not isinstance(obj, pikepdf.Stream):
+                continue
+            if obj.stream_dict.get(pikepdf.Name.Subtype) != pikepdf.Name.Image:
+                continue
+            filters = obj.stream_dict.get(pikepdf.Name.Filter)
+            if isinstance(filters, pikepdf.Name):
+                filters = [filters]
+            filters = list(filters or [])
+            if pikepdf.Name.DCTDecode not in filters:
+                continue
+            data = obj.read_raw_bytes()
+            if filters[0] == pikepdf.Name.FlateDecode:
+                data = zlib.decompress(data)
+            jpegs.append(data)
+    return jpegs
+
+
+class TestJpegTruncationBugVersions:
+    """The JPEG passthrough truncation bug is confined to Ghostscript 10.6.x.
+
+    Ghostscript bug 708956, fixed by ghostpdl commit eaada7d1 (2025-12-05) and
+    released in 10.07.0. Before this range was bounded above, every Ghostscript
+    from 10.6.0 onward triggered the mitigations, so 10.7+ users silently paid a
+    lossy JPEG re-encode for a bug their Ghostscript did not have (#1726).
+    """
+
+    @pytest.mark.parametrize(
+        ('gs_version', 'affected'),
+        [
+            ('10.5.1', False),
+            ('10.6.0', True),
+            ('10.6.1', True),
+            ('10.7.0', False),
+            ('10.7.1', False),
+            ('10.8.0', False),
+        ],
+    )
+    def test_version_range(self, gs_version, affected):
+        assert ghostscript.jpeg_truncation_bug(Version(gs_version)) is affected
+
+    @pytest.mark.parametrize(
+        ('gs_version', 'warns'),
+        [('10.5.1', False), ('10.6.0', True), ('10.7.1', False)],
+    )
+    def test_warning_only_for_affected_versions(self, gs_version, warns, caplog):
+        caplog.set_level(logging.WARNING)
+        opts, pm = make_opts_pm(output_type='pdfa')
+        with patch.object(ghostscript, 'version', return_value=Version(gs_version)):
+            vd.check_options(opts, pm)
+        assert ("contains JPEG encoding errors" in caplog.text) is warns
+
+    def test_installed_ghostscript_agrees_with_version_range(self, resources, outdir):
+        """Measure the installed Ghostscript instead of trusting the version range.
+
+        The bug was never covered by a test against real Ghostscript output - the
+        repair tests above feed artificially truncated PDFs to the repair function
+        - so nothing noticed when upstream fixed it. This asserts that whichever
+        Ghostscript is installed behaves the way jpeg_truncation_bug() claims.
+        """
+        source = resources / 'francais.pdf'
+        output = outdir / 'passthrough.pdf'
+        ghostscript.generate_pdfa(
+            pdf_pages=[source],
+            output_file=output,
+            compression='lossless',  # implies -dPassThroughJPEGImages=true
+            color_conversion_strategy='LeaveColorUnchanged',
+        )
+
+        before = _dctdecode_streams(source)
+        after = _dctdecode_streams(output)
+        assert before, "test fixture should contain JPEG images"
+        assert len(after) == len(before)
+
+        truncated = [
+            len(orig) - len(new)
+            for orig, new in zip(before, after, strict=True)
+            if new != orig and new == orig[: len(new)]
+        ]
+        if ghostscript.jpeg_truncation_bug():
+            assert truncated, (
+                f"Ghostscript {ghostscript.version()} is inside the affected range "
+                "but did not truncate JPEG passthrough data. If upstream fixed the "
+                "bug, narrow GS_JPEG_TRUNCATION_FIXED."
+            )
+        else:
+            assert after == before, (
+                f"Ghostscript {ghostscript.version()} damaged JPEG passthrough data "
+                f"(truncations: {truncated}) but is outside the affected range. "
+                "Widen the range in ocrmypdf._exec.ghostscript."
+            )
 
 
 @pytest.mark.parametrize(

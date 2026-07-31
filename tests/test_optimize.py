@@ -11,17 +11,20 @@ from unittest.mock import patch
 import img2pdf
 import pikepdf
 import pytest
+from packaging.version import Version
 from pikepdf import Array, Dictionary, Name
 from PIL import Image, ImageDraw
 
 from ocrmypdf import optimize as opt
-from ocrmypdf._exec import jbig2enc, pngquant
-from ocrmypdf._exec.ghostscript import rasterize_pdf
+from ocrmypdf._exec import ghostscript, jbig2enc, pngquant
+from ocrmypdf._exec.ghostscript import GS_GENERATED_PDFA, rasterize_pdf
+from ocrmypdf._options import OcrOptions
 from ocrmypdf.cli import get_options_and_plugins
 from ocrmypdf.helpers import IMG2PDF_KWARGS, Resolution
 from ocrmypdf.optimize import PdfImage, extract_image_filter
 from ocrmypdf.pluginspec import GhostscriptRasterDevice
 from tests.conftest import check_ocrmypdf
+from tests.test_ghostscript import _dctdecode_streams
 
 needs_pngquant = pytest.mark.skipif(
     not pngquant.available(), reason="pngquant not installed"
@@ -102,6 +105,69 @@ def test_jpg_quality_cli_alias_reaches_options(resources, outpdf):
     assert options.jpeg_quality == 42
     # The old field name is still readable as a deprecated compatibility alias.
     assert options.jpg_quality == 42
+
+
+class TestGs106JpegWorkaroundScope:
+    """The lossy JPEG re-encode workaround must fire only when it is needed.
+
+    Ghostscript 10.6.x truncates JPEG passthrough data, so at -O0/-O1 the
+    optimizer re-encodes JPEGs to get intact ones, at the cost of quality. That
+    trade is only worth making when an affected Ghostscript actually produced the
+    file (#1726).
+    """
+
+    @pytest.mark.parametrize(
+        ('optimize', 'gs_version', 'gs_ran', 'expected'),
+        [
+            # -O2+ always re-encodes, for reasons unrelated to Ghostscript
+            (2, '10.7.1', False, True),
+            (3, '10.5.1', False, True),
+            # affected Ghostscript that produced this file: workaround warranted
+            (1, '10.6.0', True, True),
+            (0, '10.6.0', True, True),
+            # affected Ghostscript, but it never touched this file (--output-type
+            # pdf, or speculative PDF/A conversion succeeded): pure quality loss
+            (1, '10.6.0', False, False),
+            # unaffected Ghostscript: nothing to work around either way
+            (1, '10.7.1', True, False),
+            (1, '10.5.1', True, False),
+        ],
+    )
+    def test_should_optimize_jpeg(self, optimize, gs_version, gs_ran, expected):
+        options = OcrOptions(input_file='a.pdf', output_file='b.pdf', optimize=optimize)
+        if gs_ran:
+            options.extra_attrs[GS_GENERATED_PDFA] = True
+        with patch.object(opt.ghostscript, 'version', return_value=Version(gs_version)):
+            assert opt._should_optimize_jpeg(options, None) is expected
+
+    @pytest.mark.skipif(
+        ghostscript.jpeg_truncation_bug(),
+        reason="installed Ghostscript truncates JPEGs, so the workaround applies",
+    )
+    def test_jpeg_survives_default_optimization(self, resources, outpdf):
+        """End-to-end: -O1 must not silently degrade JPEGs on a healthy gs.
+
+        Uses a photographic JPEG that genuinely shrinks when re-encoded at the
+        default quality - the optimizer discards a re-encode that came out larger,
+        which would mask the regression on an already heavily compressed image.
+        """
+        source = resources / 'baiona_color.jpg'
+        check_ocrmypdf(
+            source,
+            outpdf,
+            '--image-dpi',
+            '300',
+            '--optimize',
+            '1',
+            '--output-type',
+            'pdfa',
+            '--plugin',
+            'tests/plugins/tesseract_noop.py',
+        )
+        # img2pdf embeds the source JPEG losslessly, so it must come out unchanged
+        assert _dctdecode_streams(outpdf) == [source.read_bytes()], (
+            "-O1 is a lossless optimization level, but the JPEG image was re-encoded"
+        )
 
 
 @needs_jbig2enc

@@ -3,6 +3,21 @@
 
 # v17
 
+## v17.9.1
+
+- Ghostscript 10.7.0 and later are no longer treated as affected by the JPEG
+  passthrough truncation bug, which Ghostscript fixed in 10.07.0
+  ({issue}`1726`). The version check had no upper bound, so users on a fixed
+  Ghostscript still saw the "JPEG encoding errors" warning and, worse, silently
+  had every JPEG lossily re-encoded at `--optimize 1` (the default) to work
+  around a bug their Ghostscript did not have. Thanks @zuentec-droid for the
+  detailed measurements and upstream analysis.
+- The same JPEG re-encoding workaround no longer applies when Ghostscript did
+  not produce the file at all. It was previously triggered by the mere presence
+  of an affected Ghostscript, so `--output-type pdf` and files converted by the
+  speculative PDF/A path — neither of which runs Ghostscript — paid the quality
+  loss for nothing.
+
 ## v17.9.0
 
 - OCRmyPDF now uses any Noto font installed on the system, not just the two

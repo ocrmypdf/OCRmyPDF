@@ -38,6 +38,16 @@ COLOR_CONVERSION_STRATEGIES = frozenset(
 # Ghostscript executable - gswin32c is not supported
 GS = 'gswin64c' if os.name == 'nt' else 'gs'
 
+# Ghostscript 10.6.0 truncates passthrough JPEG data by 1-15 bytes, dropping the
+# EOI marker and damaging the image (Ghostscript bug 708956). Fixed upstream on
+# 2025-12-05 and released in 10.07.0, so the workarounds apply to this range only.
+GS_JPEG_TRUNCATION_FIRST = Version('10.6.0')
+GS_JPEG_TRUNCATION_FIXED = Version('10.7.0')
+
+# OcrOptions.extra_attrs key set when Ghostscript actually generated the PDF/A.
+# The truncation workarounds are only warranted when Ghostscript touched the file.
+GS_GENERATED_PDFA = '_ghostscript_generated_pdfa'
+
 
 log = logging.getLogger(__name__)
 
@@ -73,6 +83,17 @@ class DuplicateFilter(logging.Filter):
 PROBE = ToolProbe(program=GS)
 version = PROBE.version
 available = PROBE.available
+
+
+def jpeg_truncation_bug(gs_version: Version | None = None) -> bool:
+    """Is the installed Ghostscript affected by the JPEG passthrough truncation bug?
+
+    Args:
+        gs_version: Version to test, or None to probe the installed Ghostscript.
+    """
+    if gs_version is None:
+        gs_version = version()
+    return GS_JPEG_TRUNCATION_FIRST <= gs_version < GS_JPEG_TRUNCATION_FIXED
 
 
 def _ensure_log_filter_installed() -> None:

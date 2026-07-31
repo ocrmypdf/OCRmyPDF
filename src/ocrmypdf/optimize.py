@@ -16,7 +16,6 @@ from typing import Any, NamedTuple, NewType, cast
 from zlib import compress
 
 import img2pdf
-from packaging.version import Version
 from pikepdf import (
     Array,
     Dictionary,
@@ -194,9 +193,14 @@ def extract_image_jbig2(
 def _should_optimize_jpeg(options, filtdp):
     if options.optimize >= 2:
         return True
-    # Ghostscript 10.6.0+ introduced some sort of JPEG encoding issue.
-    # To resolve this, re-optimize the JPEG anyway.
-    return options.optimize < 2 and ghostscript.version() >= Version('10.6.0')
+    # Ghostscript 10.6.x truncates JPEG passthrough data, so at lower optimization
+    # levels we re-encode the JPEG to obtain an intact one, accepting the quality
+    # loss as the lesser evil. Only worth doing when an affected Ghostscript
+    # actually produced this file - other Ghostscript versions, and paths that
+    # bypass Ghostscript entirely, would pay the quality loss for nothing.
+    return ghostscript.jpeg_truncation_bug() and bool(
+        options.extra_attrs.get(ghostscript.GS_GENERATED_PDFA)
+    )
 
 
 def extract_image_generic(
