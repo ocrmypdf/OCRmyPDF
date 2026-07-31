@@ -23,6 +23,21 @@
   was also corrected to `google-noto-fonts-all`.
 - Font providers may now implement the optional `GlyphSearchingFontProvider`
   protocol to participate in coverage-based font search.
+- Fixed `--jpeg-quality`/`--jpg-quality` having no effect on the CLI: the
+  value was silently dropped before reaching the optimizer, which then
+  always used its own built-in default JPEG quality regardless of what was
+  requested ({issue}`1723`). The same bug affected the Python API's
+  `jpg_quality` parameter. `ocrmypdf.ocr()` now accepts `jpeg_quality`
+  (matching the CLI flag name) as the canonical parameter; `jpg_quality`
+  still works but is deprecated.
+- Hardened PDF parsing against malformed (non-dictionary) `/Resources`,
+  `/XObject`, and `/FontDescriptor` entries, which previously crashed
+  `ocrmypdf.ocr()` with `AttributeError`/`TypeError`/`ValueError` on
+  otherwise-processable files, both during PDF/A font scanning and general
+  image scanning ({issue}`1713`). Thanks @mvanhorn for the initial fix.
+- Release process improvements: fixed a CI bug where every push to main
+  after a release was tagged would incorrectly revert the just-published
+  GitHub release back to draft status.
 
 ## v17.8.1
 
