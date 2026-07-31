@@ -331,6 +331,16 @@ def bump_version() -> None:
         contents = contents.replace(find, replace)
         path.write_text(contents, encoding="utf8")
 
+    # Format only after every file (including pyproject.toml) reflects the new
+    # version. Running `uv run` while pyproject.toml still had the old version
+    # would leave its post-bump environment/lockfile resync to happen for the
+    # first time during the commit's pre-commit hooks instead of here, which
+    # then aborts the commit with a spurious "files were modified by this
+    # hook" error.
+    for path, _find, _replace in actions:
+        if path.suffix == ".py":
+            subprocess.run(["uv", "run", "ruff", "format", str(path)], check=True)
+
     print("Files updated.")
     print()
 
