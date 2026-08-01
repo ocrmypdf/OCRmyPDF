@@ -16,11 +16,13 @@ from .conftest import check_ocrmypdf, run_ocrmypdf_api
 
 
 def _make_cid_font(
-    pdf: pikepdf.Pdf, *, embedded: bool, basefont: str
+    pdf: pikepdf.Pdf, *, embedded: bool, basefont: str | pikepdf.Object
 ) -> pikepdf.Object:
     """Build a Type0/CID font object, optionally embedding glyph data."""
+    if isinstance(basefont, str):
+        basefont = Name(basefont)
     descriptor = pikepdf.Dictionary(
-        Type=Name.FontDescriptor, FontName=Name(basefont), Flags=4
+        Type=Name.FontDescriptor, FontName=basefont, Flags=4
     )
     if embedded:
         # The actual bytes do not matter; only the presence of FontFile2 marks
@@ -30,7 +32,7 @@ def _make_cid_font(
         pikepdf.Dictionary(
             Type=Name.Font,
             Subtype=Name.CIDFontType2,
-            BaseFont=Name(basefont),
+            BaseFont=basefont,
             FontDescriptor=descriptor,
             CIDSystemInfo=pikepdf.Dictionary(
                 Registry='Adobe', Ordering='Identity', Supplement=0
@@ -41,7 +43,7 @@ def _make_cid_font(
         pikepdf.Dictionary(
             Type=Name.Font,
             Subtype=Name.Type0,
-            BaseFont=Name(basefont),
+            BaseFont=basefont,
             Encoding=Name.Identity_H,
             DescendantFonts=pikepdf.Array([cidfont]),
         )
@@ -109,6 +111,25 @@ class TestFindNonembeddedCidFonts:
             pdf.save(path)
         with pikepdf.open(path) as pdf:
             assert find_nonembedded_cid_fonts(pdf) == set()
+
+    def test_non_utf8_font_name_is_reported(self, tmp_path):
+        # PDF name objects are byte sequences with no mandated encoding.
+        # Chinese PDFs commonly carry FounderType font names encoded in GBK
+        # (here 方正大黑 = b7 bd d5 fd b4 f3 ba da), which is not valid UTF-8,
+        # so stringifying the Name raises UnicodeDecodeError (issue #1727).
+        # The font must still be reported -- in hex-escaped PDF syntax form --
+        # so that PDF/A conversion is refused instead of crashing.
+        path = tmp_path / 'gbk_name.pdf'
+        gbk_name = pikepdf.Object.parse(b'/#b7#bd#d5#fd#b4#f3#ba#da_GBK+ZEFSzV-12')
+        with pikepdf.new() as pdf:
+            page = pdf.add_blank_page()
+            font = _make_cid_font(pdf, embedded=False, basefont=gbk_name)
+            page.Resources = pikepdf.Dictionary(Font=pikepdf.Dictionary(F0=font))
+            pdf.save(path)
+        with pikepdf.open(path) as pdf:
+            assert find_nonembedded_cid_fonts(pdf) == {
+                '#b7#bd#d5#fd#b4#f3#ba#da_GBK+ZEFSzV-12'
+            }
 
     def test_non_dictionary_font_descriptor_is_reported(self, tmp_path):
         # A Type0 font whose descendant carries a non-dictionary /FontDescriptor

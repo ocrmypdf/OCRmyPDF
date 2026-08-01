@@ -187,7 +187,17 @@ def find_nonembedded_cid_fonts(pdf: Pdf) -> set[str]:
                     if font.get(Name.Subtype) != Name.Type0:
                         continue
                     if not _cid_font_is_embedded(font):
-                        basefont = str(font.get(Name.BaseFont, '/(unnamed)'))
+                        name = font.get(Name.BaseFont, Name('/(unnamed)'))
+                        try:
+                            basefont = str(name)
+                        except UnicodeDecodeError:
+                            # Name objects are byte sequences with no mandated
+                            # encoding; e.g. CJK foundry font names are often
+                            # GBK, which is not valid UTF-8 (issue #1727). Fall
+                            # back to the hex-escaped PDF syntax form. Do not
+                            # skip the font: it is still non-embedded and must
+                            # block PDF/A conversion.
+                            basefont = name.unparse().decode('ascii', 'replace')
                         found.add(basefont.lstrip('/'))
                 except (AttributeError, TypeError, KeyError):
                     continue
