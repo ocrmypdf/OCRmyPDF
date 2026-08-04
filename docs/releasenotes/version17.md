@@ -23,6 +23,15 @@
     - At runtime it no longer follows symlinks or processes non-regular files
       (fifos, devices, etc.) in the watched directory, and refuses to write
       output onto a destination occupied by a non-regular file.
+    - A password-protected PDF dropped into the watched folder no longer stops
+      the watcher ({issue}`1715`). `pikepdf.PasswordError` does not derive from
+      `pikepdf.PdfError`, so it escaped the handler that waits for a file to be
+      fully written and tore down the watch loop, leaving files that arrived
+      afterwards unprocessed. Encrypted files are now logged and skipped
+      immediately — no amount of retrying will supply the password. More
+      generally, no per-file error can stop the watcher now: failures are
+      logged and watching continues. Thanks @christophdb for the report and a
+      fix ({issue}`1716`).
 
   See the "Watcher security model" section of the batch processing
   documentation for details. Existing

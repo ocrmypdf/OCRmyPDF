@@ -9,6 +9,7 @@ import sys
 import time
 from pathlib import Path
 
+import pikepdf
 import pytest
 
 watchfiles = pytest.importorskip('watchfiles')
@@ -153,6 +154,62 @@ def test_watcher_skips_fifo_input(data_dirs, resources):
     assert (output_dir / 'trivial.pdf').exists()
     assert not (output_dir / 'pipe.pdf').exists()
     assert proc.poll() is None  # still running
+
+    proc.terminate()
+    proc.wait()
+
+
+def test_watcher_survives_encrypted_pdf(data_dirs, resources, tmp_path):
+    # pikepdf.PasswordError does not derive from pikepdf.PdfError, so an
+    # encrypted PDF used to escape wait_for_file_ready() and tear down the
+    # watch loop, leaving later files unprocessed.
+    input_dir, output_dir, processed_dir, work_dir = data_dirs
+
+    encrypted = tmp_path / 'encrypted.pdf'
+    with pikepdf.open(resources / 'trivial.pdf') as pdf:
+        pdf.save(
+            encrypted, encryption=pikepdf.Encryption(owner='owner', user='user', R=6)
+        )
+
+    proc = _spawn_watcher(input_dir, output_dir, processed_dir, work_dir)
+    time.sleep(5)
+
+    shutil.copy(encrypted, input_dir / 'encrypted.pdf')
+    time.sleep(2)
+    # A PDF arriving after the encrypted one must still be processed.
+    shutil.copy(resources / 'trivial.pdf', input_dir / 'trivial.pdf')
+    time.sleep(5)
+
+    assert (output_dir / 'trivial.pdf').exists()
+    assert not (output_dir / 'encrypted.pdf').exists()
+    assert proc.poll() is None  # still running
+
+    proc.terminate()
+    proc.wait()
+
+
+def test_watcher_survives_ocr_exception(data_dirs, resources):
+    # Any per-file error, not just PasswordError, must be contained: a file
+    # that makes ocrmypdf.ocr() raise must not stop the watch loop.
+    input_dir, output_dir, processed_dir, work_dir = data_dirs
+
+    # An unreadable-by-ocrmypdf file that still passes wait_for_file_ready() is
+    # hard to synthesize, so drive the failure through OCR_JSON_SETTINGS: an
+    # unsupported language makes ocrmypdf.ocr() raise MissingDependencyError.
+    proc = _spawn_watcher(
+        input_dir,
+        output_dir,
+        processed_dir,
+        work_dir,
+        env_extra={'OCR_JSON_SETTINGS': json.dumps({'language': ['zzz']})},
+    )
+    time.sleep(5)
+
+    shutil.copy(resources / 'trivial.pdf', input_dir / 'bad.pdf')
+    time.sleep(5)
+
+    assert not (output_dir / 'bad.pdf').exists()
+    assert proc.poll() is None  # error contained, watcher still running
 
     proc.terminate()
     proc.wait()

@@ -86,6 +86,13 @@ def wait_for_file_ready(
             with pikepdf.Pdf.open(file_path) as pdf:
                 log.debug(f"{file_path} ready with {pdf.pages} pages")
                 return True
+        except pikepdf.PasswordError as e:
+            # PasswordError derives from Exception, not PdfError, so it must be
+            # caught explicitly. Waiting cannot produce the password, so give up
+            # immediately rather than burning the retry budget.
+            log.error(f"File {file_path} is password protected, skipping")
+            log.debug("Exception was", exc_info=e)
+            return False
         except (FileNotFoundError, OSError) as e:
             log.info(f"File {file_path} is not ready yet")
             log.debug("Exception was", exc_info=e)
@@ -361,7 +368,12 @@ def main(
             recursive=True,
         ):
             for _change, path in changes:
-                execute_ocrmypdf(file_path=Path(path), **settings)
+                try:
+                    execute_ocrmypdf(file_path=Path(path), **settings)
+                except Exception:  # noqa: BLE001
+                    # A watched folder is unattended, so no single bad file may
+                    # take the watcher down with it. Log and keep watching.
+                    log.exception(f"Error while processing {path}, continuing")
     except KeyboardInterrupt:
         pass
 
