@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import os
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -27,13 +28,11 @@ pytestmark = pytest.mark.skipif(
 
 
 def test_resolve_critical_paths_includes_expected():
-    from pathlib import Path
-
     critical = resolve_critical_paths()
     assert critical
     # The interpreter prefix and the working directory are always present.
     prefix = Path(os.path.normcase(os.path.realpath(sys.prefix)))
-    cwd = Path(os.path.normcase(os.path.realpath(os.getcwd())))
+    cwd = Path(os.path.normcase(os.path.realpath(Path.cwd())))
     assert prefix in critical
     assert cwd in critical
 
@@ -42,9 +41,7 @@ def test_resolve_critical_paths_excludes_empty(monkeypatch):
     monkeypatch.setenv('PATH', ':/usr/bin:')  # leading/trailing empty segments
     critical = resolve_critical_paths()
     # Empty PATH segments must not smuggle in a bare/empty path.
-    from pathlib import Path
-
-    assert Path('') not in critical
+    assert Path() not in critical
     assert all(str(p) for p in critical)
 
 

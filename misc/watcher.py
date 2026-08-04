@@ -11,7 +11,6 @@ import datetime as dt
 import fnmatch
 import json
 import logging
-import os
 import shutil
 import sys
 import time
@@ -179,7 +178,7 @@ class PdfFilter(DefaultFilter):
             return False
         if not super().__call__(change, path):
             return False
-        name = os.path.basename(path)
+        name = Path(path).name
         return any(fnmatch.fnmatch(name, pattern) for pattern in self._patterns)
 
 

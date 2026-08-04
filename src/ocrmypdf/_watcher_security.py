@@ -75,17 +75,18 @@ def resolve_critical_paths() -> frozenset[Path]:
     relative plugin path or ``.env`` file resolves there; an empty
     ``sys.path``/``$PATH`` entry also denotes the working directory.
     """
+    cwd = str(Path.cwd())
     candidates: list[str] = [
         sys.executable,
         sys.prefix,
         sys.base_prefix,
         sys.exec_prefix,
         sys.base_exec_prefix,
-        os.getcwd(),
+        cwd,
     ]
 
     # sys.path -- an empty entry means the current working directory.
-    candidates.extend(p or os.getcwd() for p in sys.path)
+    candidates.extend(p or cwd for p in sys.path)
 
     # site-packages locations may be unavailable in some virtualenv layouts.
     for getter in (site.getsitepackages, site.getusersitepackages):
@@ -102,9 +103,7 @@ def resolve_critical_paths() -> frozenset[Path]:
     candidates.extend(sysconfig.get_paths().values())
 
     # Everything on $PATH -- an empty segment means the working directory.
-    candidates.extend(
-        p or os.getcwd() for p in os.environ.get('PATH', '').split(os.pathsep)
-    )
+    candidates.extend(p or cwd for p in os.environ.get('PATH', '').split(os.pathsep))
 
     return frozenset(_norm(p) for p in candidates if p)
 
