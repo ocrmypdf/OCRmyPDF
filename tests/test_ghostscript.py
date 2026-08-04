@@ -744,7 +744,10 @@ def _dctdecode_streams(pdf_path) -> list[bytes]:
     """Return the raw JPEG bytes of every DCTDecode image in a PDF.
 
     Ghostscript and the optimizer may wrap a JPEG in Flate, so undo that first to
-    compare the JPEG payloads themselves.
+    compare the JPEG payloads themselves. Ghostscript releases before 10.6
+    (observed in 9.55 through 10.02) append a redundant EOI marker to JPEG
+    passthrough data; decoders stop at the first EOI, so strip the harmless
+    duplicates before comparing.
     """
     jpegs = []
     with pikepdf.open(pdf_path) as pdf:
@@ -762,6 +765,8 @@ def _dctdecode_streams(pdf_path) -> list[bytes]:
             data = obj.read_raw_bytes()
             if filters[0] == pikepdf.Name.FlateDecode:
                 data = zlib.decompress(data)
+            while data.endswith(b'\xff\xd9\xff\xd9'):
+                data = data[:-2]
             jpegs.append(data)
     return jpegs
 
