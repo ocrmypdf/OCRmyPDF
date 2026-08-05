@@ -157,7 +157,7 @@ Recommends:
  verapdf,    # Not currently in Debian
 Suggests:
  ocrmypdf-doc,
- python-watchdog,
+ python-watchfiles,
 ```
 
 ### Command line completions

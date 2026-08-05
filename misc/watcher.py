@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import fnmatch
 import json
 import logging
 import shutil
@@ -20,12 +21,23 @@ from typing import Annotated, Any
 import cyclopts
 import pikepdf
 from dotenv import load_dotenv
-from watchdog.events import PatternMatchingEventHandler
-from watchdog.observers import Observer
-from watchdog.observers.polling import PollingObserver
+from watchfiles import Change, DefaultFilter, watch
 
 import ocrmypdf
+from ocrmypdf._watcher_security import (
+    WatcherConfigError,
+    assert_data_dirs_isolated,
+    assert_no_watch_loop,
+    assert_plugins_safe,
+    assert_settings_file_safe,
+    is_safe_regular_file,
+    is_safe_write_target,
+    resolve_critical_paths,
+)
 
+# ``load_dotenv`` reads ``.env`` from the current working directory. The startup
+# check in ``main`` guarantees the data directories are disjoint from the code
+# zone (which includes the working directory), so ``.env`` remains trusted.
 load_dotenv()
 
 
@@ -74,6 +86,13 @@ def wait_for_file_ready(
             with pikepdf.Pdf.open(file_path) as pdf:
                 log.debug(f"{file_path} ready with {pdf.pages} pages")
                 return True
+        except pikepdf.PasswordError as e:
+            # PasswordError derives from Exception, not PdfError, so it must be
+            # caught explicitly. Waiting cannot produce the password, so give up
+            # immediately rather than burning the retry budget.
+            log.error(f"File {file_path} is password protected, skipping")
+            log.debug("Exception was", exc_info=e)
+            return False
         except (FileNotFoundError, OSError) as e:
             log.info(f"File {file_path} is not ready yet")
             log.debug("Exception was", exc_info=e)
@@ -91,6 +110,7 @@ def wait_for_file_ready(
 def execute_ocrmypdf(
     *,
     file_path: Path,
+    input_dir: Path,
     archive_dir: Path,
     output_dir: Path,
     ocrmypdf_kwargs: dict[str, Any],
@@ -100,12 +120,25 @@ def execute_ocrmypdf(
     retries_loading_file: int,
     output_dir_year_month: bool,
 ):
+    # Re-check right before use to shrink the TOCTOU window: reject symlinks and
+    # non-regular files, and anything that resolves outside the watched tree.
+    if not is_safe_regular_file(file_path, input_dir):
+        log.warning(f'Ignoring {file_path}: not a regular file within {input_dir}')
+        return
+
     output_path = get_output_path(output_dir, file_path.name, output_dir_year_month)
 
     log.info("-" * 20)
     log.info(f'New file: {file_path}. Waiting until fully written...')
     if not wait_for_file_ready(file_path, poll_new_file_seconds, retries_loading_file):
         log.info(f"Gave up waiting for {file_path} to become ready")
+        return
+
+    if not is_safe_write_target(output_path, output_dir):
+        log.error(
+            f'Refusing to write output to {output_path}: destination is occupied '
+            f'by a non-regular file or escapes {output_dir}'
+        )
         return
     log.info(f'Attempting to OCRmyPDF to: {output_path}')
 
@@ -125,34 +158,35 @@ def execute_ocrmypdf(
             log.info(f'OCR is done. Deleting: {file_path}')
             file_path.unlink()
         elif on_success_archive:
+            archive_path = archive_dir / file_path.name
+            if not is_safe_write_target(archive_path, archive_dir):
+                log.error(
+                    f'Refusing to archive to {archive_path}: destination is '
+                    f'occupied by a non-regular file or escapes {archive_dir}'
+                )
+                return
             log.info(f'OCR is done. Archiving {file_path.name} to {archive_dir}')
-            shutil.move(file_path, f'{archive_dir}/{file_path.name}')
+            shutil.move(file_path, archive_path)
         else:
             log.info('OCR is done')
     else:
         log.info('OCR is done')
 
 
-class HandleObserverEvent(PatternMatchingEventHandler):
-    def __init__(  # noqa: D107
-        self,
-        patterns=None,
-        ignore_patterns=None,
-        ignore_directories=False,
-        case_sensitive=False,
-        settings=None,
-    ):
-        super().__init__(
-            patterns=patterns,
-            ignore_patterns=ignore_patterns,
-            ignore_directories=ignore_directories,
-            case_sensitive=case_sensitive,
-        )
-        self._settings = settings if settings else {}
+class PdfFilter(DefaultFilter):
+    """Only surface newly created files whose name matches a watched pattern."""
 
-    def on_any_event(self, event):
-        if event.event_type in ['created']:
-            execute_ocrmypdf(file_path=Path(event.src_path), **self._settings)
+    def __init__(self, patterns):  # noqa: D107
+        super().__init__()
+        self._patterns = tuple(patterns)
+
+    def __call__(self, change: Change, path: str) -> bool:
+        if change is not Change.added:
+            return False
+        if not super().__call__(change, path):
+            return False
+        name = Path(path).name
+        return any(fnmatch.fnmatch(name, pattern) for pattern in self._patterns)
 
 
 @app.default
@@ -278,40 +312,70 @@ def main(
         f"LOGLEVEL: {loglevel.value}"
     )
 
-    if ocr_json_settings and Path(ocr_json_settings).exists():
-        json_settings = json.loads(Path(ocr_json_settings).read_text())
-    else:
-        json_settings = json.loads(ocr_json_settings or '{}')
-
-    if 'input_file' in json_settings or 'output_file' in json_settings:
-        log.error(
-            'OCR_JSON_SETTINGS (--ocr-json-settings) may not specify input/output file'
+    data_dirs = [input_dir, output_dir, archive_dir]
+    try:
+        # Harvard architecture: the attacker-writable data directories must be
+        # completely separate from the interpreter, virtual environment and $PATH,
+        # so a less-privileged user cannot inject code that we would execute.
+        assert_data_dirs_isolated(
+            {'input': input_dir, 'output': output_dir, 'archive': archive_dir},
+            resolve_critical_paths(),
         )
-        sys.exit(1)
 
-    handler = HandleObserverEvent(
-        patterns=patterns.split(','),
-        settings={
-            'archive_dir': archive_dir,
-            'output_dir': output_dir,
-            'ocrmypdf_kwargs': json_settings | {'deskew': deskew},
-            'on_success_delete': on_success_delete,
-            'on_success_archive': on_success_archive,
-            'poll_new_file_seconds': poll_new_file_seconds,
-            'retries_loading_file': retries_loading_file,
-            'output_dir_year_month': output_dir_year_month,
-        },
-    )
-    observer = PollingObserver() if use_polling else Observer()
-    observer.schedule(handler, input_dir, recursive=True)
-    observer.start()
+        # The input directory is watched recursively, so output/archive must not
+        # live under it or OCR output would be reprocessed forever.
+        assert_no_watch_loop(input_dir, output_dir, archive_dir)
+
+        if ocr_json_settings and Path(ocr_json_settings).exists():
+            settings_path = Path(ocr_json_settings)
+            assert_settings_file_safe(settings_path, data_dirs)
+            json_settings = json.loads(settings_path.read_text())
+        else:
+            json_settings = json.loads(ocr_json_settings or '{}')
+
+        if 'input_file' in json_settings or 'output_file' in json_settings:
+            raise WatcherConfigError(
+                'OCR_JSON_SETTINGS (--ocr-json-settings) may not specify '
+                'input/output file'
+            )
+
+        plugins = json_settings.get('plugins') or []
+        if isinstance(plugins, (str, Path)):
+            plugins = [plugins]
+        assert_plugins_safe(plugins, data_dirs)
+    except WatcherConfigError as e:
+        log.error(str(e))
+        sys.exit(e.exit_code)
+
+    settings = {
+        'input_dir': input_dir,
+        'archive_dir': archive_dir,
+        'output_dir': output_dir,
+        'ocrmypdf_kwargs': json_settings | {'deskew': deskew},
+        'on_success_delete': on_success_delete,
+        'on_success_archive': on_success_archive,
+        'poll_new_file_seconds': poll_new_file_seconds,
+        'retries_loading_file': retries_loading_file,
+        'output_dir_year_month': output_dir_year_month,
+    }
+
     print(f"Watching {input_dir} for new PDFs. Press Ctrl+C to exit.")
     try:
-        while True:
-            time.sleep(30)
+        for changes in watch(
+            input_dir,
+            watch_filter=PdfFilter(patterns.split(',')),
+            force_polling=use_polling,
+            recursive=True,
+        ):
+            for _change, path in changes:
+                try:
+                    execute_ocrmypdf(file_path=Path(path), **settings)
+                except Exception:  # noqa: BLE001
+                    # A watched folder is unattended, so no single bad file may
+                    # take the watcher down with it. Log and keep watching.
+                    log.exception(f"Error while processing {path}, continuing")
     except KeyboardInterrupt:
-        observer.stop()
-    observer.join()
+        pass
 
 
 if __name__ == "__main__":
