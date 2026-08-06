@@ -193,7 +193,7 @@ def test_jbig2_lossless(resources, outpdf):
     check_ocrmypdf(*args)
 
     with pikepdf.open(outpdf) as pdf:
-        pim = pikepdf.PdfImage(next(iter(pdf.pages[0].images.values())))
+        pim = pikepdf.PdfImage(next(iter(pdf.pages[0].get_images().values())))
         assert pim.filters[0] == '/JBIG2Decode'
         # Lossless JBIG2 has no JBIG2Globals (no shared symbol dictionary)
         assert len(pim.decode_parms) == 0
@@ -224,7 +224,7 @@ def test_flate_to_jbig2(resources, outdir):
     )
 
     with pikepdf.open(outdir / 'out.pdf') as pdf:
-        pim = pikepdf.PdfImage(next(iter(pdf.pages[0].images.values())))
+        pim = pikepdf.PdfImage(next(iter(pdf.pages[0].get_images().values())))
         assert pim.filters[0] == '/JBIG2Decode'
 
 
@@ -266,8 +266,8 @@ def test_multiple_pngs(resources, outdir):
         pikepdf.open(outdir / 'out.pdf') as outpdf,
     ):
         for n in range(len(inpdf.pages)):
-            inim = next(iter(inpdf.pages[n].images.values()))
-            outim = next(iter(outpdf.pages[n].images.values()))
+            inim = next(iter(inpdf.pages[n].get_images().values()))
+            outim = next(iter(outpdf.pages[n].get_images().values()))
             assert len(outim.read_raw_bytes()) < len(inim.read_raw_bytes()), n
 
 

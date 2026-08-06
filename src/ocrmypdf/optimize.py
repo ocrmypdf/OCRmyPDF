@@ -608,7 +608,7 @@ def _transcode_png(pdf: Pdf, filename: Path, xref: Xref) -> bool:
         img2pdf.convert(fspath(filename), outputstream=f, **IMG2PDF_KWARGS)
 
     with Pdf.open(output) as pdf_image:
-        foreign_image = next(iter(pdf_image.pages[0].images.values()))
+        foreign_image = next(iter(pdf_image.pages[0].get_images().values()))
         local_image = pdf.copy_foreign(foreign_image)
 
         im_obj = pdf.get_object(xref, 0)

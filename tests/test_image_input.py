@@ -86,4 +86,7 @@ def test_jpeg_in_jpeg_out(resources, outpdf):
         'tests/plugins/tesseract_noop.py',
     )
     with pikepdf.open(outpdf) as pdf:
-        assert next(iter(pdf.pages[0].images.values())).Filter == pikepdf.Name.DCTDecode
+        assert (
+            next(iter(pdf.pages[0].get_images().values())).Filter
+            == pikepdf.Name.DCTDecode
+        )
