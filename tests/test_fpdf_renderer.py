@@ -525,6 +525,66 @@ class TestWordSegmentation:
             "你好" in extracted_chars and "世界" in extracted_chars
         )
 
+    def test_last_word_of_line_gets_trailing_space(
+        self, multi_font_manager, tmp_path
+    ):
+        """Regression test for #1731.
+
+        The last word of a line must also emit a trailing space, otherwise an
+        extractor whose newline heuristic does not fire for a small baseline
+        shift (e.g. adjacent columns in a multi-column scan) glues it to the
+        first word of the next line. Here two single-word lines share the same
+        baseline and are horizontally adjacent, so nothing but an explicit
+        trailing space on the first line's last word can separate them.
+        """
+        from pdfminer.high_level import extract_text
+
+        from ocrmypdf.models.ocr_element import BoundingBox, OcrElement
+
+        word_a = OcrElement(
+            ocr_class=OcrClass.WORD,
+            text="Bijdrage",
+            bbox=BoundingBox(left=100, top=100, right=180, bottom=112),
+        )
+        line_a = OcrElement(
+            ocr_class=OcrClass.LINE,
+            bbox=BoundingBox(left=100, top=100, right=180, bottom=112),
+            children=[word_a],
+        )
+        word_b = OcrElement(
+            ocr_class=OcrClass.WORD,
+            text="4835",
+            bbox=BoundingBox(left=180, top=100, right=230, bottom=112),
+        )
+        line_b = OcrElement(
+            ocr_class=OcrClass.LINE,
+            bbox=BoundingBox(left=180, top=100, right=230, bottom=112),
+            children=[word_b],
+        )
+        page = OcrElement(
+            ocr_class=OcrClass.PAGE,
+            bbox=BoundingBox(left=0, top=0, right=612, bottom=792),
+            children=[line_a, line_b],
+        )
+
+        renderer = Fpdf2PdfRenderer(
+            page=page,
+            dpi=72,
+            multi_font_manager=multi_font_manager,
+            invisible_text=False,
+        )
+
+        output_path = tmp_path / "test_last_word_trailing_space.pdf"
+        renderer.render(output_path)
+
+        extracted_text = extract_text(str(output_path))
+
+        # Without the trailing space the two words are extracted glued together.
+        assert "Bijdrage4835" not in extracted_text
+        words_found = extracted_text.split()
+        assert "Bijdrage" in words_found
+        assert "4835" in words_found
+
     def test_latin_hocr_word_segmentation(
         self, resources, multi_font_manager, tmp_path
     ):

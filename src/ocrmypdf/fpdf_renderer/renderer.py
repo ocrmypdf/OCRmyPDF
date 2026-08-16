@@ -746,7 +746,17 @@ class Fpdf2PdfRenderer:
                 else:
                     text_to_render = word.text
             else:
-                text_to_render = word.text
+                # The last word of a line also gets a trailing space, so that
+                # extractors don't glue it to the first word of the next line
+                # when the baseline shift between the two lines is below the
+                # extractor's newline threshold (e.g. adjacent columns in a
+                # multi-column scan, see #1731). A trailing space glyph draws
+                # nothing, so there is no visual change; CJK-only words keep
+                # the no-space behaviour to avoid spurious spacing.
+                if word.text.strip() and not self._is_cjk_only(word.text):
+                    text_to_render = word.text + ' '
+                else:
+                    text_to_render = word.text
 
             # Use word_tz (fits word into its hOCR bbox) — Td handles
             # inter-word gaps, so Tz should not stretch to fill them.
