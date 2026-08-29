@@ -129,6 +129,7 @@ class DigitalSignatureError(InputFileError):
 class TaggedPDFError(InputFileError):
     """PDF is tagged."""
 
+    exit_code = ExitCode.already_done_ocr
     message = dedent(
         """\
         This PDF is marked as a Tagged PDF. This often indicates
