@@ -86,6 +86,33 @@ def check_options_languages(
         raise MissingDependencyError(msg)
 
 
+def _same_target(a: object, b: object) -> bool:
+    """Return True if two option values denote the same file.
+
+    A plain ``==`` only catches byte-identical strings, so ``out.txt`` and
+    ``./out.txt`` -- or a ``Path`` against the equivalent ``str`` -- would slip
+    through. Canonicalize both sides instead: ``os.path.realpath`` resolves
+    ``.``, ``..`` and symlinks while tolerating a path that does not exist yet
+    (the sidecar usually does not), and ``os.path.normcase`` folds case on
+    platforms where the filesystem does.
+
+    Streams and the ``-`` (stdout) sentinel are not filesystem paths and are
+    compared only for identity.
+    """
+    if a is b:
+        return True
+    if not isinstance(a, str | os.PathLike) or not isinstance(b, str | os.PathLike):
+        return False
+    if a == '-' or b == '-':
+        return False
+    return _norm_target(a) == _norm_target(b)
+
+
+def _norm_target(path: str | os.PathLike[str]) -> Path:
+    """Canonicalize a path for same-file comparison."""
+    return Path(os.path.normcase(os.path.realpath(os.fspath(path))))
+
+
 def check_options_sidecar(options: OcrOptions) -> None:
     if options.sidecar == '\0':
         if options.output_file == '-':
@@ -103,7 +130,9 @@ def check_options_sidecar(options: OcrOptions) -> None:
                 "--sidecar filename needed when output file is not a path."
             )
         options.sidecar = os.fspath(options.output_file) + '.txt'
-    if options.sidecar == options.input_file or options.sidecar == options.output_file:
+    if _same_target(options.sidecar, options.input_file) or _same_target(
+        options.sidecar, options.output_file
+    ):
         raise BadArgsError(
             "--sidecar file must be different from the input and output files"
         )

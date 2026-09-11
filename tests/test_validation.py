@@ -354,6 +354,50 @@ def test_sidecar_equals_output(resources, no_outpdf):
         run_ocrmypdf_api(resources / 'trivial.pdf', op, '--sidecar', op)
 
 
+@pytest.mark.parametrize(
+    'spell_input, spell_sidecar',
+    [
+        pytest.param(lambda p: p, lambda p: f'./{p}', id='dot_slash'),
+        pytest.param(lambda p: p, lambda p: Path(p).resolve(), id='absolute'),
+        pytest.param(lambda p: f'sub/{p}', lambda p: f'sub//{p}', id='double_sep'),
+        pytest.param(lambda p: f'sub/{p}', lambda p: f'sub/x/../{p}', id='dot_dot'),
+        pytest.param(lambda p: p, lambda p: Path(p), id='path_vs_str'),
+    ],
+)
+def test_sidecar_same_as_input_other_spelling(spell_input, spell_sidecar):
+    """A sidecar that merely *spells* the input path differently must be caught.
+
+    Comparing the raw option values only catches byte-identical strings, so
+    ``./in.pdf`` or an absolute path would be accepted and the sidecar would
+    then overwrite the input PDF.
+    """
+    opts = make_opts(
+        input_file=spell_input('in.pdf'),
+        output_file='out.pdf',
+        sidecar=spell_sidecar('in.pdf'),
+    )
+    with pytest.raises(BadArgsError, match=r'--sidecar'):
+        vd.check_options_sidecar(opts)
+
+
+def test_sidecar_same_as_output_other_spelling():
+    """The same aliasing must be caught for the output file."""
+    opts = make_opts(input_file='in.pdf', output_file='out.pdf', sidecar='./out.pdf')
+    with pytest.raises(BadArgsError, match=r'--sidecar'):
+        vd.check_options_sidecar(opts)
+
+
+@pytest.mark.parametrize(
+    'sidecar',
+    ['notes.txt', 'in.txt', 'sub/in.pdf'],
+    ids=['distinct', 'same_stem', 'subdir'],
+)
+def test_sidecar_genuinely_different_is_allowed(sidecar):
+    """Distinct files must keep working - the check must not over-reject."""
+    opts = make_opts(input_file='in.pdf', output_file='out.pdf', sidecar=sidecar)
+    vd.check_options_sidecar(opts)
+
+
 def test_devnull_sidecar(resources):
     with pytest.raises(BadArgsError, match=r'--sidecar.*NUL'):
         run_ocrmypdf_api(resources / 'trivial.pdf', os.devnull, '--sidecar')
