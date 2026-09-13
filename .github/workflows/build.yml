@@ -45,10 +45,12 @@ jobs:
     name: Test ${{ matrix.os }} with Python ${{ matrix.python }}
     needs: lint
     runs-on: ${{ matrix.os }}
+    # Python release candidates are informational and do not block the build.
+    continue-on-error: ${{ matrix.experimental || false }}
     strategy:
       matrix:
         os: [ubuntu-22.04, ubuntu-24.04]
-        python: ["3.11", "3.12", "3.13", "3.14"]
+        python: ["3.11", "3.12", "3.13", "3.14", "3.15"]
         include:
           - os: ubuntu-22.04
             tesseract_ppa: "ppa"
@@ -56,6 +58,8 @@ jobs:
           - os: ubuntu-24.04
             python: "3.14"
             runslow: "runslow"
+          - python: "3.15"
+            experimental: true
 
     env:
       OS: ${{ matrix.os }}
@@ -73,9 +77,11 @@ jobs:
           enable-cache: false
 
       - name: "Set up Python"
+        id: setup-python
         uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
+          allow-prereleases: true
 
       - name: Install Tesseract from PPA
         if: matrix.tesseract_ppa == 'ppa'
@@ -105,11 +111,14 @@ jobs:
             zlib1g
 
       - name: Install Python packages
+        # Pin uv to the interpreter from setup-python; otherwise uv may skip a
+        # prerelease Python in favour of a stable one already on the runner.
         run: |
-          uv sync --group test
+          uv sync --group test --python "${{ steps.setup-python.outputs.python-path }}"
 
       - name: Report versions
         run: |
+          uv run --no-dev python --version
           tesseract --version
           gs --version
           pngquant --version
@@ -136,10 +145,14 @@ jobs:
     name: Test macOS
     needs: lint
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.experimental || false }}
     strategy:
       matrix:
         os: [macos-latest]
-        python: ["3.11", "3.12", "3.13", "3.14"]
+        python: ["3.11", "3.12", "3.13", "3.14", "3.15"]
+        include:
+          - python: "3.15"
+            experimental: true
 
     env:
       OS: ${{ matrix.os }}
@@ -171,16 +184,21 @@ jobs:
           enable-cache: false
 
       - name: "Set up Python"
+        id: setup-python
         uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
+          allow-prereleases: true
 
       - name: Install Python packages
+        # Pin uv to the interpreter from setup-python; otherwise uv may skip a
+        # prerelease Python in favour of a stable one already on the runner.
         run: |
-          uv sync --group test
+          uv sync --group test --python "${{ steps.setup-python.outputs.python-path }}"
 
       - name: Report versions
         run: |
+          uv run --no-dev python --version
           tesseract --version
           gs --version
           pngquant --version
@@ -202,10 +220,14 @@ jobs:
     name: Test Windows
     needs: lint
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.experimental || false }}
     strategy:
       matrix:
         os: [windows-latest]
-        python: ["3.11", "3.12", "3.13", "3.14"]
+        python: ["3.11", "3.12", "3.13", "3.14", "3.15"]
+        include:
+          - python: "3.15"
+            experimental: true
 
     env:
       OS: ${{ matrix.os }}
@@ -223,9 +245,11 @@ jobs:
           enable-cache: false
 
       - name: "Set up Python"
+        id: setup-python
         uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
+          allow-prereleases: true
 
       - name: Install system packages
         run: |
@@ -234,8 +258,10 @@ jobs:
           choco install --yes --no-progress poppler --version=25.11.0
 
       - name: Install Python packages
+        # Pin uv to the interpreter from setup-python; otherwise uv may skip a
+        # prerelease Python in favour of a stable one already on the runner.
         run: |
-          uv sync --group test
+          uv sync --group test --python "${{ steps.setup-python.outputs.python-path }}"
 
       - name: Test
         run: |
