@@ -393,8 +393,11 @@ uv tool install ocrmypdf
 ```
 
 :::{note}
-The OCRmyPDF Snap package (`snap install ocrmypdf`) has not been updated since
-2024 and is several major versions behind. We do not recommend it.
+The OCRmyPDF Snap package (`snap install ocrmypdf`) tracks each OCRmyPDF
+release on the `stable` channel. Builds of the development branch are available
+with `snap install ocrmypdf --edge`. The snap is strictly confined and can only
+read and write files in your home folder or on removable media; for other
+locations, use `snap run ocrmypdf - - <input.pdf >output.pdf`.
 :::
 
 (homebrew-linux)=

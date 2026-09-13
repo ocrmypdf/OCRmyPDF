@@ -432,3 +432,36 @@ jobs:
             --platform linux/amd64,linux/arm64  \
             --tag "${DOCKER_REPOSITORY}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}" \
             --file .docker/Dockerfile.alpine .
+
+  snap_edge:
+    name: Build snap (publish to edge from main)
+    needs: [test_linux, test_macos, test_windows]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # snap version is derived from git describe
+
+      - uses: canonical/setup-lxd@v1
+        with:
+          channel: latest/stable
+
+      - name: Build snap
+        run: |
+          sudo snap install snapcraft --classic
+          snapcraft pack --output ocrmypdf.snap
+
+      - name: Smoke test snap
+        run: |
+          sudo snap install --dangerous ocrmypdf.snap
+          ocrmypdf --version
+          ocrmypdf --deskew --clean --optimize 2 -l eng+fra --sidecar skew.txt \
+            - - <tests/resources/skew.pdf >skew-ocr.pdf
+          grep -i 'the' skew.txt
+
+      - name: Publish snap to edge
+        if: github.ref == 'refs/heads/main'
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+        run: snapcraft upload --release=edge ocrmypdf.snap
