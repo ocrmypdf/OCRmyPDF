@@ -81,6 +81,37 @@ jobs:
           # Upload signatures to the release
           gh release upload "$GITHUB_REF_NAME" dist/*.sigstore.json --clobber
 
+  snap_stable:
+    name: Build snap and publish to stable
+    needs: [publish]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # snap version is derived from git describe
+
+      - uses: canonical/setup-lxd@v1
+        with:
+          channel: latest/stable
+
+      - name: Build snap
+        run: |
+          sudo snap install snapcraft --classic
+          snapcraft pack --output ocrmypdf.snap
+
+      - name: Smoke test snap
+        run: |
+          sudo snap install --dangerous ocrmypdf.snap
+          ocrmypdf --version | grep -Fx "${GITHUB_REF_NAME#v}"
+          ocrmypdf --deskew --clean --optimize 2 -l eng+fra --sidecar skew.txt \
+            - - <tests/resources/skew.pdf >skew-ocr.pdf
+          grep -i 'the' skew.txt
+
+      - name: Publish snap to stable
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+        run: snapcraft upload --release=stable ocrmypdf.snap
+
   docker_tag:
     name: Tag Docker images with release version
     needs: [publish]
