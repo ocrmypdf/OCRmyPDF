@@ -3,12 +3,46 @@
 
 from __future__ import annotations
 
+from unittest.mock import Mock
+
 import pikepdf
 import pytest
 from pikepdf import Name
 
 import ocrmypdf
+from ocrmypdf._options import ProcessingMode, TaggedPdfMode
+from ocrmypdf._pipeline import validate_pdfinfo_options
+from ocrmypdf.exceptions import ExitCode, PriorOcrFoundError, TaggedPDFError
 from ocrmypdf.pdfinfo import PdfInfo
+
+
+def test_tagged_pdf_error_uses_already_done_ocr_exit_code():
+    """Tagged PDFs are a distinct condition, but they do not need OCR.
+
+    They should use the same exit code as a file that already contains text
+    (already_done_ocr), not input_file. This must hold regardless of which
+    OCR engine plugin is installed.
+    """
+    err = TaggedPDFError()
+    assert not isinstance(err, PriorOcrFoundError)
+    assert err.exit_code == ExitCode.already_done_ocr
+
+
+def test_validate_tagged_pdf_before_plugin_hooks(resources):
+    """Reject tagged PDFs before plugin validate, independent of OCR engine."""
+    pdfinfo = PdfInfo(resources / 'tagged.pdf')
+    context = Mock()
+    context.pdfinfo = pdfinfo
+    context.options.invalidate_digital_signatures = False
+    context.options.tagged_pdf_mode = TaggedPdfMode.default
+    context.options.mode = ProcessingMode.default
+    context.plugin_manager.validate = Mock()
+
+    with pytest.raises(TaggedPDFError) as excinfo:
+        validate_pdfinfo_options(context)
+
+    assert excinfo.value.exit_code == ExitCode.already_done_ocr
+    context.plugin_manager.validate.assert_not_called()
 
 
 def test_block_tagged(resources):
