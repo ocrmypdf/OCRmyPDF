@@ -50,7 +50,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-22.04, ubuntu-24.04]
-        python: ["3.11", "3.12", "3.13", "3.14", "3.15"]
+        python: ["3.11", "3.12", "3.13", "3.14"]
         include:
           - os: ubuntu-22.04
             tesseract_ppa: "ppa"
@@ -58,8 +58,6 @@ jobs:
           - os: ubuntu-24.04
             python: "3.14"
             runslow: "runslow"
-          - python: "3.15"
-            experimental: true
 
     env:
       OS: ${{ matrix.os }}
@@ -149,10 +147,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        python: ["3.11", "3.12", "3.13", "3.14", "3.15"]
-        include:
-          - python: "3.15"
-            experimental: true
+        python: ["3.11", "3.12", "3.13", "3.14"]
 
     env:
       OS: ${{ matrix.os }}
@@ -224,10 +219,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        python: ["3.11", "3.12", "3.13", "3.14", "3.15"]
-        include:
-          - python: "3.15"
-            experimental: true
+        python: ["3.11", "3.12", "3.13", "3.14"]
 
     env:
       OS: ${{ matrix.os }}
