@@ -59,10 +59,10 @@ from ocrmypdf.pdfinfo import Colorspace, Encoding, FloatRect, Ink, PageInfo, Pdf
 from ocrmypdf.pluginspec import GhostscriptRasterDevice, OrientationConfidence
 
 try:
-    from pi_heif import register_heif_opener
+    from pillow_heif import register_heif_opener
 except ImportError:
 
-    def register_heif_opener():
+    def register_heif_opener(**kwargs) -> None:
         pass
 
 

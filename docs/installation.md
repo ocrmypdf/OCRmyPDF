@@ -923,6 +923,7 @@ User features are available as optional dependencies (extras). When
 installing OCRmyPDF as a tool:
 
 ```bash
+uv tool install "ocrmypdf[heic]"                   # HEIF/HEIC image support
 uv tool install "ocrmypdf[watcher]"                # File watching service
 uv tool install "ocrmypdf[webservice]"             # Streamlit web UI
 uv tool install "ocrmypdf[watcher,webservice]"     # Multiple features
@@ -931,6 +932,7 @@ uv tool install "ocrmypdf[watcher,webservice]"     # Multiple features
 Or, from a local source checkout:
 
 ```bash
+uv sync --extra heic           # HEIF/HEIC image support
 uv sync --extra watcher        # File watching service
 uv sync --extra webservice     # Streamlit web UI
 uv sync --extra watcher --extra webservice  # Multiple features

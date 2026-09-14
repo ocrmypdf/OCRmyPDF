@@ -16,7 +16,6 @@ dependencies = [
   "img2pdf>=0.5",
   "packaging>=20",
   "pdfminer.six>=20260107",  # fixes parsing of tokens split across the read buffer/streams (gh #1361)
-  "pi-heif",                # Heif image format - maintainers: if this is removed, it will NOT break
   "pikepdf>=10.2",     # NamePath, Object.as_int()/as_bool(), thread-local
                        # explicit_conversion(); see helpers.pikepdf_get_int
   "Pillow>=12",                # imageops.has_decoded_pixels() reads Image._im,
@@ -55,6 +54,7 @@ Changelog = "https://github.com/ocrmypdf/OCRmyPDF/tree/main/docs/releasenotes"
 
 [project.optional-dependencies]
 # User-installable features - use `uv sync --extra <name>` or `pip install ocrmypdf[name]`
+heic = ["pillow-heif>=1.7.0"]  # HEIF/HEIC image support - wheels bundle GPLv2 x265, opt-in only
 watcher = ["watchfiles>=1.0", "cyclopts>=3", "python-dotenv"]
 webservice = ["streamlit>=1.41.0"]
 
@@ -113,7 +113,7 @@ module = [
   'libxmp.utils',
   'pypdfium2',
   'uharfbuzz',
-  'pi_heif',
+  'pillow_heif',
 ]
 ignore_missing_imports = true
 

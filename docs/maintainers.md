@@ -174,8 +174,10 @@ continue to be available in 32-bit form. Please note we do not test on
 
 ### HEIF/HEIC
 
-OCRmyPDF defaults to installing the pi-heif PyPI package, which supports
-converting HEIF (High Efficiency Image File Format) images to PDF from
-the command line. If your distribution does not have this library
-available, you can exclude it and OCRmyPDF will gracefully degrade
-automatically, losing only support for this feature.
+HEIF/HEIC image support is an optional extra (`ocrmypdf[heic]`), backed by
+the pillow-heif PyPI package; it is not installed by default and is not
+included in the Docker image or snap. Its binary wheels bundle libheif,
+libde265, and x265, which makes the wheel as a whole GPLv2-licensed, so
+this stays opt-in rather than a default or bundled dependency. If not
+installed, OCRmyPDF gracefully degrades and loses only support for this
+feature.
