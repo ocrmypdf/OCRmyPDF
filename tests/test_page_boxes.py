@@ -3,10 +3,11 @@
 
 from __future__ import annotations
 
+import logging
+
 import pikepdf
 import pytest
 
-from ocrmypdf._exec import verapdf
 from ocrmypdf._pageboxes import repair_page_boxes
 
 from .conftest import check_ocrmypdf
@@ -17,14 +18,15 @@ wh_rect = [0, 0, 412, 592]
 
 neg_rect = [-100, -100, 512, 692]
 
-# When speculative PDF/A succeeds (verapdf available), MediaBox is preserved.
-# Ghostscript would normalize MediaBox to start at origin, but speculative
-# conversion bypasses Ghostscript.
-_pdfa_inset_expected = inset_rect if verapdf.available() else wh_rect
+# When speculative PDF/A succeeds, MediaBox is preserved; Ghostscript would
+# normalize it to start at the origin. Which path ran is only known after the
+# pipeline runs (probing verapdf at collection time is unreliable on cold CI
+# runners), so resolve this expectation from the log.
+PDFA_DEPENDS = object()
 
 mediabox_testdata = [
-    ('fpdf2', 'pdfa', 'ccitt.pdf', None, inset_rect, _pdfa_inset_expected),
-    ('sandwich', 'pdfa', 'ccitt.pdf', None, inset_rect, _pdfa_inset_expected),
+    ('fpdf2', 'pdfa', 'ccitt.pdf', None, inset_rect, PDFA_DEPENDS),
+    ('sandwich', 'pdfa', 'ccitt.pdf', None, inset_rect, PDFA_DEPENDS),
     ('fpdf2', 'pdf', 'ccitt.pdf', None, inset_rect, inset_rect),
     ('sandwich', 'pdf', 'ccitt.pdf', None, inset_rect, inset_rect),
     (
@@ -52,7 +54,15 @@ mediabox_testdata = [
     'renderer, output_type, in_pdf, mode, crop_to, crop_expected', mediabox_testdata
 )
 def test_media_box(
-    resources, outdir, renderer, output_type, in_pdf, mode, crop_to, crop_expected
+    resources,
+    outdir,
+    caplog,
+    renderer,
+    output_type,
+    in_pdf,
+    mode,
+    crop_to,
+    crop_expected,
 ):
     with pikepdf.open(resources / in_pdf) as pdf:
         page = pdf.pages[0]
@@ -69,7 +79,12 @@ def test_media_box(
     if mode:
         args.append(mode)
 
-    check_ocrmypdf(outdir / 'cropped.pdf', outdir / 'processed.pdf', *args)
+    with caplog.at_level(logging.INFO, logger='ocrmypdf'):
+        check_ocrmypdf(outdir / 'cropped.pdf', outdir / 'processed.pdf', *args)
+
+    if crop_expected is PDFA_DEPENDS:
+        speculative = 'Speculative PDF/A conversion succeeded' in caplog.text
+        crop_expected = inset_rect if speculative else wh_rect
 
     with pikepdf.open(outdir / 'processed.pdf') as pdf:
         page = pdf.pages[0]
