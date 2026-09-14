@@ -42,6 +42,47 @@ def _is_rtl_text(text: str) -> bool:
     return False
 
 
+# Unicode blocks of scripts whose glyphs depend on context: joining forms,
+# conjuncts, reordered vowel signs. Shaping is what makes these extract
+# correctly. Everything else (Latin, Greek, Cyrillic, CJK, ...) maps one
+# character to one glyph, and shaping would only add optional ligatures.
+_COMPLEX_SCRIPT_RANGES: tuple[tuple[int, int], ...] = (
+    (0x0590, 0x08FF),  # Hebrew, Arabic, Syriac, Thaana, NKo, Samaritan, Mandaic
+    (0x0900, 0x0DFF),  # Indic: Devanagari through Sinhala
+    (0x0E00, 0x0EFF),  # Thai, Lao
+    (0x0F00, 0x0FFF),  # Tibetan
+    (0x1000, 0x109F),  # Myanmar
+    (0x1780, 0x17FF),  # Khmer
+    (0x1800, 0x18AF),  # Mongolian
+    (0x1900, 0x1AAF),  # Limbu, Tai Le, New Tai Lue, Buginese, Tai Tham
+    (0x1B00, 0x1BFF),  # Balinese, Sundanese, Batak, Lepcha
+    (0x1C00, 0x1C4F),  # Ol Chiki
+    (0x1CD0, 0x1CFF),  # Vedic Extensions
+    (0xA800, 0xA82F),  # Syloti Nagri
+    (0xA840, 0xA8DF),  # Phags-pa, Saurashtra
+    (0xA8E0, 0xA8FF),  # Devanagari Extended
+    (0xA930, 0xA95F),  # Rejang
+    (0xA980, 0xA9DF),  # Javanese
+    (0xAA00, 0xAA7F),  # Cham, Myanmar Extended-A, Tai Viet
+    (0xAAE0, 0xAAFF),  # Meetei Mayek Extensions
+    (0xABC0, 0xABFF),  # Meetei Mayek
+    (0xFB1D, 0xFDFF),  # Hebrew and Arabic presentation forms
+    (0xFE70, 0xFEFF),  # Arabic Presentation Forms-B
+    (0x10800, 0x10FFF),  # SMP right-to-left scripts
+    (0x11000, 0x11FFF),  # SMP Brahmic scripts
+)
+
+
+def _needs_complex_shaping(text: str) -> bool:
+    """Does any character in text belong to a script that requires shaping?"""
+    for char in text:
+        cp = ord(char)
+        for lo, hi in _COMPLEX_SCRIPT_RANGES:
+            if lo <= cp <= hi:
+                return True
+    return False
+
+
 def transform_point(matrix: Matrix, x: float, y: float) -> tuple[float, float]:
     """Transform a point (x, y) by a matrix.
 
@@ -93,6 +134,7 @@ class WordRenderData:
     font_family: str
     word_tz: float
     is_rtl: bool
+    shaped: bool
 
 
 @dataclass
@@ -506,15 +548,26 @@ class Fpdf2PdfRenderer:
             # CMap entries whose character order is reversed by the bidi
             # algorithm during text extraction.
             # Since the text is invisible, glyph mirroring is harmless.
+            #
+            # Invisible text in scripts that do not need shaping (Latin,
+            # Greek, Cyrillic, CJK, ...) is also encoded 1:1. Shaping would
+            # only form optional ligatures such as "fi", whose ToUnicode
+            # entries expand to several characters - and Ghostscript 10.05
+            # through 10.06 drop those entries during PDF/A conversion,
+            # so the ligature vanishes from extracted text (issue #1744).
+            #
             # Compute Tz using unshaped widths to match encode_text().
             word_is_rtl = self.invisible_text and _is_rtl_text(word.text)
-            if word_is_rtl:
+            word_shaped = not self.invisible_text or (
+                not word_is_rtl and _needs_complex_shaping(word.text)
+            )
+            if word_shaped:
+                natural_width = pdf.get_string_width(word.text)
+            else:
                 saved_shaping = pdf.text_shaping
                 pdf.text_shaping = None
                 natural_width = pdf.get_string_width(word.text)
                 pdf.text_shaping = saved_shaping
-            else:
-                natural_width = pdf.get_string_width(word.text)
             if natural_width > 0 and word_width_pt > 0:
                 word_tz = (word_width_pt / natural_width) * 100
             else:
@@ -527,6 +580,7 @@ class Fpdf2PdfRenderer:
                     font_family=font_family,
                     word_tz=word_tz,
                     is_rtl=word_is_rtl,
+                    shaped=word_shaped,
                 )
             )
 
@@ -760,7 +814,11 @@ class Fpdf2PdfRenderer:
             # Use word_tz (fits word into its hOCR bbox) — Td handles
             # inter-word gaps, so Tz should not stretch to fill them.
             ops.append(f'{word.word_tz:.2f} Tz')
-            ops.append(self._encode_shaped_text(pdf, text_to_render, word.is_rtl))
+            ops.append(
+                self._encode_shaped_text(
+                    pdf, text_to_render, word.is_rtl, shaped=word.shaped
+                )
+            )
 
             prev_x_baseline = word.x_baseline
 
@@ -776,13 +834,16 @@ class Fpdf2PdfRenderer:
         # don't think Tz is still set from our raw operators
         pdf.font_stretching = 100
 
-    def _encode_shaped_text(self, pdf: FPDF, text: str, is_rtl: bool = False) -> str:
+    def _encode_shaped_text(
+        self, pdf: FPDF, text: str, is_rtl: bool = False, shaped: bool = True
+    ) -> str:
         """Encode text using HarfBuzz text shaping for complex script support.
 
         Unlike font.encode_text() which maps unicode characters one-by-one to
         glyph IDs, this uses HarfBuzz to handle BiDi reordering, Arabic joining
         forms, Devanagari conjuncts, and other complex script shaping. Falls
-        back to encode_text() when text shaping is not enabled.
+        back to encode_text() when text shaping is not enabled, or when
+        ``shaped`` is False because the word gains nothing from shaping.
 
         For RTL words with invisible text, we use encode_text() instead of
         shape_text(). fpdf2's shape_text() produces RTL ligature glyphs
@@ -807,12 +868,12 @@ class Fpdf2PdfRenderer:
             # positions and applies bidi reversal, which reverses them.
             # By pre-reversing, the double reversal yields the original.
             return font.encode_text(text[::-1])
-        if pdf.text_shaping and pdf.text_shaping.get("use_shaping_engine"):
-            shaped = font.shape_text(text, pdf.font_size_pt, pdf.text_shaping)
-            if shaped:
+        if shaped and pdf.text_shaping and pdf.text_shaping.get("use_shaping_engine"):
+            glyphs = font.shape_text(text, pdf.font_size_pt, pdf.text_shaping)
+            if glyphs:
                 mapped = "".join(
                     chr(ti["mapped_char"])
-                    for ti in shaped
+                    for ti in glyphs
                     if ti["mapped_char"] is not None
                 )
                 if mapped:

@@ -16,12 +16,17 @@ from pathlib import Path
 from typing import NamedTuple
 
 from pdfminer.layout import LTPage, LTTextBox
-from pikepdf import Name, Object, Page, Pdf
+from pikepdf import Dictionary, Name, NamePath, Page, Pdf
 
 from ocrmypdf._concurrent import Executor, SerialExecutor
 from ocrmypdf._pageboxes import coerce_box
 from ocrmypdf.exceptions import EncryptedPdfError
-from ocrmypdf.helpers import Resolution, pikepdf_get_bool, pikepdf_get_int
+from ocrmypdf.helpers import (
+    Resolution,
+    pikepdf_get_bool,
+    pikepdf_get_decimal,
+    pikepdf_get_int,
+)
 from ocrmypdf.pdfinfo._contentstream import TextboxInfo, TextMarker, VectorMarker
 from ocrmypdf.pdfinfo._image import ImageInfo, _process_content_streams
 from ocrmypdf.pdfinfo._types import FloatRect
@@ -33,6 +38,9 @@ from ocrmypdf.pdfinfo.layout import (
 )
 
 logger = logging.getLogger()
+
+#: Whether the document claims to carry a structure tree.
+MARKINFO_MARKED = NamePath.MarkInfo.Marked
 
 
 def _box_rect(values: Iterable) -> FloatRect:
@@ -178,13 +186,7 @@ class PageInfo:
             self._textboxes = []
             self._has_text = None  # i.e. "no information"
 
-        userunit = page.get(Name.UserUnit, Decimal(1.0))
-        if isinstance(userunit, Object):
-            # Only reachable under pikepdf's explicit conversion mode; the
-            # default (implicit) mode already unboxes to int/float/Decimal.
-            userunit = Decimal(userunit.as_float())
-        elif not isinstance(userunit, Decimal):
-            userunit = Decimal(userunit)
+        userunit = pikepdf_get_decimal(page.obj, Name.UserUnit, Decimal(1))
         self._userunit = userunit
         self._width_inches = width_pt * userunit / Decimal(72.0)
         self._height_inches = height_pt * userunit / Decimal(72.0)
@@ -455,21 +457,12 @@ class PdfInfo:
                     miner_state=miner_state,
                 )
             self._needs_rendering = pikepdf_get_bool(pdf.Root, Name.NeedsRendering)
-            if Name.AcroForm in pdf.Root:
-                if (
-                    len(pdf.Root.AcroForm.get(Name.Fields, [])) > 0
-                    or Name.XFA in pdf.Root.AcroForm
-                ):
+            acroform = pdf.Root.get(Name.AcroForm)
+            if isinstance(acroform, Dictionary):
+                if len(acroform.get(Name.Fields, [])) > 0 or Name.XFA in acroform:
                     self._has_acroform = True
-                self._has_signature = bool(
-                    pikepdf_get_int(pdf.Root.AcroForm, Name.SigFlags) & 1
-                )
-            mark_info = pdf.Root.get(Name.MarkInfo)
-            self._is_tagged = (
-                pikepdf_get_bool(mark_info, Name.Marked)
-                if mark_info is not None
-                else False
-            )
+                self._has_signature = bool(pikepdf_get_int(acroform, Name.SigFlags) & 1)
+            self._is_tagged = pikepdf_get_bool(pdf.Root, MARKINFO_MARKED)
             self._has_structure_tree = Name.StructTreeRoot in pdf.Root
 
     @property

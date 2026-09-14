@@ -310,7 +310,7 @@ def check_options(options):
         program='tesseract',
         package={'linux': 'tesseract-ocr'},
         version_checker=tesseract.version,
-        need_version='4.1.1',  # Ubuntu 22.04 version (also 20.04)
+        need_version='4.1.1',  # Ubuntu 22.04 version
         version_parser=tesseract.TesseractVersion,
     )
     tess_version = tesseract.version()

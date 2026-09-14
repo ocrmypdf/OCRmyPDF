@@ -1510,3 +1510,39 @@ class TestGeneratePdfaHook:
                 stop_on_soft_error=True,
             )
         assert gs_mock.call_args.kwargs['compression'] == expected
+
+
+class TestToUnicodeMultiCharBugVersions:
+    """Ghostscript 10.05.0 through 10.06.x drop multi-character ToUnicode entries.
+
+    Ghostscript bug 709030, introduced by ghostpdl commit 48b3c949 (2025-02-11)
+    and fixed by 8dad3470 (2026-01-15), released in 10.07.0. pdfwrite tested a
+    simple-font Encoding field on composite fonts and then kept only ToUnicode
+    entries of a single UTF-16 code unit, so a ligature or conjunct glyph lost
+    its mapping and extracted as nothing (#1744).
+    """
+
+    @pytest.mark.parametrize(
+        ('gs_version', 'affected'),
+        [
+            ('10.4.0', False),
+            ('10.5.0', True),
+            ('10.5.1', True),
+            ('10.6.0', True),
+            ('10.7.0', False),
+            ('10.7.1', False),
+        ],
+    )
+    def test_version_range(self, gs_version, affected):
+        assert ghostscript.tounicode_multichar_bug(Version(gs_version)) is affected
+
+    @pytest.mark.parametrize(
+        ('gs_version', 'warns'),
+        [('10.4.0', False), ('10.5.1', True), ('10.6.0', True), ('10.7.0', False)],
+    )
+    def test_warning_only_for_affected_versions(self, gs_version, warns, caplog):
+        caplog.set_level(logging.WARNING)
+        opts, pm = make_opts_pm(output_type='pdfa')
+        with patch.object(ghostscript, 'version', return_value=Version(gs_version)):
+            vd.check_options(opts, pm)
+        assert ("drops ToUnicode" in caplog.text) is warns

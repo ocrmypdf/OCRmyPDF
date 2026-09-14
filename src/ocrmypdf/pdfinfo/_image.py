@@ -21,7 +21,12 @@ from pikepdf import (
     UnsupportedImageTypeError,
 )
 
-from ocrmypdf.helpers import Resolution, pikepdf_get_int
+from ocrmypdf.helpers import (
+    RESOURCES_XOBJECT,
+    Resolution,
+    pikepdf_get_dict,
+    pikepdf_get_int,
+)
 from ocrmypdf.pdfinfo._contentstream import (
     ContentsInfo,
     TextMarker,
@@ -284,18 +289,7 @@ def _image_xobjects(container) -> Iterator[tuple[Object, str]]:
     since the object does not know its own name.
 
     """
-    if Name.Resources not in container:
-        return
-    resources = container[Name.Resources]
-    # A malformed PDF may store a non-dictionary at /Resources or
-    # /Resources /XObject; treat that as "no image XObjects" instead of
-    # crashing when we try to iterate it.
-    if not isinstance(resources, Dictionary):
-        return
-    xobjects = resources.get(Name.XObject)
-    if not isinstance(xobjects, Dictionary):
-        return
-    for key, candidate in xobjects.items():
+    for key, candidate in pikepdf_get_dict(container, RESOURCES_XOBJECT).items():
         if candidate is None or Name.Subtype not in candidate:
             continue
         if candidate[Name.Subtype] == Name.Image:
@@ -339,17 +333,7 @@ def _find_form_xobject_images(pdf: Pdf, container: Object, contentsinfo: Content
     The container may be a page, or a parent Form XObject.
 
     """
-    if Name.Resources not in container:
-        return
-    resources = container[Name.Resources]
-    # As in _image_xobjects, tolerate a non-dictionary /Resources or
-    # /Resources /XObject in a malformed PDF rather than crashing.
-    if not isinstance(resources, Dictionary):
-        return
-    xobject = resources.get(Name.XObject)
-    if not isinstance(xobject, Dictionary):
-        return
-    xobjs = xobject.as_dict()
+    xobjs = pikepdf_get_dict(container, RESOURCES_XOBJECT).as_dict()
     for xobj in xobjs:
         candidate = xobjs[xobj]
         if candidate is None or candidate.get(Name.Subtype) != Name.Form:

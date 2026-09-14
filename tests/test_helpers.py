@@ -10,11 +10,13 @@ import sys
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import pikepdf
 import pytest
 from packaging.version import Version
 
 from ocrmypdf import helpers
 from ocrmypdf.helpers import running_in_docker
+from ocrmypdf.pdfinfo import PdfInfo
 
 needs_symlink = pytest.mark.skipif(os.name == 'nt', reason='needs posix symlink')
 windows_only = pytest.mark.skipif(os.name != 'nt', reason="Windows test")
@@ -208,3 +210,69 @@ def test_malloc_trim_absent_without_glibc(monkeypatch, uncached_malloc_trim):
 @pytest.mark.skipif(not sys.platform.startswith('linux'), reason="glibc only")
 def test_malloc_trim_found_on_glibc(uncached_malloc_trim):
     assert callable(helpers._malloc_trim())
+
+
+class TestPikepdfGetters:
+    """Cover the untrusted-input paths of pikepdf_get_int/pikepdf_get_bool.
+
+    Both helpers read optional hints out of arbitrary user PDFs, so a value of
+    the wrong PDF type must fall back to the caller's default rather than
+    propagate a Python-level error out of ``PdfInfo``.
+    """
+
+    @pytest.mark.parametrize(
+        'value, expected',
+        [
+            (42, 42),
+            (pikepdf.Object.parse(b'42'), 42),
+            (3.9, 3),  # PDF Real truncates, as int() always has
+            (True, 1),
+            (pikepdf.String('nope'), 7),
+            (pikepdf.Name.Nope, 7),
+            (pikepdf.Array([1, 2]), 7),
+            (None, 7),  # key absent
+        ],
+    )
+    def test_get_int(self, value, expected):
+        d = pikepdf.Dictionary()
+        if value is not None:
+            d[pikepdf.Name.K] = value
+        assert helpers.pikepdf_get_int(d, pikepdf.Name.K, 7) == expected
+
+    @pytest.mark.parametrize(
+        'value, expected',
+        [
+            (True, True),
+            (False, False),
+            (1, True),  # malformed files store Booleans as 0/1
+            (0, False),
+            (pikepdf.Object.parse(b'true'), True),
+            (pikepdf.String('nope'), False),
+            (pikepdf.Name.Nope, False),
+            (pikepdf.Array([1, 2]), False),
+            (None, False),  # key absent
+        ],
+    )
+    def test_get_bool(self, value, expected):
+        d = pikepdf.Dictionary()
+        if value is not None:
+            d[pikepdf.Name.K] = value
+        assert helpers.pikepdf_get_bool(d, pikepdf.Name.K, False) is expected
+
+    def test_integer_marked_does_not_break_pdfinfo(self, outdir):
+        """A /Marked written as an integer must not abort PdfInfo.
+
+        ``pikepdf_get_bool`` only handled a native ``bool``, so an integer
+        raised ``AttributeError: 'int' object has no attribute 'as_bool'``
+        from ``PdfInfo.__init__`` -- before any OCR work began, and naming
+        neither the file nor the field.
+        """
+        pdf = pikepdf.Pdf.new()
+        pdf.add_blank_page(page_size=(200, 200))
+        pdf.Root[pikepdf.Name.MarkInfo] = pdf.make_indirect(
+            pikepdf.Dictionary(Marked=1)
+        )
+        target = outdir / 'marked_int.pdf'
+        pdf.save(target)
+
+        assert PdfInfo(target).is_tagged is True

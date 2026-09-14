@@ -17,6 +17,11 @@ from ocrmypdf import hookimpl
 from ocrmypdf._exec import ghostscript
 from ocrmypdf._options import ProcessingMode
 from ocrmypdf.exceptions import MissingDependencyError
+from ocrmypdf.helpers import (
+    RESOURCES_XOBJECT,
+    pikepdf_get_dict,
+    pikepdf_get_int,
+)
 from ocrmypdf.subprocess import check_external_program
 
 log = logging.getLogger(__name__)
@@ -217,6 +222,15 @@ def check_options(options):
                 gs_version,
                 ghostscript.GS_JPEG_TRUNCATION_FIXED,
             )
+        if ghostscript.tounicode_multichar_bug(gs_version):
+            log.warning(
+                "Ghostscript %s drops ToUnicode mappings that expand to more than "
+                "one character while writing PDF/A, so ligatures and conjuncts "
+                "in complex-script text may not copy or search correctly. "
+                "Please upgrade to Ghostscript %s or later, which fixes this.",
+                gs_version,
+                ghostscript.GS_TOUNICODE_MULTICHAR_FIXED,
+            )
         if options.output_type == 'pdfa':
             options.output_type = 'pdfa-2'
 
@@ -298,8 +312,6 @@ def _collect_dctdecode_images(pdf: Pdf) -> dict[tuple, list[tuple[Stream, bytes]
 
     def process_xobject_dict(xobjects, depth=0):
         """Process an XObject dictionary for DCTDecode images."""
-        if xobjects is None:
-            return
         if depth > 10:
             log.warning("Recursion depth exceeded in _collect_dctdecode_images")
             return
@@ -312,10 +324,10 @@ def _collect_dctdecode_images(pdf: Pdf) -> dict[tuple, list[tuple[Stream, bytes]
                 filt = obj.get(Name.Filter)
                 if filt == Name.DCTDecode:
                     sig = (
-                        int(obj.get(Name.Width, 0)),
-                        int(obj.get(Name.Height, 0)),
+                        pikepdf_get_int(obj, Name.Width),
+                        pikepdf_get_int(obj, Name.Height),
                         str(filt),
-                        int(obj.get(Name.BitsPerComponent, 0)),
+                        pikepdf_get_int(obj, Name.BitsPerComponent),
                         get_colorspace_key(obj),
                     )
                     raw_bytes = obj.read_raw_bytes()
@@ -324,18 +336,12 @@ def _collect_dctdecode_images(pdf: Pdf) -> dict[tuple, list[tuple[Stream, bytes]
                     images[sig].append((obj, raw_bytes))
             # Recurse into Form XObjects
             elif obj.get(Name.Subtype) == Name.Form:
-                if Name.Resources in obj:
-                    res = obj[Name.Resources]
-                    if Name.XObject in res:
-                        process_xobject_dict(res[Name.XObject], depth=depth + 1)
+                process_xobject_dict(
+                    pikepdf_get_dict(obj, RESOURCES_XOBJECT), depth=depth + 1
+                )
 
     for page in pdf.pages:
-        if Name.Resources not in page:
-            continue
-        resources = page[Name.Resources]
-        if Name.XObject not in resources:
-            continue
-        process_xobject_dict(resources[Name.XObject])
+        process_xobject_dict(pikepdf_get_dict(page.obj, RESOURCES_XOBJECT))
 
     return images
 

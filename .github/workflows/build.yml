@@ -45,6 +45,8 @@ jobs:
     name: Test ${{ matrix.os }} with Python ${{ matrix.python }}
     needs: lint
     runs-on: ${{ matrix.os }}
+    # Python release candidates are informational and do not block the build.
+    continue-on-error: ${{ matrix.experimental || false }}
     strategy:
       matrix:
         os: [ubuntu-22.04, ubuntu-24.04]
@@ -73,9 +75,11 @@ jobs:
           enable-cache: false
 
       - name: "Set up Python"
+        id: setup-python
         uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
+          allow-prereleases: true
 
       - name: Install Tesseract from PPA
         if: matrix.tesseract_ppa == 'ppa'
@@ -105,11 +109,14 @@ jobs:
             zlib1g
 
       - name: Install Python packages
+        # Pin uv to the interpreter from setup-python; otherwise uv may skip a
+        # prerelease Python in favour of a stable one already on the runner.
         run: |
-          uv sync --group test
+          uv sync --group test --python "${{ steps.setup-python.outputs.python-path }}"
 
       - name: Report versions
         run: |
+          uv run --no-dev python --version
           tesseract --version
           gs --version
           pngquant --version
@@ -136,6 +143,7 @@ jobs:
     name: Test macOS
     needs: lint
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.experimental || false }}
     strategy:
       matrix:
         os: [macos-latest]
@@ -171,16 +179,21 @@ jobs:
           enable-cache: false
 
       - name: "Set up Python"
+        id: setup-python
         uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
+          allow-prereleases: true
 
       - name: Install Python packages
+        # Pin uv to the interpreter from setup-python; otherwise uv may skip a
+        # prerelease Python in favour of a stable one already on the runner.
         run: |
-          uv sync --group test
+          uv sync --group test --python "${{ steps.setup-python.outputs.python-path }}"
 
       - name: Report versions
         run: |
+          uv run --no-dev python --version
           tesseract --version
           gs --version
           pngquant --version
@@ -202,6 +215,7 @@ jobs:
     name: Test Windows
     needs: lint
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.experimental || false }}
     strategy:
       matrix:
         os: [windows-latest]
@@ -223,9 +237,11 @@ jobs:
           enable-cache: false
 
       - name: "Set up Python"
+        id: setup-python
         uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
+          allow-prereleases: true
 
       - name: Install system packages
         run: |
@@ -234,8 +250,10 @@ jobs:
           choco install --yes --no-progress poppler --version=25.11.0
 
       - name: Install Python packages
+        # Pin uv to the interpreter from setup-python; otherwise uv may skip a
+        # prerelease Python in favour of a stable one already on the runner.
         run: |
-          uv sync --group test
+          uv sync --group test --python "${{ steps.setup-python.outputs.python-path }}"
 
       - name: Test
         run: |
@@ -406,3 +424,36 @@ jobs:
             --platform linux/amd64,linux/arm64  \
             --tag "${DOCKER_REPOSITORY}/${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}" \
             --file .docker/Dockerfile.alpine .
+
+  snap_edge:
+    name: Build snap (publish to edge from main)
+    needs: [test_linux, test_macos, test_windows]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # snap version is derived from git describe
+
+      - uses: canonical/setup-lxd@v1
+        with:
+          channel: latest/stable
+
+      - name: Build snap
+        run: |
+          sudo snap install snapcraft --classic
+          snapcraft pack --output ocrmypdf.snap
+
+      - name: Smoke test snap
+        run: |
+          sudo snap install --dangerous ocrmypdf.snap
+          ocrmypdf --version
+          ocrmypdf --deskew --clean --optimize 2 -l eng+fra --sidecar skew.txt \
+            - - <tests/resources/skew.pdf >skew-ocr.pdf
+          grep -i 'the' skew.txt
+
+      - name: Publish snap to edge
+        if: github.ref == 'refs/heads/main'
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+        run: snapcraft upload --release=edge ocrmypdf.snap

@@ -914,3 +914,62 @@ class TestRtlTextExtraction:
         check_pdf(str(output_pdf))
         text = text_from_pdf(output_pdf)
         assert len(text.strip()) > 0, "Visible RTL should produce extractable text"
+
+
+class TestLatinInvisibleTextUnshaped:
+    """Invisible Latin text is encoded 1:1 without ligature glyphs (issue #1744).
+
+    HarfBuzz shaping turns "fi" and "ff" into single ligature glyphs whose
+    ToUnicode entries expand to two characters. Ghostscript 10.05.0 through
+    10.06.0 (Ghostscript bug 709030) silently drop such entries from composite
+    fonts while converting to PDF/A, so extraction yields "con dentiality".
+    Invisible text gains nothing from optional Latin ligatures, so the renderer
+    must not form them; complex scripts that need shaping are unaffected.
+    """
+
+    def test_latin_tounicode_one_to_one(self, tmp_path, multi_font_manager):
+        page = create_simple_page(
+            words=[
+                ("confidentiality", (100, 100, 500, 200)),
+                ("effects", (550, 100, 800, 200)),
+            ]
+        )
+        output_pdf = tmp_path / "latin_ligatures.pdf"
+        renderer = Fpdf2PdfRenderer(
+            page=page,
+            dpi=72.0,
+            multi_font_manager=multi_font_manager,
+            invisible_text=True,
+        )
+        renderer.render(output_pdf)
+
+        cmap, _ = _decode_tounicode_stream(output_pdf)
+        multi = {glyph: chars for glyph, chars in cmap.items() if len(chars) != 1}
+        assert not multi, f"ligature CMap entries in invisible Latin text: {multi}"
+        text = text_from_pdf(output_pdf)
+        assert "confidentiality" in text
+        assert "effects" in text
+
+    @pytest.mark.parametrize(
+        ('text', 'complex_script'),
+        [
+            ("confidentiality", False),
+            ("Straße naïve", False),
+            ("Ελληνικά", False),
+            ("Кириллица", False),
+            ("日本語", False),
+            ("नमस्ते", True),
+            ("বাংলা", True),
+            ("தமிழ்", True),
+            ("ภาษาไทย", True),
+            ("ខ្មែរ", True),
+            ("မြန်မာ", True),
+            ("سلام", True),
+            ("שלום", True),
+            ("hello नमस्ते", True),
+        ],
+    )
+    def test_needs_complex_shaping(self, text, complex_script):
+        from ocrmypdf.fpdf_renderer.renderer import _needs_complex_shaping
+
+        assert _needs_complex_shaping(text) is complex_script

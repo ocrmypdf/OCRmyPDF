@@ -21,7 +21,7 @@ JBIG2 encoding is automatically provided by these OCRmyPDF packages:
 - Docker image (both Ubuntu and Alpine)
 - Snap package
 - Alpine Linux package
-- ArchLinux AUR package
+- ArchLinux AUR package (as an optional dependency)
 - Debian package
 - Ubuntu package
 - Homebrew on macOS

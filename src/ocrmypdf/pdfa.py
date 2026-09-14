@@ -14,6 +14,8 @@ from pathlib import Path
 import pikepdf
 from pikepdf import Array, Dictionary, Name, Object, Pdf, Stream
 
+from ocrmypdf.helpers import pikepdf_get_dict
+
 log = logging.getLogger(__name__)
 
 SRGB_ICC_PROFILE_NAME = 'sRGB.icc'
@@ -140,10 +142,11 @@ def file_claims_pdfa(filename: Path):
 def _cid_font_is_embedded(type0_font: Object) -> bool:
     """Return True if a Type0 font's CID descendant carries embedded glyphs."""
     for descendant in type0_font.get(Name.DescendantFonts, []):
-        descriptor = descendant.get(Name.FontDescriptor, None)
         # A malformed PDF may store a non-dictionary here; `key in descriptor`
-        # raises on those, so require a real dictionary before probing it.
-        if isinstance(descriptor, Dictionary) and any(
+        # raises on those, so reduce anything that is not a dictionary to an
+        # empty one before probing it.
+        descriptor = pikepdf_get_dict(descendant, Name.FontDescriptor)
+        if any(
             key in descriptor for key in (Name.FontFile, Name.FontFile2, Name.FontFile3)
         ):
             return True
@@ -173,42 +176,38 @@ def find_nonembedded_cid_fonts(pdf: Pdf) -> set[str]:
     """
     found: set[str] = set()
 
-    def scan_resources(resources, depth: int = 0) -> None:
-        if resources is None or depth > 10:
+    def scan_resources(resources: Object, depth: int = 0) -> None:
+        if depth > 10:
             return
         # A well-formed PDF stores dictionaries under /Font and /XObject, but a
         # malformed one (common in OCR workloads) may store an array, a name, or
-        # another non-dictionary object. Only such dictionaries have .values(),
-        # so guard with isinstance rather than let the scan crash (issue #1713).
-        fonts = resources.get(Name.Font, None)
-        if isinstance(fonts, Dictionary):
-            for font in fonts.as_dict().values():
-                try:
-                    if font.get(Name.Subtype) != Name.Type0:
-                        continue
-                    if not _cid_font_is_embedded(font):
-                        name = font.get(Name.BaseFont, Name('/(unnamed)'))
-                        try:
-                            basefont = str(name)
-                        except UnicodeDecodeError:
-                            # Name objects are byte sequences with no mandated
-                            # encoding; e.g. CJK foundry font names are often
-                            # GBK, which is not valid UTF-8 (issue #1727). Fall
-                            # back to the hex-escaped PDF syntax form. Do not
-                            # skip the font: it is still non-embedded and must
-                            # block PDF/A conversion.
-                            basefont = name.unparse().decode('ascii', 'replace')
-                        found.add(basefont.lstrip('/'))
-                except (AttributeError, TypeError, KeyError):
+        # another non-dictionary object. pikepdf_get_dict reduces every one of
+        # those to "no fonts" rather than let the scan crash (issue #1713).
+        for font in pikepdf_get_dict(resources, Name.Font).as_dict().values():
+            try:
+                if font.get(Name.Subtype) != Name.Type0:
                     continue
-        xobjects = resources.get(Name.XObject, None)
-        if isinstance(xobjects, Dictionary):
-            for xobj in xobjects.as_dict().values():
-                if xobj.get(Name.Subtype) == Name.Form and Name.Resources in xobj:
-                    scan_resources(xobj[Name.Resources], depth + 1)
+                if not _cid_font_is_embedded(font):
+                    name = font.get(Name.BaseFont, Name('/(unnamed)'))
+                    try:
+                        basefont = str(name)
+                    except UnicodeDecodeError:
+                        # Name objects are byte sequences with no mandated
+                        # encoding; e.g. CJK foundry font names are often
+                        # GBK, which is not valid UTF-8 (issue #1727). Fall
+                        # back to the hex-escaped PDF syntax form. Do not
+                        # skip the font: it is still non-embedded and must
+                        # block PDF/A conversion.
+                        basefont = name.unparse().decode('ascii', 'replace')
+                    found.add(basefont.lstrip('/'))
+            except (AttributeError, TypeError, KeyError):
+                continue
+        for xobj in pikepdf_get_dict(resources, Name.XObject).as_dict().values():
+            if xobj.get(Name.Subtype) == Name.Form:
+                scan_resources(pikepdf_get_dict(xobj, Name.Resources), depth + 1)
 
     for page in pdf.pages:
-        scan_resources(page.get(Name.Resources, None))
+        scan_resources(pikepdf_get_dict(page.obj, Name.Resources))
     return found
 
 

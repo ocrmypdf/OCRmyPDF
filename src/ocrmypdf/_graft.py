@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 from pikepdf import (
     Dictionary,
     Name,
+    NamePath,
     Object,
     Operator,
     Page,
@@ -31,6 +32,7 @@ from pikepdf import (
 from ocrmypdf._jobcontext import PdfContext
 from ocrmypdf._options import ProcessingMode
 from ocrmypdf._pipeline import VECTOR_PAGE_DPI
+from ocrmypdf.helpers import pikepdf_get_dict
 
 
 class RenderMode(Enum):
@@ -169,6 +171,12 @@ def _build_text_layer_ctm(
 log = logging.getLogger(__name__)
 MAX_REPLACE_PAGES = 100
 
+#: Acrobat's private, and after any rewrite stale, text search index.
+PIECEINFO_SEARCHINDEX = NamePath.PieceInfo.SearchIndex
+
+#: A page's font resources.
+RESOURCES_FONT = NamePath.Resources.Font
+
 
 def _ensure_dictionary(obj: Dictionary | Stream, name: Name):
     if name not in obj:
@@ -225,7 +233,7 @@ def _page_resources(page: Page) -> Object:
 def _strip_invisible_text_from_form_xobjects(
     pdf: Pdf,
     resources: Object,
-    name: Object,
+    name: Name,
     inherited_render_mode: int,
     visited: dict[tuple[int, int], bool],
 ) -> bool:
@@ -234,12 +242,13 @@ def _strip_invisible_text_from_form_xobjects(
     Returns True if the form paints nothing once stripped, meaning the caller
     should stop drawing it.
     """
-    try:
-        xobj = resources[Name.XObject][cast('Name', name)]
-    except (KeyError, TypeError):
-        return False  # dangling or non-dictionary resource; nothing we can strip
-    if xobj.get(Name.Subtype) != Name.Form:
-        return False  # image XObjects carry no text operators
+    # None covers a dangling name and a non-dictionary /XObject alike; there is
+    # nothing we can strip in either case.
+    xobj = resources.get(NamePath(Name.XObject, name))
+    # A Form XObject is always a stream, and image XObjects carry no text
+    # operators, so anything else here is nothing we can strip.
+    if not isinstance(xobj, Stream) or xobj.get(Name.Subtype) != Name.Form:
+        return False
     key = (xobj.objgen[0], xobj.objgen[1])
     if key == (0, 0):
         return False  # a direct object we cannot identify
@@ -250,7 +259,7 @@ def _strip_invisible_text_from_form_xobjects(
     visited[key] = False
     content, vestigial = _strip_invisible_text_from_content(
         pdf,
-        cast('Stream', xobj),
+        xobj,
         xobj.get(Name.Resources, Dictionary()),
         visited,
         inherited_render_mode,
@@ -276,7 +285,7 @@ def _strip_invisible_text_from_content(
     render_mode = initial_render_mode
     render_mode_stack = []
     text_objects = []
-    vestigial_names: list[Object] = []
+    vestigial_names: list[Name] = []
 
     for instruction in parse_content_stream(obj, ''):
         operands, operator = instruction.operands, instruction.operator
@@ -298,15 +307,16 @@ def _strip_invisible_text_from_content(
         # text is not in the page content stream at all. The current render mode
         # is inherited across the Do, and a form that paints nothing once
         # stripped is no longer drawn.
+        xobject_name = operands[0] if operands else None
         if (
             operator == Operator('Do')
             and not in_text_obj
-            and operands
+            and isinstance(xobject_name, Name)
             and _strip_invisible_text_from_form_xobjects(
-                pdf, resources, operands[0], render_mode, visited
+                pdf, resources, xobject_name, render_mode, visited
             )
         ):
-            vestigial_names.append(operands[0])
+            vestigial_names.append(xobject_name)
             continue
 
         if not in_text_obj:
@@ -325,8 +335,9 @@ def _strip_invisible_text_from_content(
 
     for name in vestigial_names:
         # The form is no longer drawn, so unlink it; it drops out at save time.
+        # __delitem__ has no NamePath overload, so this step stays a subscript.
         with suppress(KeyError, TypeError):
-            del resources[Name.XObject][cast('Name', name)]
+            del resources[Name.XObject][name]
 
     vestigial = not any(operator in _PAINTING_OPERATORS for _, operator in stream)
 
@@ -359,22 +370,22 @@ def discard_text_search_index(pdf: Pdf) -> bool:
     update this vendor-private data, so we discard it; modern viewers rebuild a
     search index on demand. Returns True if the catalog was modified.
     """
-    try:
-        pieceinfo = pdf.Root.get(Name.PieceInfo)
-        if not isinstance(pieceinfo, Dictionary) or Name.SearchIndex not in pieceinfo:
-            return False
-        del pieceinfo[Name.SearchIndex]
-        log.debug(
-            "Discarded embedded text search index "
-            "(/Root/PieceInfo/SearchIndex) because the PDF was rewritten; "
-            "it would otherwise be stale."
-        )
-        # Drop an empty PieceInfo rather than leave a husk behind.
-        if len(pieceinfo) == 0:
-            del pdf.Root.PieceInfo
-        return True
-    except (KeyError, TypeError, AttributeError):
+    # A NamePath lookup answers None for a missing /PieceInfo, a non-dictionary
+    # one, or a missing /SearchIndex alike, so no exception guard is needed to
+    # tolerate a malformed catalog here.
+    if pdf.Root.get(PIECEINFO_SEARCHINDEX) is None:
         return False
+    pieceinfo = pdf.Root[Name.PieceInfo]
+    del pieceinfo[Name.SearchIndex]
+    log.debug(
+        "Discarded embedded text search index "
+        "(/Root/PieceInfo/SearchIndex) because the PDF was rewritten; "
+        "it would otherwise be stale."
+    )
+    # Drop an empty PieceInfo rather than leave a husk behind.
+    if len(pieceinfo) == 0:
+        del pdf.Root.PieceInfo
+    return True
 
 
 def discard_page_thumbnails(pdf: Pdf) -> int:
@@ -696,22 +707,23 @@ class OcrGrafter:
 
         # Copy resources from text page's Resources to xobj
         # We need to handle this carefully since text_page is from a foreign PDF
-        if hasattr(text_page, 'Resources') and text_page.Resources:
+        text_resources = pikepdf_get_dict(text_page.obj, Name.Resources)
+        if text_resources:
             # Create empty Resources dictionary for xobj
             xobj_resources = _ensure_dictionary(xobj, Name.Resources)
 
             # Copy fonts if they exist
-            if Name.Font in text_page.Resources:
+            text_fonts = pikepdf_get_dict(text_resources, Name.Font)
+            if text_fonts:
                 xobj_fonts = _ensure_dictionary(xobj_resources, Name.Font)
-                text_fonts = text_page.Resources[Name.Font]
                 # Copy each font from the foreign PDF
                 for font_name, font_obj in text_fonts.items():
                     xobj_fonts[font_name] = self.pdf_base.copy_foreign(font_obj)
 
             # Copy ExtGState (graphics state) if it exists - needed for transparency
-            if Name.ExtGState in text_page.Resources:
+            text_extstates = pikepdf_get_dict(text_resources, Name.ExtGState)
+            if text_extstates:
                 xobj_extstates = _ensure_dictionary(xobj_resources, Name.ExtGState)
-                text_extstates = text_page.Resources[Name.ExtGState]
                 # Copy each graphics state from the foreign PDF
                 for gs_name, gs_obj in text_extstates.items():
                     xobj_extstates[gs_name] = self.pdf_base.copy_foreign(gs_obj)
@@ -771,9 +783,7 @@ class OcrGrafter:
                 base_page = self.pdf_base.pages[pageno]
 
                 # Get font from the text PDF
-                pdf_text_fonts = pdf_text.pages[0].Resources.get(
-                    Name.Font, Dictionary()
-                )
+                pdf_text_fonts = pikepdf_get_dict(pdf_text.pages[0].obj, RESOURCES_FONT)
                 font = None
                 font_key = None
                 for f in ('/f-0-0', '/F1'):

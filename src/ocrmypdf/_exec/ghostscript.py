@@ -44,6 +44,13 @@ GS = 'gswin64c' if os.name == 'nt' else 'gs'
 GS_JPEG_TRUNCATION_FIRST = Version('10.6.0')
 GS_JPEG_TRUNCATION_FIXED = Version('10.7.0')
 
+# Ghostscript 10.05.0 through 10.06.x drop ToUnicode entries that expand to more
+# than one UTF-16 code unit from composite fonts, so a ligature ("fi") or an
+# Indic conjunct glyph loses its Unicode mapping in the PDF/A output
+# (Ghostscript bug 709030). Fixed upstream on 2026-01-15, released in 10.07.0.
+GS_TOUNICODE_MULTICHAR_FIRST = Version('10.5.0')
+GS_TOUNICODE_MULTICHAR_FIXED = Version('10.7.0')
+
 # OcrOptions.extra_attrs key set when Ghostscript actually generated the PDF/A.
 # The truncation workarounds are only warranted when Ghostscript touched the file.
 GS_GENERATED_PDFA = '_ghostscript_generated_pdfa'
@@ -94,6 +101,17 @@ def jpeg_truncation_bug(gs_version: Version | None = None) -> bool:
     if gs_version is None:
         gs_version = version()
     return GS_JPEG_TRUNCATION_FIRST <= gs_version < GS_JPEG_TRUNCATION_FIXED
+
+
+def tounicode_multichar_bug(gs_version: Version | None = None) -> bool:
+    """Does this Ghostscript drop multi-character ToUnicode entries in pdfwrite?
+
+    Args:
+        gs_version: Version to test, or None to probe the installed Ghostscript.
+    """
+    if gs_version is None:
+        gs_version = version()
+    return GS_TOUNICODE_MULTICHAR_FIRST <= gs_version < GS_TOUNICODE_MULTICHAR_FIXED
 
 
 def _ensure_log_filter_installed() -> None:

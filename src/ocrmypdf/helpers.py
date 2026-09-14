@@ -24,6 +24,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Generic,
+    TypeAlias,
     TypeVar,
 )
 
@@ -32,8 +33,16 @@ import pikepdf
 
 if TYPE_CHECKING:
     from _typeshed import StrOrBytesPath
+    from pikepdf._core import _NamePath
 
 log = logging.getLogger(__name__)
+
+# A key that Object.get() accepts: a single name, or a NamePath describing a
+# path through nested dictionaries. pikepdf.NamePath's metaclass returns
+# pikepdf._core._NamePath instances and get()'s overload is typed against that
+# private name, so the public NamePath -- its declared base -- does not satisfy
+# the overload and annotations have to name the private type.
+PdfKey: TypeAlias = 'pikepdf.Name | _NamePath'
 
 IMG2PDF_KWARGS = dict(engine=img2pdf.Engine.pikepdf, rotation=img2pdf.Rotation.ifvalid)
 
@@ -365,35 +374,119 @@ def release_free_memory() -> None:
         trim(0)
 
 
-def pikepdf_get_int(obj: pikepdf.Object, key: pikepdf.Name, default: int = 0) -> int:
+def _get_boxed(obj: pikepdf.Object, key: PdfKey) -> pikepdf.Object | None:
+    """Read *key* from *obj* without pikepdf unboxing the result.
+
+    pikepdf's safe accessors -- ``as_int``, ``as_bool``, ``as_decimal`` -- are
+    methods on ``pikepdf.Object``, but in the default (implicit) conversion
+    mode a PDF Integer, Real or Boolean is converted to a native Python value
+    before we ever see it. The accessors are therefore reachable only for the
+    types that would fail them, which is useless. Explicit conversion mode is
+    what keeps a scalar boxed, and it is the only way to reach them.
+
+    That mode is thread-local and has no "off" switch, and while it is active
+    ``isinstance(x, int)``, ``bool()``, ordering comparisons and Real
+    arithmetic change behaviour or raise for everything else running on the
+    thread. So it is entered around this one read and nothing else. The Object
+    it returns stays boxed after the block exits, so callers can use the
+    accessors at their leisure. Entering the context per lookup costs well
+    under a microsecond.
+
+    ``Object.get`` returns None rather than raising when the key is absent,
+    when *obj* is not a dictionary at all, or -- given a ``NamePath`` -- when
+    any step along the path is missing or of the wrong type.
+    """
+    with pikepdf.explicit_conversion():
+        return obj.get(key)
+
+
+def pikepdf_get_int(obj: pikepdf.Object, key: PdfKey, default: int = 0) -> int:
     """Look up a key on a pikepdf dictionary/stream, returning a plain int.
 
     ``.get(key, default)``'s return type is the ambiguous ``Object | int``,
-    which does not support arithmetic or comparison against a plain int. In
-    pikepdf's default (implicit) conversion mode, a PDF Integer is already
-    unboxed to a native ``int`` by the time we see it here; under explicit
-    conversion mode it would instead be a ``pikepdf.Object``. ``int()``
-    handles both, since ``Object`` implements ``__int__``.
+    which does not support arithmetic or comparison against a plain int.
+
+    A malformed PDF may store anything at all under the key, so every value
+    that cannot be read as a number falls back to *default*. Callers reading
+    optional hints out of untrusted files therefore need no guard of their own.
     """
-    value = obj.get(key)
-    return int(value) if value is not None else default
-
-
-def pikepdf_get_bool(
-    obj: pikepdf.Object, key: pikepdf.Name, default: bool = False
-) -> bool:
-    """Look up a key on a pikepdf dictionary/stream, returning a plain bool.
-
-    Unlike ``int()``/``float()``, ``bool()`` is not supported on
-    ``pikepdf.Object`` (it raises), so both conversion modes must be
-    handled explicitly. See :func:`pikepdf_get_int` for background.
-    """
-    value = obj.get(key)
+    value = _get_boxed(obj, key)
     if value is None:
         return default
-    if isinstance(value, bool):
+    if (as_int := value.as_int(None)) is not None:
+        return as_int
+    # as_int accepts a PDF Integer and nothing else. Producers do write
+    # integral quantities as Reals (/Predictor 15.0) or Booleans, and
+    # truncating one of those beats discarding a usable value -- which is also
+    # what the int() this replaced did.
+    if (as_decimal := value.as_decimal(None)) is not None:
+        return int(as_decimal)
+    if (as_bool := value.as_bool(None)) is not None:
+        return int(as_bool)
+    return default
+
+
+def pikepdf_get_bool(obj: pikepdf.Object, key: PdfKey, default: bool = False) -> bool:
+    """Look up a key on a pikepdf dictionary/stream, returning a plain bool.
+
+    Unlike ``int()``, ``bool()`` is not supported on ``pikepdf.Object``, so
+    there is no coercion to fall back on. See :func:`pikepdf_get_int`.
+    """
+    value = _get_boxed(obj, key)
+    if value is None:
+        return default
+    if (as_bool := value.as_bool(None)) is not None:
+        return as_bool
+    # as_bool accepts a PDF Boolean and nothing else, but storing a flag as
+    # 0/1 is a common malformation -- /MarkInfo << /Marked 1 >> in the wild.
+    if (as_int := value.as_int(None)) is not None:
+        return as_int != 0
+    return default
+
+
+def pikepdf_get_decimal(
+    obj: pikepdf.Object,
+    key: PdfKey,
+    default: Decimal = Decimal(0),
+) -> Decimal:
+    """Look up a key on a pikepdf dictionary/stream, returning a Decimal.
+
+    Reading a PDF Real straight to Decimal keeps the decimal digits the file
+    actually wrote; going via float would introduce binary rounding noise into
+    a value the PDF expressed exactly. See :func:`pikepdf_get_int`.
+    """
+    value = _get_boxed(obj, key)
+    if value is None:
+        return default
+    if (as_decimal := value.as_decimal(None)) is not None:
+        return as_decimal
+    if (as_int := value.as_int(None)) is not None:
+        return Decimal(as_int)
+    return default
+
+
+#: ``/Resources /XObject`` on a page or Form XObject. A PDF may legitimately
+#: omit either step, and a malformed one may store a non-dictionary at either;
+#: :func:`pikepdf_get_dict` reduces both to "no XObjects".
+RESOURCES_XOBJECT: PdfKey = pikepdf.NamePath.Resources.XObject
+
+
+def pikepdf_get_dict(obj: pikepdf.Object, key: PdfKey) -> pikepdf.Dictionary:
+    """Look up a key expected to hold a dictionary, else return an empty one.
+
+    A well-formed PDF stores dictionaries at structural keys like /Resources
+    and /XObject, but a malformed one may store an array, a name, or nothing
+    at all. Iterating those raises, so scanning code that wants to treat a
+    broken container as an empty one can call this and drop its guards.
+
+    Note that ``key in obj`` cannot substitute for this when *key* is a
+    ``NamePath``: pikepdf's ``__contains__`` has no NamePath overload and
+    silently answers False even for a path that resolves.
+    """
+    value = obj.get(key)
+    if isinstance(value, pikepdf.Dictionary):
         return value
-    return value.as_bool(default)
+    return pikepdf.Dictionary()
 
 
 def running_in_docker() -> bool:

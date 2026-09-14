@@ -5,85 +5,88 @@
 
 name: ocrmypdf
 title: OCRmyPDF
-base: core24
-version: git
+base: core26
+adopt-info: ocrmypdf
 summary: OCRmyPDF adds a searchable text layer to scanned PDF files
-description: OCRmyPDF packaged for snap
+description: |
+  OCRmyPDF adds an optical character recognition (OCR) text layer to scanned
+  PDF files, allowing them to be searched or copy-pasted.
+
+  This snap bundles Tesseract with all language packs, Ghostscript, jbig2enc,
+  pngquant and unpaper.
+
+  Because the snap is strictly confined, it can only access files in your home
+  folder and on removable media. For other locations, use stdin and stdout:
+
+      snap run ocrmypdf - - <input.pdf >output.pdf
 grade: stable
 confinement: strict
 icon: docs/images/logo-square-256.svg
 license: MPL-2.0
+website: https://ocrmypdf.readthedocs.io/
+source-code: https://github.com/ocrmypdf/OCRmyPDF
+issues: https://github.com/ocrmypdf/OCRmyPDF/issues
 
 platforms:
   amd64:
 
-environment:
-  TESSDATA_PREFIX: $SNAP/usr/share/tesseract-ocr/5/tessdata
-  GS_LIB: $SNAP/usr/share/ghostscript/10.02.1/Resource/Init
-  GS_FONTPATH: $SNAP/usr/share/ghostscript/10.02.1/Resource/Font
-  LD_LIBRARY_PATH: $SNAP/usr/lib/x86_64-linux-gnu
-
 apps:
   ocrmypdf:
-    command: usr/bin/snapcraft-preload python3 -m ocrmypdf
+    # Run the venv interpreter explicitly: snapd puts $SNAP/usr/bin ahead of
+    # $SNAP/bin on PATH, so a `#!/usr/bin/env python3` launcher would pick up
+    # the bare interpreter without the venv's site-packages.
+    command: bin/python3 -m ocrmypdf
+    environment:
+      TESSDATA_PREFIX: $SNAP/usr/share/tesseract-ocr/5/tessdata
+      GS_LIB: $SNAP/usr/share/ghostscript/current/Resource/Init
+      GS_FONTPATH: $SNAP/usr/share/ghostscript/current/Resource/Font
     plugs:
-      - desktop
-      - desktop-legacy
-      - wayland
-      - x11
       - home
       - removable-media
+      - shm
+
+plugs:
+  # A private /dev/shm lets Python multiprocessing create semaphores under
+  # strict confinement.
+  shm:
+    interface: shared-memory
+    private: true
 
 parts:
-  snapcraft-preload:
-    source: https://github.com/sergiusens/snapcraft-preload.git
-    plugin: cmake
-    cmake-parameters:
-      - -DCMAKE_INSTALL_PREFIX=/usr -DLIBPATH=/usr/lib
-    build-packages:
-      - on amd64:
-          - gcc-multilib
-          - g++-multilib
-    stage-packages:
-      - lib32stdc++6
-
-  jbig2enc:
-    plugin: autotools
-    source: https://github.com/agl/jbig2enc.git
-    source-tag: "0.29"
-    build-packages:
-      - libleptonica-dev
-
   ocrmypdf:
     plugin: python
     source: .
-
     build-packages:
-      - python3-pip
-
+      - git
     stage-packages:
+      - libpython3.14-minimal
+      - libpython3.14-stdlib
+      - python3-minimal
+      - python3.14-minimal
+      - python3.14-venv
       - ghostscript
       - icc-profiles-free
-      - liblept5
-      - libxml2
+      - jbig2
       - pngquant
       - tesseract-ocr-all
       - unpaper
-      - qpdf
-      - zlib1g
-
-    python-packages:
-      - cffi
-      - pdfminer.six
-      - pikepdf
-      - Pillow
-      - pluggy
-      - reportlab
-      - setuptools
-      - tqdm
-      - pipe
-      - wheel
-
-    override-build: |
+    override-pull: |
       craftctl default
-      ln -sf ../usr/lib/libsnapcraft-preload.so $CRAFT_PART_INSTALL/lib/libsnapcraft-preload.so
+      # Tagged commits get the bare release version; anything else gets
+      # <last tag>+git<commits since>.<hash>, as with `version: git`.
+      desc=$(git -C "$CRAFT_PROJECT_DIR" -c safe.directory='*' describe --tags --long --match 'v*')
+      tag=${desc%-*-g*}
+      rest=${desc#"$tag"-}
+      count=${rest%-g*}
+      hash=${rest#*-g}
+      if [ "$count" = 0 ]; then
+        craftctl set version="${tag#v}"
+      else
+        craftctl set version="${tag#v}+git${count}.${hash}"
+      fi
+    override-prime: |
+      craftctl default
+      # Ghostscript's resource directory is versioned; give the environment
+      # above a stable path so it survives Ghostscript package updates.
+      gsdir=$(cd usr/share/ghostscript && ls -d [0-9]* | sort -V | tail -n1)
+      ln -sfn "$gsdir" usr/share/ghostscript/current

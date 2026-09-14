@@ -41,6 +41,7 @@ from pikepdf import (
     Array,
     Dictionary,
     Name,
+    NamePath,
     Object,
     ObjectStreamMode,
     Pdf,
@@ -57,9 +58,19 @@ from ocrmypdf._exec import ghostscript, jbig2enc, pngquant
 from ocrmypdf._jobcontext import PdfContext
 from ocrmypdf._progressbar import ProgressBar
 from ocrmypdf.exceptions import OutputFileAccessError
-from ocrmypdf.helpers import IMG2PDF_KWARGS, pikepdf_get_int, safe_symlink
+from ocrmypdf.helpers import (
+    IMG2PDF_KWARGS,
+    RESOURCES_XOBJECT,
+    pikepdf_get_dict,
+    pikepdf_get_int,
+    safe_symlink,
+)
 
 log = logging.getLogger(__name__)
+
+#: An image's soft mask carries a pre-blending matte, which rules the image
+#: out of optimization (gh #1536).
+SMASK_MATTE = NamePath.SMask.Matte
 
 DEFAULT_JPEG_QUALITY = 75
 DEFAULT_PNG_QUALITY = 70
@@ -95,16 +106,17 @@ def extract_image_filter(
     image: Stream, xref: Xref
 ) -> tuple[PdfImage, tuple[Name, Object]] | None:
     """Determine if an image is extractable."""
-    if image.Subtype != Name.Image:
+    if image.get(Name.Subtype) != Name.Image:
         return None
-    if not isinstance(image.Length, int) or image.Length < 100:
+    # A malformed PDF may omit these or store them as the wrong type, in which
+    # case pikepdf_get_int yields 0 and the image is skipped -- the same answer
+    # the explicit isinstance guards this replaced arrived at.
+    if pikepdf_get_int(image, Name.Length) < 100:
         log.debug(f"xref {xref}: skipping image with small stream size")
         return None
     if (
-        not isinstance(image.Width, int)
-        or not isinstance(image.Height, int)
-        or image.Width < 8
-        or image.Height < 8
+        pikepdf_get_int(image, Name.Width) < 8
+        or pikepdf_get_int(image, Name.Height) < 8
     ):  # Issue 732
         log.debug(f"xref {xref}: skipping image with unusually small dimensions")
         return None
@@ -155,7 +167,7 @@ def extract_image_filter(
     if Name.Decode in image:
         log.debug(f"xref {xref}: skipping image with Decode table")
         return None  # Don't mess with custom Decode tables
-    if image.get(Name.SMask, Dictionary()).get(Name.Matte, None) is not None:
+    if image.get(SMASK_MATTE) is not None:
         # https://github.com/ocrmypdf/OCRmyPDF/issues/1536
         # Do not attempt to optimize images that have a SMask with a Matte.
         # That means alpha channel pre-blending is used, and we're not prepared
@@ -398,11 +410,7 @@ def _find_image_xrefs_container(
         # rather than a cycle defense, so a debug log is sufficient.
         log.debug("Recursion depth exceeded in _find_image_xrefs_page")
         return
-    try:
-        xobjs = container.Resources.XObject
-    except AttributeError:
-        return
-    for _imname, image in dict(xobjs).items():
+    for _imname, image in pikepdf_get_dict(container, RESOURCES_XOBJECT).items():
         if image.objgen[1] != 0:
             continue  # Ignore images in an incremental PDF
         xref = Xref(image.objgen[0])
