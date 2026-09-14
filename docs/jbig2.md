@@ -5,7 +5,7 @@
 
 # Installing the JBIG2 encoder
 
-Most Linux distributions do not include a JBIG2 encoder since JBIG2
+Many Linux distributions do not include a JBIG2 encoder since JBIG2
 encoding was patented for a long time. All known JBIG2 US patents have
 expired as of 2017, but it is possible that unknown patents exist.
 
@@ -17,15 +17,14 @@ JBIG2 decoding is not patented and is performed automatically by most
 PDF viewers. It is widely supported and has been part of the PDF
 specification since 2001.
 
-JBIG encoding is automatically provided by these OCRmyPDF packages:
-
+JBIG2 encoding is automatically provided by these OCRmyPDF packages: 
 - Docker image (both Ubuntu and Alpine)
-- Homebrew (macOS and Linux)
+- Snap package
 - Alpine Linux package
-- Arch Linux AUR package (as an optional dependency)
-
-On Debian 13 or newer and Ubuntu 24.04 or newer, the encoder is packaged
-separately and can be installed with `apt install jbig2`.
+- ArchLinux AUR package (as an optional dependency)
+- Debian package
+- Ubuntu package
+- Homebrew on macOS
 
 For all other platforms, you would need to build the JBIG2 encoder from
 source:
