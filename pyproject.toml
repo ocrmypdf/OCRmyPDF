@@ -94,6 +94,8 @@ exclude_lines = [
 minversion = "6.0"
 testpaths = ["tests"]
 addopts = "-n auto"
+# Dump tracebacks if a test hangs, so CI timeouts show the culprit
+faulthandler_timeout = 300
 markers = ["slow"]
 filterwarnings = [
   "ignore:.*XMLParser.*:DeprecationWarning",
