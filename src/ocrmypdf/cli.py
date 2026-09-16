@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import argparse
-from argparse import ArgumentParser
+import sys
 from collections.abc import Callable, Mapping
 from typing import Any, TypeVar
 
@@ -14,9 +14,27 @@ from ocrmypdf._defaults import DEFAULT_ROTATE_PAGES_THRESHOLD
 from ocrmypdf._defaults import PROGRAM_NAME as _PROGRAM_NAME
 from ocrmypdf._options import OcrOptions, ProcessingMode, TaggedPdfMode
 from ocrmypdf._plugin_manager import OcrmypdfPluginManager
+from ocrmypdf._stdoutprotect import write_to_real_stdout
 from ocrmypdf._version import __version__ as _VERSION
 
 T = TypeVar('T', int, float)
+
+
+class ArgumentParser(argparse.ArgumentParser):
+    """An ArgumentParser whose standard output survives stdout protection.
+
+    ``run()`` installs stdout protection before it parses the command line, so
+    file descriptor 1 points at stderr by the time argparse prints anything.
+    ``--version`` and ``--help`` are the program's output and belong on
+    standard output, or ``ver=$(ocrmypdf --version)`` comes back empty. Errors
+    are unaffected: argparse already sends those to stderr.
+    """
+
+    def _print_message(self, message, file=None):
+        if message and file in (None, sys.stdout):
+            write_to_real_stdout(message)
+            return
+        super()._print_message(message, file)
 
 
 def numeric(basetype: Callable[[Any], T], min_: T | None = None, max_: T | None = None):

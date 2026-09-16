@@ -12,6 +12,7 @@ from subprocess import DEVNULL, PIPE, run
 import pytest
 
 from ocrmypdf import _stdoutprotect
+from ocrmypdf._version import __version__
 from ocrmypdf.helpers import check_pdf
 
 from .conftest import run_ocrmypdf
@@ -93,6 +94,37 @@ def test_dev_null(resources):
     )
     assert p.returncode == 0, "could not send output to /dev/null"
     assert len(p.stdout) == 0, "wrote to stdout"
+
+
+# --- argparse output must survive stdout protection ---
+#
+# run() installs stdout protection before argparse sees the command line, so
+# anything argparse prints would land on stderr unless it is routed back to the
+# preserved real stdout. `ver=$(ocrmypdf --version)` has to work.
+
+
+def test_version_goes_to_stdout(ocrmypdf_exec):
+    p = run(ocrmypdf_exec + ['--version'], capture_output=True, text=True, check=True)
+    assert p.stdout.strip() == __version__
+    assert __version__ not in p.stderr
+
+
+def test_help_goes_to_stdout(ocrmypdf_exec):
+    p = run(ocrmypdf_exec + ['--help'], capture_output=True, text=True, check=True)
+    assert p.stdout.startswith('usage: OCRmyPDF')
+    assert 'usage: OCRmyPDF' not in p.stderr
+
+
+def test_argparse_error_goes_to_stderr(ocrmypdf_exec):
+    p = run(
+        ocrmypdf_exec + ['--no-such-option'],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert p.returncode != 0
+    assert 'error:' in p.stderr
+    assert p.stdout == ''
 
 
 # --- stdout protection unit tests ---

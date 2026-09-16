@@ -23,18 +23,15 @@ snap connections ocrmypdf
 df -h .
 set +e
 
-# Run --version three ways: the exit code differed between a bare call and a
-# piped one, which is what we are here to pin down.
-ocrmypdf --version >version-tty.txt 2>version-tty-err.txt
+# Keep stdout and stderr apart: --version belongs on stdout, and a release
+# once shipped with it going to stderr, where a bare `| grep` could not tell
+# the difference.
+ocrmypdf --version >version.txt 2>version-err.txt
 version_rc=$?
-ocrmypdf --version 2>version-pipe-err.txt | cat >version-pipe.txt
-version_piped_rc=${PIPESTATUS[0]}
 
-echo "::group::ocrmypdf --version"
-echo "bare exit: $version_rc, stdout: $(cat version-tty.txt)"
-cat version-tty-err.txt
-echo "piped exit: $version_piped_rc, stdout: $(cat version-pipe.txt)"
-cat version-pipe-err.txt
+echo "::group::ocrmypdf --version (exit $version_rc)"
+echo "stdout: $(cat version.txt)"
+cat version-err.txt
 echo "::endgroup::"
 
 ocrmypdf --deskew --clean --optimize 2 -l eng+fra --sidecar skew.txt \
@@ -51,18 +48,17 @@ grep_rc=$?
 
 version_matches=0
 if [ -n "$expected_version" ]; then
-  grep -Fx "$expected_version" version-tty.txt
+  grep -Fx "$expected_version" version.txt
   version_matches=$?
 fi
 
-if [ "$version_rc" -ne 0 ] || [ "$version_piped_rc" -ne 0 ] ||
-   [ "$ocr_rc" -ne 0 ] || [ "$grep_rc" -ne 0 ] || [ "$version_matches" -ne 0 ]; then
+if [ "$version_rc" -ne 0 ] || [ "$ocr_rc" -ne 0 ] || [ "$grep_rc" -ne 0 ] || [ "$version_matches" -ne 0 ]; then
   echo "::group::snapd diagnostics"
   snap changes
   sudo journalctl -u snapd --no-pager -n 200
   sudo dmesg | grep -iE 'apparmor|seccomp|audit' | tail -n 50
   echo "::endgroup::"
-  echo "smoke test failed: version=$version_rc version_piped=$version_piped_rc" \
-       "ocr=$ocr_rc sidecar_grep=$grep_rc version_match=$version_matches"
+  echo "smoke test failed: version=$version_rc ocr=$ocr_rc" \
+       "sidecar_grep=$grep_rc version_match=$version_matches"
   exit 1
 fi

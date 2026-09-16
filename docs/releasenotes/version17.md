@@ -3,6 +3,20 @@
 
 # v17
 
+## v17.12.1
+
+**Fixes**
+
+- `ocrmypdf --version` and `ocrmypdf --help` printed to standard error
+  instead of standard output, so `version=$(ocrmypdf --version)` came back
+  empty and `ocrmypdf --help | less` showed nothing. OCRmyPDF redirects file
+  descriptor 1 to standard error early in startup, before it parses the
+  command line, so that a stray write from a plugin or a library cannot
+  corrupt a PDF being written to standard output; argparse's own output was
+  caught by that redirection too and is now routed back to the real standard
+  output. Error messages continue to go to standard error. Broken since
+  v17.8.0.
+
 ## v17.12.0
 
 **Changes**

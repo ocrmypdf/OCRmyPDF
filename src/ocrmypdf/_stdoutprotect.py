@@ -70,6 +70,22 @@ def get_protected_stdout_fd() -> int | None:
     return _saved_fd if _active else None
 
 
+def write_to_real_stdout(message: str) -> None:
+    """Write text to the real standard output, bypassing the redirection.
+
+    For the few messages that are the program's output rather than its
+    progress reporting -- ``--version``, ``--help`` -- and so belong on
+    standard output even while file descriptor 1 points at stderr. Falls back
+    to ``sys.stdout`` when protection is not active.
+    """
+    fd = get_protected_stdout_fd()
+    if fd is None:
+        sys.stdout.write(message)
+        sys.stdout.flush()
+        return
+    os.write(fd, message.encode(sys.stdout.encoding or 'utf-8', errors='replace'))
+
+
 def protected_stdout_isatty() -> bool | None:
     """Whether the preserved real stdout is a terminal.
 
