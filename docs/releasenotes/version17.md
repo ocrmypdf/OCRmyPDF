@@ -21,10 +21,13 @@
   CMap as a single `bfchar` block, but the CMap specification allows at most
   100 entries per block, and those Ghostscript releases discard the whole map
   when a block is larger. Any page with more than 100 distinct glyphs was
-  affected, which is nearly every page of prose. OCRmyPDF now splits the CMap
-  into blocks of 100 entries as fpdf2 writes it, for every fpdf2 release, until
-  fpdf2 does so itself. Thanks @jarun for the analysis ({issue}`1747`,
-  fpdf2 issue py-pdf/fpdf2#1952).
+  affected, which is nearly every page of prose. CFF CID-keyed fonts such as
+  Noto Sans CJK have the same problem in their Encoding CMap, where those
+  Ghostscript releases then also draw the wrong glyphs. OCRmyPDF now splits
+  every CMap block to 100 entries as fpdf2 writes it, for every fpdf2 release.
+  fpdf2 2.8.9 will split the ToUnicode blocks itself but not the Encoding
+  blocks, so the fix stays in place. Thanks @olafure for the analysis
+  ({issue}`1747`, fpdf2 issue py-pdf/fpdf2#1952).
 - Words containing `fi`, `ff`, `fl` and similar pairs extracted with the
   letters missing (`con dentiality`, `e ects`) from `--output-type pdfa` files
   when the PDF/A conversion ran through Ghostscript 10.05.0 through 10.06.x.

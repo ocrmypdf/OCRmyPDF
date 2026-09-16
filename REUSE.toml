@@ -182,3 +182,9 @@ SPDX-FileCopyrightText = [
 ]
 SPDX-License-Identifier = "CC-BY-SA-4.0 and (GFDL-1.2-or-later or CC-BY-SA-1.0 or CC-BY-SA-2.0 or CC-BY-SA-2.5 or CC-BY-SA-3.0)"
 SPDX-FileComment = "concatenation of baiona_gray.png, crom.png and typewriter.png/2400dpi.pdf"
+
+[[annotations]]
+path = "tests/resources/NotoSansCJKjp-Medium-subset.otf"
+precedence = "aggregate"
+SPDX-FileCopyrightText = ["(C) 2014-2021 Adobe (http://www.adobe.com/)"]
+SPDX-License-Identifier = "OFL-1.1"

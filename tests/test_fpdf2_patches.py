@@ -25,12 +25,15 @@ from ocrmypdf.models.ocr_element import BoundingBox, OcrClass, OcrElement
 
 FONT_DIR = Path(__file__).parent.parent / "src" / "ocrmypdf" / "data"
 NOTO_SANS = FONT_DIR / "NotoSans-Regular.ttf"
+# CFF CID-keyed OpenType font: fpdf2 writes its Encoding CMap as cidchar blocks
+NOTO_CJK = Path(__file__).parent / "resources" / "NotoSansCJKjp-Medium-subset.otf"
 
 # Enough distinct printable glyphs, all in NotoSans, to exceed the 100-entry
 # limit on a bfchar block.
 MANY_CHARS = "".join(chr(c) for c in range(0x21, 0x7F)) + "".join(
     chr(c) for c in range(0xA1, 0xFF)
 )
+MANY_CJK_CHARS = "".join(chr(c) for c in range(0x4E00, 0x4E00 + 180))
 
 CMAP_HEADER = (
     "/CIDInit /ProcSet findresource begin\n"
@@ -74,6 +77,21 @@ def _mapping_entries(cmap: bytes) -> list[bytes]:
         rb"\d+ begin(bfchar|bfrange)\n(.*?)end\1\n", cmap, flags=re.DOTALL
     )
     return [line for _kind, body in bodies for line in body.split(b"\n") if line]
+
+
+def _block_sizes(cmap: bytes, kind: str) -> list[int]:
+    return [int(n) for n in re.findall(rb"(\d+) begin" + kind.encode(), cmap)]
+
+
+def _encoding_cmaps(pdf_path: Path) -> list[bytes]:
+    with pikepdf.open(pdf_path) as pdf:
+        return [
+            obj.Encoding.read_bytes()
+            for obj in pdf.objects
+            if isinstance(obj, pikepdf.Dictionary)
+            and obj.get('/Type') == '/Font'
+            and isinstance(obj.get('/Encoding'), pikepdf.Stream)
+        ]
 
 
 def _tounicode_cmaps(pdf_path: Path) -> list[bytes]:
@@ -122,6 +140,15 @@ class TestSplitCmapBlocks:
         result = split_cmap_blocks(original)
         assert re.findall(rb"(\d+) beginbfrange\n", result) == [b"100", b"50"]
 
+    def test_cidchar_is_also_chunked(self):
+        entries = "".join(f"<{i:04X}> {i + 1}\n" for i in range(182))
+        original = (
+            f"{CMAP_HEADER}182 begincidchar\n{entries}endcidchar\n{CMAP_FOOTER}"
+        ).encode("latin-1")
+        result = split_cmap_blocks(original)
+        assert _block_sizes(result, "cidchar") == [100, 82]
+        assert result.count(b"endcidchar\n") == 2
+
     def test_non_cmap_content_is_unchanged(self):
         content = b"BT /F1 12 Tf (Hello) Tj ET"
         assert split_cmap_blocks(content) == content
@@ -152,6 +179,28 @@ class TestFpdf2Output:
             assert sizes, "ToUnicode has no bfchar block"
             assert max(sizes) <= CMAP_BLOCK_LIMIT
             assert sum(sizes) == len(_bfchar_entries(cmap)) > CMAP_BLOCK_LIMIT
+
+    def test_cff_cid_font_encoding_blocks_limited(self, tmp_path):
+        """The Encoding CMap of a CFF CID-keyed font is split too.
+
+        fpdf2 2.8.9 splits ToUnicode blocks but not this one.
+        """
+        pdf = FPDF()
+        pdf.add_font("cjk", "", NOTO_CJK)
+        pdf.set_font("cjk", "", 10)
+        pdf.add_page()
+        pdf.multi_cell(0, 6, MANY_CJK_CHARS)
+        out = tmp_path / "cjk.pdf"
+        pdf.output(out)
+
+        encodings = _encoding_cmaps(out)
+        assert encodings, "expected a CMap stream as /Encoding for a CFF CID font"
+        for cmap in encodings:
+            sizes = _block_sizes(cmap, "cidchar")
+            assert max(sizes) <= CMAP_BLOCK_LIMIT
+            assert sum(sizes) > CMAP_BLOCK_LIMIT
+        for cmap in _tounicode_cmaps(out):
+            assert max(_bfchar_block_sizes(cmap)) <= CMAP_BLOCK_LIMIT
 
     def test_renderer_tounicode_blocks_limited(self, tmp_path):
         words = [
@@ -186,22 +235,7 @@ class TestFpdf2Output:
         assert any(len(_bfchar_entries(c)) > CMAP_BLOCK_LIMIT for c in cmaps)
 
 
-@pytest.mark.skipif(shutil.which('gs') is None, reason="Ghostscript not installed")
-def test_ghostscript_pdfwrite_keeps_tounicode(tmp_path):
-    """Ghostscript pdfwrite keeps a ToUnicode CMap with more than 100 entries.
-
-    Ghostscript 9.56 through 10.04 discard a ToUnicode CMap whose bfchar block
-    exceeds 100 entries, leaving the text layer unextractable.
-    """
-    pdf = FPDF()
-    pdf.add_font("noto", "", NOTO_SANS)
-    pdf.set_font("noto", "", 8)
-    pdf.add_page()
-    pdf.multi_cell(0, 4, MANY_CHARS)
-    src = tmp_path / "many.pdf"
-    pdf.output(src)
-
-    out = tmp_path / "gs.pdf"
+def _run_gs_pdfa(src: Path, out: Path) -> None:
     subprocess.run(
         [
             'gs',
@@ -218,12 +252,40 @@ def test_ghostscript_pdfwrite_keeps_tounicode(tmp_path):
         capture_output=True,
     )
 
+
+@pytest.mark.skipif(shutil.which('gs') is None, reason="Ghostscript not installed")
+@pytest.mark.parametrize(
+    'font_path, text, expected',
+    [
+        (NOTO_SANS, MANY_CHARS, "ABCDEFGHIJKLMNOPQRSTUVWXYZ"),
+        (NOTO_CJK, MANY_CJK_CHARS, MANY_CJK_CHARS[:20]),
+    ],
+    ids=['truetype', 'cff_cid'],
+)
+def test_ghostscript_pdfwrite_keeps_text(tmp_path, font_path, text, expected):
+    """Ghostscript pdfwrite keeps CMaps with more than 100 entries.
+
+    Ghostscript 9.56 through 10.04 discard a CMap with an oversized block. For
+    a ToUnicode CMap the text layer becomes unextractable; for the Encoding
+    CMap of a CFF CID-keyed font the wrong glyphs are drawn as well.
+    """
+    pdf = FPDF()
+    pdf.add_font("f", "", font_path)
+    pdf.set_font("f", "", 8)
+    pdf.add_page()
+    pdf.multi_cell(0, 4, text)
+    src = tmp_path / "many.pdf"
+    pdf.output(src)
+
+    out = tmp_path / "gs.pdf"
+    _run_gs_pdfa(src, out)
+
     cmaps = _tounicode_cmaps(out)
     assert cmaps, "Ghostscript dropped the ToUnicode CMap"
     assert sum(len(_mapping_entries(c)) for c in cmaps) > CMAP_BLOCK_LIMIT
 
     if shutil.which('pdftotext'):
-        text = subprocess.check_output(
+        extracted = subprocess.check_output(
             ['pdftotext', '-enc', 'UTF-8', str(out), '-'], text=True
         )
-        assert "ABCDEFGHIJKLMNOPQRSTUVWXYZ" in text
+        assert expected in extracted.replace("\n", "")

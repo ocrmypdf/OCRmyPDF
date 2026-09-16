@@ -120,7 +120,10 @@ These test resources are assemblies or derivatives from other previously mention
 - rotated_skew.pdf (a /Rotate'd and skewed document from linn.png)
 - skew.pdf (from linn.png, skew simulated by adjusting the transformation matrix)
 - toc.pdf (from formxobject.pdf, trivial.pdf)
-
+    *   - NotoSansCJKjp-Medium-subset.otf
+        - `Noto Sans CJK`_, subset to U+4E00-U+4EFF
+        - CFF CID-keyed OpenType font, whose Encoding CMap fpdf2 writes as one
+          ``cidchar`` block
 
 .. _`Wikimedia: LinnSequencer`: https://upload.wikimedia.org/wikipedia/en/b/b7/LinnSequencer_hardware_MIDI_sequencer_brochure_page_2_300dpi.jpg
 
@@ -135,3 +138,5 @@ These test resources are assemblies or derivatives from other previously mention
 .. _`Wikimedia: Triumph typewrtier text Linzensoep`: https://commons.wikimedia.org/wiki/File:Triumph.typewriter_text_Linzensoep.gif
 
 .. _`Wikimedia: Baionako udalerri mugakideak`: https://commons.wikimedia.org/wiki/File:Baionako_udalerri_mugakideak.png
+
+.. _`Noto Sans CJK`: https://github.com/notofonts/noto-cjk

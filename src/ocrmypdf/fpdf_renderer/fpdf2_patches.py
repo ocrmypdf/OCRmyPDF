@@ -4,13 +4,21 @@
 """Runtime patches for defects in fpdf2 that damage the OCR text layer.
 
 fpdf2 writes every entry of a font's ToUnicode CMap in a single
-``beginbfchar``/``endbfchar`` block. The CMap specification (ISO 32000-2
-section 9.10.3, via the Adobe CMap and CIDFont Files Specification) allows at
-most 100 entries per block. Ghostscript 9.56.0 through 10.04.x reject an
-oversized block with a syntax error and drop the whole ToUnicode CMap when
-writing PDF/A, after which text extraction returns raw glyph ids instead of
-characters (https://github.com/py-pdf/fpdf2/issues/1952). Any page with more
-than 100 distinct glyphs is affected, which is nearly every page of prose.
+``beginbfchar``/``endbfchar`` block, and for CFF CID-keyed fonts (such as the
+Noto Sans CJK OpenType fonts) every entry of the font's Encoding CMap in a
+single ``begincidchar``/``endcidchar`` block. The CMap specification (ISO
+32000-2 section 9.10.3, via the Adobe CMap and CIDFont Files Specification)
+allows at most 100 entries per block. Ghostscript 9.56.0 through 10.04.x
+reject an oversized block with a syntax error and drop the whole CMap when
+writing PDF/A. A dropped ToUnicode CMap makes text extraction return raw
+glyph ids instead of characters; a dropped Encoding CMap also makes the
+wrong glyphs render (https://github.com/py-pdf/fpdf2/issues/1952). Any page
+with more than 100 distinct glyphs is affected, which is nearly every page of
+prose.
+
+fpdf2 2.8.9 splits the ToUnicode blocks (py-pdf/fpdf2#1954) but not the
+Encoding CMap of CFF CID-keyed fonts, so this patch stays in place for every
+fpdf2 release.
 
 Rather than rewriting fpdf2's font serializer, which is one very long
 method, we intercept the ToUnicode content stream at the point fpdf2 registers
@@ -33,8 +41,10 @@ log = logging.getLogger(__name__)
 # Maximum number of entries in one begin*/end* CMap block, per the spec.
 CMAP_BLOCK_LIMIT = 100
 
-# First fpdf2 release that splits CMap blocks itself, once one exists. While
-# this is None, every fpdf2 version is patched.
+# First fpdf2 release that splits every CMap block itself, once one exists.
+# While this is None, every fpdf2 version is patched. fpdf2 2.8.9 does not
+# qualify: it splits ToUnicode bfchar blocks but not the Encoding cidchar
+# block of CFF CID-keyed fonts.
 FPDF2_CMAP_BLOCKS_FIXED: Version | None = None
 
 _CMAP_PREFIX = b'/CIDInit /ProcSet findresource begin'
