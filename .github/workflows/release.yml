@@ -7,10 +7,19 @@ on:
   push:
     tags:
       - "v*"
+  # Rebuilding and republishing the snap for an already published release does
+  # not require redoing PyPI or Docker, so dispatch runs only the snap job.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to build the snap from, e.g. v17.12.0"
+        required: true
+        type: string
 
 jobs:
   publish:
     name: Publish release
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     environment:
       name: release
@@ -84,10 +93,14 @@ jobs:
   snap_stable:
     name: Build snap and publish to stable
     needs: [publish]
+    if: ${{ !cancelled() && (github.event_name == 'workflow_dispatch' || needs.publish.result == 'success') }}
     runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
     steps:
       - uses: actions/checkout@v7
         with:
+          ref: ${{ inputs.tag || github.ref_name }}
           fetch-depth: 0 # snap version is derived from git describe
 
       - uses: canonical/setup-lxd@v1
@@ -99,13 +112,15 @@ jobs:
           sudo snap install snapcraft --classic
           snapcraft pack --output ocrmypdf.snap
 
+      # The tag's tree is what we build and test, but it may predate the smoke
+      # test script, so take that from the ref this workflow file came from.
+      - uses: actions/checkout@v7
+        with:
+          path: .workflow-ref
+          sparse-checkout: .github/scripts
+
       - name: Smoke test snap
-        run: |
-          sudo snap install --dangerous ocrmypdf.snap
-          ocrmypdf --version | grep -Fx "${GITHUB_REF_NAME#v}"
-          ocrmypdf --deskew --clean --optimize 2 -l eng+fra --sidecar skew.txt \
-            - - <tests/resources/skew.pdf >skew-ocr.pdf
-          grep -i 'the' skew.txt
+        run: .workflow-ref/.github/scripts/smoke-test-snap.sh "${RELEASE_TAG#v}"
 
       - name: Publish snap to stable
         env:
@@ -115,6 +130,7 @@ jobs:
   docker_tag:
     name: Tag Docker images with release version
     needs: [publish]
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - name: Login to Docker Hub

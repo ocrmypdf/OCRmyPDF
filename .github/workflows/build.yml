@@ -448,12 +448,7 @@ jobs:
           snapcraft pack --output ocrmypdf.snap
 
       - name: Smoke test snap
-        run: |
-          sudo snap install --dangerous ocrmypdf.snap
-          ocrmypdf --version
-          ocrmypdf --deskew --clean --optimize 2 -l eng+fra --sidecar skew.txt \
-            - - <tests/resources/skew.pdf >skew-ocr.pdf
-          grep -i 'the' skew.txt
+        run: .github/scripts/smoke-test-snap.sh
 
       - name: Publish snap to edge
         if: github.ref == 'refs/heads/main'
