@@ -11,6 +11,20 @@
   first release that provides `pikepdf.NamePath`, the `Object.as_int()` family
   of type-safe accessors, and a thread-local `explicit_conversion()`. OCRmyPDF
   uses all three to read optional values out of PDFs it did not write.
+- HEIF/HEIC input support is now an opt-in extra, `ocrmypdf[heic]`, instead of
+  a default dependency. The `pi-heif` package we previously depended on is
+  discontinued; its successor `pillow-heif` bundles libheif, libde265 and x265
+  in its wheels, making the wheel as a whole GPLv2-licensed, so we do not
+  install it by default. Install `ocrmypdf[heic]` if you feed HEIC images to
+  OCRmyPDF. The Docker image and snap do not include it. {issue}`1746`
+- A Tagged PDF that is refused because it appears to contain real text now
+  exits with code 6 (`already_done_ocr`) instead of code 2 (`input_file`),
+  matching the exit code for a PDF with prior OCR. Scripts that check for exit
+  code 2 on tagged PDFs need updating. Thanks @BetterAndBetterII.
+  {issue}`1551`
+- The snap package is now built and published from our CI rather than
+  Launchpad, so the `stable` channel tracks releases again instead of being
+  frozen at v16.4.2. It is based on core26 and includes a JBIG2 encoder.
 
 **Fixes**
 
@@ -51,6 +65,21 @@
   ({issue}`1742`).
 - A page `/UserUnit` written as a PDF Real is now read exactly rather than via
   binary floating point, so the digits the file wrote are the digits used.
+- `--sidecar` now refuses any spelling of the input or output file, not just a
+  byte-identical one. `ocrmypdf in.pdf out.pdf --sidecar ./in.pdf` was accepted
+  and then silently overwrote the input PDF with the OCR text. Paths are now
+  compared after resolving `.`, `..`, symlinks and filesystem case. Thanks
+  @linhongyu510.
+- `--deskew` and `--rotate-pages` now warn that they will have no effect when
+  combined with `--ocr-engine none`, since skew and orientation are measured by
+  the OCR engine. Other image processing options are unaffected. Thanks
+  @Anai-Guo. {issue}`1735`
+- Installation documentation refreshed for current platforms: Ubuntu 26.04 and
+  Fedora 43/44 added, Ubuntu 20.04 dropped, and `uv tool install` shown in
+  place of pip.
+- Documentation: corrected the list of platforms that ship a JBIG2 encoder,
+  which now includes Debian and Ubuntu. Thanks @lcorbasson.
+- Release process and CI improvements.
 
 ## v17.11.0
 
