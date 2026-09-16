@@ -14,6 +14,17 @@
 
 **Fixes**
 
+- Text copied or searched in a `--output-type pdfa` file came out as garbage
+  (a stable substitution of unrelated characters, or nothing at all) when the
+  PDF/A conversion ran through Ghostscript 9.56 through 10.04.x, which
+  includes the Ghostscript in Ubuntu 24.04. fpdf2 writes each font's ToUnicode
+  CMap as a single `bfchar` block, but the CMap specification allows at most
+  100 entries per block, and those Ghostscript releases discard the whole map
+  when a block is larger. Any page with more than 100 distinct glyphs was
+  affected, which is nearly every page of prose. OCRmyPDF now splits the CMap
+  into blocks of 100 entries as fpdf2 writes it, for every fpdf2 release, until
+  fpdf2 does so itself. Thanks @jarun for the analysis ({issue}`1747`,
+  fpdf2 issue py-pdf/fpdf2#1952).
 - Words containing `fi`, `ff`, `fl` and similar pairs extracted with the
   letters missing (`con dentiality`, `e ects`) from `--output-type pdfa` files
   when the PDF/A conversion ran through Ghostscript 10.05.0 through 10.06.x.

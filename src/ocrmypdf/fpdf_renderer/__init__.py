@@ -9,11 +9,14 @@ searchable OCR text layers.
 
 from __future__ import annotations
 
+from ocrmypdf.fpdf_renderer.fpdf2_patches import install_fpdf2_patches
 from ocrmypdf.fpdf_renderer.renderer import (
     DebugRenderOptions,
     Fpdf2MultiPageRenderer,
     Fpdf2PdfRenderer,
 )
+
+install_fpdf2_patches()
 
 __all__ = [
     "DebugRenderOptions",
