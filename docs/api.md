@@ -183,6 +183,22 @@ automatically when an exception occurs.
 
 When OCRmyPDF succeeds conditionally, it returns an integer exit code.
 
+### Bundling with PyInstaller
+
+OCRmyPDF ships a PyInstaller hook, which PyInstaller finds automatically,
+so applications that call {func}`ocrmypdf.ocr` can be frozen without extra
+`--collect-*` options. The hook bundles OCRmyPDF's builtin plugins, fonts
+and color profiles, and the pikepdf data needed for PDF/A output.
+
+The external programs are not bundled. Tesseract and Ghostscript must still
+be installed on the target machine and be on the `PATH`, as must any optional
+tools you use, such as unpaper or pngquant. Third party plugins must be
+bundled by your application.
+
+Like any frozen application that uses multiprocessing, call
+{func}`multiprocessing.freeze_support` at the start of your
+`if __name__ == '__main__':` block.
+
 ### Plugin Development Changes
 
 ```{versionchanged} 16.13

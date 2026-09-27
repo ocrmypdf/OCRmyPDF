@@ -7,18 +7,17 @@ from __future__ import annotations
 
 import importlib
 import importlib.util
-import pkgutil
 import sys
 from argparse import ArgumentParser
 from collections.abc import Sequence
 from logging import Handler
 from pathlib import Path
+from types import ModuleType
 from typing import TYPE_CHECKING
 
 import pluggy
 from pydantic import BaseModel
 
-import ocrmypdf.builtin_plugins
 from ocrmypdf import Executor, PdfContext, pluginspec
 from ocrmypdf._options import OcrOptions
 from ocrmypdf._plugin_registry import PluginOptionRegistry
@@ -32,6 +31,48 @@ if TYPE_CHECKING:
 
     from ocrmypdf._jobcontext import PageContext
     from ocrmypdf.pdfinfo import PdfInfo
+
+
+#: Builtin plugins, in registration order. pluggy calls the most recently
+#: registered implementation first, so later entries take precedence.
+BUILTIN_PLUGINS = (
+    'concurrency',
+    'default_filters',
+    'ghostscript',
+    'null_ocr',
+    'optimize',
+    'pypdfium',
+    'tesseract_ocr',
+)
+
+
+def _builtin_plugin_modules() -> tuple[ModuleType, ...]:
+    """Import the builtin plugins.
+
+    The imports are written out explicitly, rather than discovered by scanning
+    the package, so that freezing tools such as PyInstaller can find them and
+    so that a missing plugin is an ImportError rather than a silent omission.
+    """
+    from ocrmypdf.builtin_plugins import (
+        concurrency,
+        default_filters,
+        ghostscript,
+        null_ocr,
+        optimize,
+        pypdfium,
+        tesseract_ocr,
+    )
+
+    modules = (
+        concurrency,
+        default_filters,
+        ghostscript,
+        null_ocr,
+        optimize,
+        pypdfium,
+        tesseract_ocr,
+    )
+    return modules
 
 
 class OcrmypdfPluginManager:
@@ -90,11 +131,7 @@ class OcrmypdfPluginManager:
 
         # 1. Register builtins
         if self._builtins:
-            for module_info in sorted(
-                pkgutil.iter_modules(ocrmypdf.builtin_plugins.__path__)
-            ):
-                name = f'ocrmypdf.builtin_plugins.{module_info.name}'
-                module = importlib.import_module(name)
+            for module in _builtin_plugin_modules():
                 self._pm.register(module)
 
         # 2. Register setuptools plugins

@@ -61,6 +61,9 @@ webservice = ["streamlit>=1.41.0"]
 [project.scripts]
 ocrmypdf = "ocrmypdf.__main__:run"
 
+[project.entry-points.pyinstaller40]
+hook-dirs = "ocrmypdf._pyinstaller:get_hook_dirs"
+
 [tool.distutils.bdist_wheel]
 python-tag = "py311"
 
