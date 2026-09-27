@@ -225,19 +225,28 @@ ocrmypdf --deskew --clean --rotate-pages input.pdf output.pdf
 Don\'t actually OCR my PDF
 --------------------------
 
-If you set `--ocr-engine none` OCRmyPDF will apply its image processing without
-performing OCR. This works if all you want to is to apply image processing or PDF/A
-conversion.
+If you set `--ocr-engine none` OCRmyPDF will skip OCR entirely. This works if
+all you want is PDF/A conversion or image processing such as `--clean`.
 
 ```bash
-ocrmypdf --ocr-engine none --deskew --output-type pdfa input.pdf output.pdf
+ocrmypdf --ocr-engine none --output-type pdfa input.pdf output.pdf
+```
+
+`--ocr-engine none` cannot detect page orientation or skew, so
+`--rotate-pages` and `--deskew` have no effect with it. To rotate or deskew
+pages without adding a text layer, use `--tesseract-timeout 0` instead.
+Tesseract will still be used to measure orientation and skew, but will not
+OCR the page.
+
+```bash
+ocrmypdf --tesseract-timeout 0 --rotate-pages --deskew input.pdf output.pdf
 ```
 
 :::{versionchanged} v17.0.0
 
-Prior to this version, `--tesseract-timeout 0` was recommended as an idiom
-to turn off OCR. This is not longer recommended, as we move away from
-Tesseract OCR as the primary OCR engine.
+Prior to this version, `--tesseract-timeout 0` was recommended as the general
+idiom to turn off OCR. `--ocr-engine none` is now preferred, except when
+rotating or deskewing pages.
 
 :::
 

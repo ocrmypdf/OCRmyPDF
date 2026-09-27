@@ -218,6 +218,34 @@ def test_rotate_deskew_ocr_timeout(resources, outdir, rasterizer):
     assert cmp > 0.85
 
 
+@pytest.mark.parametrize('renderer', RENDERERS)
+def test_rotate_pages_ocr_timeout(renderer, resources, outpdf):
+    # With OCR disabled by a zero timeout, orientation detection still runs,
+    # so pages must be rotated even though no text layer is added.
+    check_ocrmypdf(
+        resources / 'cardinal.pdf',
+        outpdf,
+        '--rotate-pages',
+        '--rotate-pages-threshold',
+        '0',
+        '--tesseract-timeout',
+        '0',
+        '--pdf-renderer',
+        renderer,
+        '--output-type',
+        'pdf',
+    )
+
+    with pikepdf.open(outpdf) as pdf:
+        rotations = [int(page.obj.get(pikepdf.Name.Rotate, 0)) for page in pdf.pages]
+        assert rotations == [0, 270, 180, 90]
+        for page in pdf.pages:
+            xobjs = page.Resources.get(pikepdf.Name.XObject, {})
+            assert not any(str(name).startswith('/OCR-') for name in xobjs.keys()), (
+                "Expected no text layer"
+            )
+
+
 def make_rotate_test(imagefile, outdir, prefix, image_angle, page_angle, cropbox=None):
     memimg = BytesIO()
     with Image.open(fspath(imagefile)) as im:

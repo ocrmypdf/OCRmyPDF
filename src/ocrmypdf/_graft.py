@@ -545,6 +545,16 @@ class OcrGrafter:
                     rotation=(content_rotation - autorotate_correction) % 360,
                 )
 
+        # Apply the orientation correction whether or not a text layer is
+        # grafted, since OCR may have timed out or been skipped after
+        # orientation detection. Text layers are aligned by their own
+        # transform and do not depend on the page's /Rotate.
+        page_rotation = _compute_page_rotation(
+            content_rotation, autorotate_correction, emplaced_page
+        )
+        if emplaced_page or page_rotation != content_rotation:
+            self.pdf_base.pages[pageno].Rotate = page_rotation
+
         if self.use_sandwich_renderer:
             # Sandwich renderer: graft pre-rendered PDF immediately
             if ocr_output:
@@ -556,15 +566,11 @@ class OcrGrafter:
                     textpdf=ocr_output,
                     text_rotation=text_misaligned,
                 )
-                page_rotation = _compute_page_rotation(
-                    content_rotation, autorotate_correction, emplaced_page
-                )
-                self.pdf_base.pages[pageno].Rotate = page_rotation
         else:
             # fpdf2 renderer: accumulate page info for batch rendering.
             # The hOCR coordinates are in the corrected (upright) coordinate system.
-            # We store autorotate_correction and emplaced_page to set the final
-            # page /Rotate tag after grafting.
+            # We store autorotate_correction and emplaced_page to align the text
+            # layer when grafting.
             if ocr_tree:
                 self.fpdf2_parsed_pages.append(
                     Fpdf2ParsedPage(
@@ -683,13 +689,6 @@ class OcrGrafter:
                     parsed.emplaced_page,
                 )
                 self._graft_fpdf2_text_layer(parsed.pageno, text_page, text_misaligned)
-
-                page_rotation = _compute_page_rotation(
-                    content_rotation,
-                    parsed.autorotate_correction,
-                    parsed.emplaced_page,
-                )
-                self.pdf_base.pages[parsed.pageno].Rotate = page_rotation
 
         # Clean up multi-page PDF if not keeping temp files
         if not self.context.options.keep_temporary_files:
