@@ -128,4 +128,6 @@ def run_hocr_to_ocr_pdf_pipeline(
         plugin_manager.check_options(options=options)
         optimize_messages = exec_hocr_to_ocr_pdf(context, executor)
 
-        return report_output_pdf(options, origin_pdf, optimize_messages)
+        return report_output_pdf(
+            options, origin_pdf, optimize_messages, plugin_manager=plugin_manager
+        )

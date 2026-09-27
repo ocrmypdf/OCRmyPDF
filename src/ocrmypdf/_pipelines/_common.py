@@ -29,6 +29,7 @@ from ocrmypdf._annots import remove_broken_goto_annotations
 from ocrmypdf._concurrent import Executor, setup_executor
 from ocrmypdf._jobcontext import PageContext, PdfContext
 from ocrmypdf._logging import PageNumberFilter
+from ocrmypdf._metadata import PikepdfProgress
 from ocrmypdf._options import OcrOptions
 from ocrmypdf._pipeline import (
     create_ocr_image,
@@ -493,7 +494,13 @@ def postprocess(
     return finish_output_pdf(pdf_out, context, executor)
 
 
-def report_output_pdf(options, start_input_file, optimize_messages) -> ExitCode:
+def report_output_pdf(
+    options,
+    start_input_file,
+    optimize_messages,
+    *,
+    plugin_manager: OcrmypdfPluginManager,
+) -> ExitCode:
     if options.output_file == '-':
         log.info("Output sent to stdout")
     elif hasattr(options.output_file, 'writable') and options.output_file.writable():
@@ -527,7 +534,15 @@ def report_output_pdf(options, start_input_file, optimize_messages) -> ExitCode:
                     pdfa_info['conformance'],
                 )
                 return ExitCode.pdfa_conversion_failed
-        if not check_pdf(options.output_file):
+        # Decoding every stream can take minutes on large image-heavy files, so
+        # show progress rather than appear hung after the output is written.
+        with PikepdfProgress(
+            plugin_manager.get_progressbar_class(),
+            options.progress_bar,
+            desc="Checking output",
+        ) as pbar:
+            output_ok = check_pdf(options.output_file, progress=pbar)
+        if not output_ok:
             log.warning('Output file: The generated PDF is INVALID')
             return ExitCode.invalid_output_pdf
         report_output_file_size(

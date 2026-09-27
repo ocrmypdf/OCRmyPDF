@@ -238,11 +238,13 @@ def _set_language(pdf: Pdf, languages: list[str]):
     pdf.Root.Lang = iso639_2
 
 
-class MetadataProgress:
-    def __init__(self, progressbar_class, enable: bool = True):
+class PikepdfProgress:
+    """Adapt a progress bar class to pikepdf's percent-complete callback."""
+
+    def __init__(self, progressbar_class, enable: bool = True, *, desc: str):
         self.progressbar_class = progressbar_class
         self.progressbar = self.progressbar_class(
-            total=100, desc="Linearizing", unit='%', disable=not enable
+            total=100, desc=desc, unit='%', disable=not enable
         )
 
     def __enter__(self):
@@ -289,7 +291,7 @@ def metadata_fixup(
     with (
         Pdf.open(context.origin, conversion_mode='explicit') as original,
         Pdf.open(working_file, conversion_mode='explicit') as pdf,
-        MetadataProgress(pbar_class, options.progress_bar) as pbar,
+        PikepdfProgress(pbar_class, options.progress_bar, desc="Linearizing") as pbar,
     ):
         docinfo = get_docinfo(original, context)
         with (

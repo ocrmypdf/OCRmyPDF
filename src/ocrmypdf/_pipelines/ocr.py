@@ -197,7 +197,9 @@ def _run_pipeline(
         # Execute the pipeline
         optimize_messages = exec_concurrent(context, executor)
 
-        exitcode = report_output_pdf(options, start_input_file, optimize_messages)
+        exitcode = report_output_pdf(
+            options, start_input_file, optimize_messages, plugin_manager=plugin_manager
+        )
         return exitcode
 
 
