@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import logging
 import warnings
 from pathlib import Path
 from shutil import copyfile
@@ -12,6 +13,7 @@ from unittest.mock import MagicMock, patch
 import pikepdf
 import pytest
 from pikepdf.models.metadata import decode_pdf_date
+from pikepdf.pdfa import validate_written
 
 from ocrmypdf._jobcontext import PdfContext
 from ocrmypdf._metadata import (
@@ -516,3 +518,54 @@ def test_zoned_creation_date_no_warning(resources, outpdf, caplog):
     )
     assert exitcode == ExitCode.ok, caplog.text
     assert 'has no time zone' not in caplog.text
+
+
+@pytest.fixture
+def pdf_with_xmp_only_properties(resources, tmp_path) -> Path:
+    """A PDF whose XMP has Dublin Core properties with no DocInfo equivalent."""
+    path = tmp_path / 'xmp_only.pdf'
+    with pikepdf.open(resources / 'trivial.pdf') as pdf:
+        with pdf.open_metadata() as meta:
+            meta['dc:contributor'] = {'A'}
+            meta['dc:subject'] = {'x', 'y'}
+            meta['dc:date'] = ['2023-12-25']
+            # Not a Dublin Core property, so not permitted in PDF/A
+            meta['dc:created'] = 'D:20231225000000'
+        pdf.save(path)
+    return path
+
+
+@pytest.mark.parametrize('pdfa_backend', ['ghostscript', 'auto'])
+def test_ghostscript_pdfa_keeps_xmp_only_properties(
+    pdfa_backend, pdf_with_xmp_only_properties, outpdf, request, caplog
+):
+    if pdfa_backend == 'auto':
+        # Make auto fall back to Ghostscript
+        request.getfixturevalue('no_speculative_pdfa')
+    with caplog.at_level(logging.DEBUG, logger='ocrmypdf'):
+        check_ocrmypdf(
+            pdf_with_xmp_only_properties,
+            outpdf,
+            '--output-type',
+            'pdfa',
+            '--pdfa-backend',
+            pdfa_backend,
+            '--skip-text',
+            '--plugin',
+            'tests/plugins/tesseract_noop.py',
+        )
+    with pikepdf.open(outpdf) as pdf:
+        meta = pdf.open_metadata()
+        assert meta.get('dc:contributor') == {'A'}
+        assert meta.get('dc:subject') == {'x', 'y'}
+        assert meta.get('dc:date') == ['2023-12-25']
+        assert 'dc:created' not in meta
+    report = validate_written(outpdf, '2b')
+    assert report.verdict == 'pass', report.summary()
+    not_copied = [
+        r.getMessage() for r in caplog.records if 'were not copied' in r.getMessage()
+    ]
+    assert len(not_copied) == 1, caplog.text
+    assert 'created' in not_copied[0]
+    for name in ('contributor', 'subject', '}date', 'MetadataDate'):
+        assert name not in not_copied[0]

@@ -113,6 +113,7 @@ module = [
   'reportlab.*',
   'fitz',
   'libxmp.utils',
+  'lxml.*',
   'pypdfium2',
   'uharfbuzz',
   'pillow_heif',

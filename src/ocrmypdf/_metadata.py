@@ -189,6 +189,144 @@ def _docinfo_to_copy(docinfo: dict[str, str], meta: PdfMetadata) -> dict[str, st
     return to_copy
 
 
+_RDF_NS = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+_RDF_DESCRIPTION = f'{{{_RDF_NS}}}Description'
+_RDF_ABOUT = f'{{{_RDF_NS}}}about'
+_XML_NS = 'http://www.w3.org/XML/1998/namespace'
+
+# XMP properties that describe this file rather than the document, and are
+# written afresh for the output, so they are never copied from the input.
+_XMP_REGENERATED_PROPERTIES = frozenset(
+    {
+        '{http://ns.adobe.com/xap/1.0/}MetadataDate',
+        '{http://ns.adobe.com/xap/1.0/}ModifyDate',
+        '{http://ns.adobe.com/xap/1.0/}CreatorTool',
+        '{http://ns.adobe.com/pdf/1.3/}Producer',
+        '{http://ns.adobe.com/pdf/1.3/}PDFVersion',
+        '{http://purl.org/dc/elements/1.1/}format',
+        '{http://ns.adobe.com/xap/1.0/mm/}DocumentID',
+        '{http://ns.adobe.com/xap/1.0/mm/}InstanceID',
+        '{http://ns.adobe.com/xap/1.0/mm/}VersionID',
+        '{http://ns.adobe.com/xap/1.0/mm/}RenditionClass',
+    }
+)
+
+# Namespaces of conformance claims and PDF/A extension schemas, which are
+# declared for the output by the PDF/A conversion if they apply to it.
+_XMP_REGENERATED_NAMESPACES = frozenset(
+    {
+        'http://www.aiim.org/pdfa/ns/id/',
+        'http://www.aiim.org/pdfua/ns/id/',
+        'http://www.aiim.org/pdfa/ns/extension/',
+        'http://www.aiim.org/pdfa/ns/schema#',
+        'http://www.aiim.org/pdfa/ns/property#',
+        'http://www.aiim.org/pdfa/ns/type#',
+        'http://www.aiim.org/pdfa/ns/field#',
+    }
+)
+
+
+def _is_regenerated_xmp_property(key: str) -> bool:
+    if key in _XMP_REGENERATED_PROPERTIES:
+        return True
+    namespace = key[1:].partition('}')[0]
+    return namespace in _XMP_REGENERATED_NAMESPACES
+
+
+def _parse_xmp(pdf: Pdf):
+    """Return the rdf:RDF element of the PDF's XMP packet, or None."""
+    from lxml import etree
+
+    try:
+        data = pdf.Root.Metadata.read_bytes()
+    except (AttributeError, KeyError, TypeError, pikepdf.PdfError):
+        return None
+    parser = etree.XMLParser(
+        resolve_entities=False, no_network=True, load_dtd=False, remove_comments=True
+    )
+    try:
+        root = etree.fromstring(data, parser)
+    except (etree.XMLSyntaxError, ValueError):
+        return None
+    if root.tag == f'{{{_RDF_NS}}}RDF':
+        return root
+    return root.find(f'{{{_RDF_NS}}}RDF')
+
+
+def _xmp_properties(rdf) -> dict[str, Any]:
+    """Map the Clark name of each top-level XMP property to its node.
+
+    Properties written as attributes of an rdf:Description map to that
+    Description. Every Description is read whatever its rdf:about, which
+    pikepdf's metadata editor does not do.
+    """
+
+    def is_property(name) -> bool:
+        return (
+            isinstance(name, str)
+            and name.startswith('{')
+            and name[1:].partition('}')[0] not in {_RDF_NS, _XML_NS}
+        )
+
+    properties: dict[str, Any] = {}
+    if rdf is None:
+        return properties
+    for desc in rdf.iterchildren(_RDF_DESCRIPTION):
+        for key in desc.attrib:
+            if is_property(key):
+                properties.setdefault(str(key), desc)
+        for node in desc.iterchildren():
+            if is_property(node.tag):
+                properties.setdefault(node.tag, node)
+    return properties
+
+
+def _copy_missing_xmp(original: Pdf, pdf: Pdf, excluded: set[str]) -> None:
+    """Copy XMP properties that are in *original* but missing from *pdf*.
+
+    Ghostscript writes the XMP of a PDF/A from DocInfo alone, dropping
+    properties that have no DocInfo equivalent, such as dc:contributor. The
+    properties are copied verbatim, keeping their structure, into a new
+    rdf:Description. Properties that are not permitted in PDF/A are removed
+    afterwards, when PDF/A is declared again.
+
+    Args:
+        original: The input PDF.
+        pdf: The PDF whose XMP is to receive the properties.
+        excluded: Clark names of properties not to copy.
+    """
+    from copy import deepcopy
+
+    from lxml import etree
+
+    original_properties = _xmp_properties(_parse_xmp(original))
+    rdf = _parse_xmp(pdf)
+    if rdf is None:
+        return
+    present = _xmp_properties(rdf)
+    to_copy = {
+        key: node
+        for key, node in original_properties.items()
+        if key not in present
+        and key not in excluded
+        and not _is_regenerated_xmp_property(key)
+    }
+    if not to_copy:
+        return
+    # XMP requires every top-level Description to have the same rdf:about
+    existing = next(rdf.iterchildren(_RDF_DESCRIPTION), None)
+    about = existing.get(_RDF_ABOUT, '') if existing is not None else ''
+    desc = etree.SubElement(rdf, _RDF_DESCRIPTION, {_RDF_ABOUT: about})
+    for key, node in to_copy.items():
+        if node.tag == _RDF_DESCRIPTION:
+            desc.set(key, node.get(key))
+        else:
+            desc.append(deepcopy(node))
+    pdf.Root.Metadata.write(
+        etree.tostring(rdf.getroottree(), encoding='utf-8', xml_declaration=False)
+    )
+
+
 def _fix_metadata(meta_original: PdfMetadata, meta_pdf: PdfMetadata):
     # If xmp:CreateDate is missing, set it to the modify date to
     # ensure consistency with Ghostscript.
@@ -306,16 +444,25 @@ def metadata_fixup(
                 raise_failure=False,
             )
             _fix_metadata(meta_original, meta_pdf)
+            keys_before_unset = set(meta_original.keys())
             _unset_empty_metadata(meta_original, options)
             _unset_empty_metadata(meta_pdf, options)
-            meta_missing = set(meta_original.keys()) - set(meta_pdf.keys())
-            report_on_metadata(options, meta_missing)
+            unset_keys = keys_before_unset - set(meta_original.keys())
 
         _set_language(pdf, options.languages)
         if pdfa_output_type is not None:
             from ocrmypdf.pdfa import prepare_pdfa
 
+            _copy_missing_xmp(original, pdf, excluded=unset_keys)
             prepare_pdfa(pdf, pdfa_output_type)
+        meta_missing = {
+            key
+            for key in set(_xmp_properties(_parse_xmp(original)))
+            - set(_xmp_properties(_parse_xmp(pdf)))
+            - unset_keys
+            if not _is_regenerated_xmp_property(key)
+        }
+        report_on_metadata(options, meta_missing)
         pdf.save(output_file, **(pdf_save_settings | {'progress': pbar}))
 
     return output_file
