@@ -473,3 +473,34 @@ def test_output_is_symlink(resources, outdir):
     )
     assert exitcode == ExitCode.ok
     assert (outdir / 'out.pdf').stat().st_size > 0, 'target file not created'
+
+
+def _pad_pdf(path, pdf, size, pdfa=False):
+    pdf.Root.Dummy = b'Dummy' * size
+    if pdfa:
+        with pdf.open_metadata(set_pikepdf_as_editor=False) as meta:
+            meta['pdfaid:part'] = '2'
+            meta['pdfaid:conformance'] = 'B'
+    pdf.save(path)
+
+
+def test_report_file_size_auto_produced_pdfa(tmp_path, caplog):
+    in_ = tmp_path / 'a.pdf'
+    out = tmp_path / 'b.pdf'
+    _pad_pdf(in_, pikepdf.new(), 5000)
+    _pad_pdf(out, pikepdf.new(), 20000, pdfa=True)
+
+    vd.report_output_file_size(make_opts(output_type='auto'), in_, out, [])
+    assert 'PDF/A conversion was enabled' in caplog.text
+    assert 'No reason' not in caplog.text
+
+
+def test_report_file_size_auto_produced_regular_pdf(tmp_path, caplog):
+    in_ = tmp_path / 'a.pdf'
+    out = tmp_path / 'b.pdf'
+    _pad_pdf(in_, pikepdf.new(), 5000)
+    _pad_pdf(out, pikepdf.new(), 20000)
+
+    vd.report_output_file_size(make_opts(output_type='auto'), in_, out, [])
+    assert 'PDF/A conversion was enabled' not in caplog.text
+    assert 'No reason' in caplog.text
