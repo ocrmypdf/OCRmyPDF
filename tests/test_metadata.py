@@ -17,6 +17,7 @@ from pikepdf.pdfa import validate_written
 
 from ocrmypdf._jobcontext import PdfContext
 from ocrmypdf._metadata import (
+    _fix_metadata,
     assume_local_time_zone,
     metadata_fixup,
     repair_docinfo_nuls,
@@ -569,3 +570,53 @@ def test_ghostscript_pdfa_keeps_xmp_only_properties(
     assert 'created' in not_copied[0]
     for name in ('contributor', 'subject', '}date', 'MetadataDate'):
         assert name not in not_copied[0]
+
+
+# Ghostscript 10.08 quotes the placeholder title; earlier versions do not
+@pytest.mark.parametrize('gs_title', ['Untitled', "'Untitled'"])
+def test_fix_metadata_removes_ghostscript_untitled(gs_title):
+    with (
+        pikepdf.new() as original,
+        pikepdf.new() as pdf,
+        original.open_metadata() as meta_original,
+        pdf.open_metadata(update_docinfo=False) as meta_pdf,
+    ):
+        meta_pdf['dc:title'] = gs_title
+        _fix_metadata(meta_original, meta_pdf)
+        assert 'dc:title' not in meta_pdf
+
+
+@pytest.mark.parametrize('title', ['Untitled', "'Untitled'"])
+def test_fix_metadata_keeps_untitled_from_input(title):
+    with (
+        pikepdf.new() as original,
+        pikepdf.new() as pdf,
+        original.open_metadata() as meta_original,
+        pdf.open_metadata(update_docinfo=False) as meta_pdf,
+    ):
+        meta_original['dc:title'] = title
+        meta_pdf['dc:title'] = title
+        _fix_metadata(meta_original, meta_pdf)
+        assert meta_pdf['dc:title'] == title
+
+
+@pytest.mark.parametrize('pdfa_backend', ['ghostscript', 'auto'])
+def test_ghostscript_pdfa_adds_no_title(pdfa_backend, resources, outpdf, request):
+    if pdfa_backend == 'auto':
+        request.getfixturevalue('no_speculative_pdfa')
+    with pikepdf.open(resources / 'trivial.pdf') as pdf:
+        assert '/Title' not in pdf.docinfo
+    check_ocrmypdf(
+        resources / 'trivial.pdf',
+        outpdf,
+        '--output-type',
+        'pdfa',
+        '--pdfa-backend',
+        pdfa_backend,
+        '--skip-text',
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
+    )
+    with pikepdf.open(outpdf) as pdf:
+        assert '/Title' not in pdf.docinfo
+        assert 'dc:title' not in pdf.open_metadata()

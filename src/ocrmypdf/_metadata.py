@@ -327,12 +327,19 @@ def _copy_missing_xmp(original: Pdf, pdf: Pdf, excluded: set[str]) -> None:
     )
 
 
+# The title Ghostscript writes to the XMP of a PDF/A whose input has none;
+# Ghostscript 10.08 encloses it in single quotes
+_GHOSTSCRIPT_UNTITLED = frozenset({'Untitled', "'Untitled'"})
+
+
 def _fix_metadata(meta_original: PdfMetadata, meta_pdf: PdfMetadata):
     # If xmp:CreateDate is missing, set it to the modify date to
     # ensure consistency with Ghostscript.
     if 'xmp:CreateDate' not in meta_pdf:
         meta_pdf['xmp:CreateDate'] = meta_pdf.get('xmp:ModifyDate', '')
-    if meta_pdf.get('dc:title') == 'Untitled' and ('dc:title' not in meta_original):
+    if meta_pdf.get('dc:title') in _GHOSTSCRIPT_UNTITLED and (
+        'dc:title' not in meta_original
+    ):
         # Ghostscript likes to set title to Untitled if omitted from input.
         # Reverse this, because PDF/A TechNote 0003:Metadata in PDF/A-1
         # and the XMP Spec do not make this recommendation.
