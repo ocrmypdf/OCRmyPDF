@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import pikepdf
 import pytest
 
 from ocrmypdf.exceptions import ExitCode
@@ -16,6 +17,63 @@ from .conftest import RENDERERS, check_ocrmypdf, run_ocrmypdf_api
 def test_repeat_ocr(resources, no_outpdf):
     result = run_ocrmypdf_api(resources / 'graph_ocred.pdf', no_outpdf)
     assert result == ExitCode.already_done_ocr
+
+
+RECORDER = 'tests/plugins/ocr_image_recorder.py'
+
+
+@pytest.fixture
+def text_on_last_page(resources, tmp_path):
+    """Three image-only pages followed by one page that already has text."""
+    path = tmp_path / 'text_on_last_page.pdf'
+    with pikepdf.new() as pdf:
+        for _ in range(3):
+            with pikepdf.open(resources / 'ccitt.pdf') as image_pdf:
+                pdf.pages.append(image_pdf.pages[0])
+        with pikepdf.open(resources / 'graph_ocred.pdf') as text_pdf:
+            pdf.pages.append(text_pdf.pages[0])
+        pdf.save(path)
+    return path
+
+
+@pytest.fixture
+def ocr_image_log(monkeypatch, tmp_path):
+    """File that records each image handed to the OCR engine."""
+    logfile = tmp_path / 'ocr_images.txt'
+    monkeypatch.setenv('OCRMYPDF_TEST_OCR_IMAGE_LOG', str(logfile))
+    return logfile
+
+
+def test_prior_text_aborts_before_ocr(text_on_last_page, no_outpdf, ocr_image_log):
+    """Prior text on any page aborts before any page is rasterized or OCR'd."""
+    result = run_ocrmypdf_api(
+        text_on_last_page, no_outpdf, '--jobs', '1', '--plugin', RECORDER
+    )
+    assert result == ExitCode.already_done_ocr
+    assert not ocr_image_log.exists() or ocr_image_log.read_text() == ''
+
+
+def test_prior_text_names_page(text_on_last_page, no_outpdf, caplog):
+    result = run_ocrmypdf_api(text_on_last_page, no_outpdf, '--jobs', '1')
+    assert result == ExitCode.already_done_ocr
+    assert 'page 4 already has text' in caplog.text
+
+
+def test_prior_text_outside_pages_ignored(text_on_last_page, outpdf, ocr_image_log):
+    """Text on a page excluded by --pages does not abort the run."""
+    check_ocrmypdf(
+        text_on_last_page,
+        outpdf,
+        '--pages',
+        '1',
+        '--output-type',
+        'pdf',
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
+        '--plugin',
+        RECORDER,
+    )
+    assert len(ocr_image_log.read_text().splitlines()) == 1
 
 
 def test_force_ocr(resources, outpdf):

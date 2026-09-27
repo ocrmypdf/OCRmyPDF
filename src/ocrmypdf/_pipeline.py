@@ -321,6 +321,21 @@ def validate_pdfinfo_options(context: PdfContext) -> None:
             log.info("Use --tagged-pdf-mode ignore to ignore Tagged PDFs.")
             raise TaggedPDFError()
     context.plugin_manager.validate(pdfinfo=pdfinfo, options=options)
+    if options.mode == ProcessingMode.default:
+        # Abort before any page is rasterized or OCR'd, rather than waiting
+        # for a worker to reach the first page with text. is_ocr_required
+        # performs the same check per page.
+        for pageinfo in pdfinfo.pages:
+            if pageinfo is None:
+                continue
+            if options.pages and pageinfo.pageno not in options.pages:
+                continue
+            if pageinfo.has_text:
+                raise PriorOcrFoundError(
+                    f"page {pageinfo.pageno + 1} already has text! - aborting "
+                    "(use --force-ocr or --mode force to force OCR; see also help "
+                    "for --skip-text, --redo-ocr, and --mode)"
+                )
 
 
 def _vector_page_dpi(pageinfo: PageInfo) -> int:
