@@ -326,6 +326,22 @@ class OcrOptions(BaseModel):
         # Convert string ranges to set of page numbers
         return _pages_from_ranges(v)
 
+    @field_validator('tesseract_thresholding', mode='before')
+    @classmethod
+    def validate_tesseract_thresholding(cls, v):
+        """Accept thresholding method names (e.g. 'adaptive-otsu') as well as ints."""
+        if not isinstance(v, str) or v.strip().isdigit():
+            return v
+        from ocrmypdf._exec.tesseract import TESSERACT_THRESHOLDING_METHODS
+
+        try:
+            return TESSERACT_THRESHOLDING_METHODS[v.lower()]
+        except KeyError:
+            valid = ', '.join(TESSERACT_THRESHOLDING_METHODS)
+            raise ValueError(
+                f"Invalid thresholding method '{v}'. Must be one of: {valid}"
+            ) from None
+
     @field_validator('unpaper_args', mode='before')
     @classmethod
     def validate_unpaper_args(cls, v):

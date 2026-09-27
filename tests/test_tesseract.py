@@ -10,9 +10,12 @@ from os import fspath
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
+import ocrmypdf
 from ocrmypdf import pdfinfo
 from ocrmypdf._exec import tesseract
+from ocrmypdf._options import OcrOptions
 from ocrmypdf.builtin_plugins.tesseract_ocr import _thresholding_method_converter
 from ocrmypdf.exceptions import BadArgsError, ExitCode, MissingDependencyError
 
@@ -414,4 +417,59 @@ def test_pagesegmode(renderer, resources, outpdf):
         renderer,
         '--plugin',
         'tests/plugins/tesseract_cache.py',
+    )
+
+
+@pytest.mark.parametrize(
+    'value, expected',
+    [
+        ('auto', tesseract.ThresholdingMethod.AUTO),
+        ('otsu', tesseract.ThresholdingMethod.OTSU),
+        ('adaptive-otsu', tesseract.ThresholdingMethod.ADAPTIVE_OTSU),
+        ('Sauvola', tesseract.ThresholdingMethod.SAUVOLA),
+        (1, tesseract.ThresholdingMethod.ADAPTIVE_OTSU),
+        (None, None),
+    ],
+)
+def test_tesseract_thresholding_api_names(value, expected):
+    """The API accepts thresholding method names as well as integers (#1460)."""
+    options = OcrOptions(
+        input_file='a.pdf', output_file='b.pdf', tesseract_thresholding=value
+    )
+    assert options.tesseract_thresholding == expected
+
+
+def test_tesseract_thresholding_api_invalid_name():
+    with pytest.raises(ValidationError, match="Invalid thresholding method"):
+        OcrOptions(
+            input_file='a.pdf', output_file='b.pdf', tesseract_thresholding='abcxyz'
+        )
+
+
+@pytest.mark.skipif(
+    not tesseract.has_thresholding(), reason="tesseract lacks thresholding"
+)
+def test_tesseract_thresholding_api_passes_method(resources, outpdf, monkeypatch):
+    """A thresholding name given to ocrmypdf.ocr() reaches tesseract (#1460)."""
+    captured = []
+    real_run = tesseract.run
+
+    def spy_run(args, *a, **kw):
+        captured.append(list(args))
+        return real_run(args, *a, **kw)
+
+    monkeypatch.setattr(tesseract, 'run', spy_run)
+    ocrmypdf.ocr(
+        resources / 'trivial.pdf',
+        outpdf,
+        tesseract_thresholding='adaptive-otsu',
+        use_threads=True,
+        optimize=0,
+        output_type='pdf',
+        progress_bar=False,
+    )
+    assert any(
+        'thresholding_method=1' in args
+        for args in captured
+        if args and 'tesseract' in str(args[0])
     )
