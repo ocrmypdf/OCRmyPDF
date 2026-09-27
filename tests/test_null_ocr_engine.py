@@ -226,3 +226,24 @@ class TestNullOcrEngineInertOptions:
         )
 
         assert messages == []
+
+
+class TestNullOcrEngineVectorPage:
+    """Force-OCR a vector-only page, which has no image DPI in pdfinfo."""
+
+    def test_force_ocr_vector_page(self, resources, outpdf):
+        import pikepdf
+
+        from .conftest import check_ocrmypdf
+
+        check_ocrmypdf(
+            resources / 'vector.pdf',
+            outpdf,
+            '--force-ocr',
+            '--ocr-engine',
+            'none',
+            '--output-type',
+            'pdf',
+        )
+        with pikepdf.open(outpdf) as pdf:
+            assert len(pdf.pages) == 1

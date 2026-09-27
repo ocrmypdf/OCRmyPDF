@@ -549,7 +549,11 @@ class OcrGrafter:
                         pageno=pageno,
                         autorotate_correction=autorotate_correction,
                         emplaced_page=emplaced_page,
-                        dpi=self.pdfinfo[pageno].dpi.to_scalar(),
+                        # Vector-only pages have no image DPI in pdfinfo, so
+                        # prefer the DPI the OCR engine saw, as for hOCR below.
+                        dpi=ocr_tree.dpi
+                        or self.pdfinfo[pageno].dpi.to_scalar()
+                        or float(VECTOR_PAGE_DPI),
                     )
                 )
             if ocr_output:
