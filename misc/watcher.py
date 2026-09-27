@@ -281,6 +281,17 @@ def execute_ocrmypdf(
         log.info('OCR is done')
 
 
+def ocrmypdf_kwargs(json_settings: dict[str, Any], deskew: bool | None) -> dict:
+    """Merge OCR_DESKEW into the OCR_JSON_SETTINGS arguments for ocrmypdf.ocr.
+
+    OCR_DESKEW overrides the JSON settings only if it is set, so that
+    "deskew" in the JSON settings is not silently turned off.
+    """
+    if deskew is None:
+        return dict(json_settings)
+    return json_settings | {'deskew': deskew}
+
+
 class PdfFilter(DefaultFilter):
     """Only surface newly created files whose name matches a watched pattern."""
 
@@ -358,12 +369,13 @@ def main(
         ),
     ] = False,
     deskew: Annotated[
-        bool,
+        bool | None,
         cyclopts.Parameter(
             env_var='OCR_DESKEW',
-            help='Deskew the input file before OCR',
+            help='Deskew the input file before OCR. If set, overrides "deskew" '
+            'in OCR_JSON_SETTINGS',
         ),
-    ] = False,
+    ] = None,
     ocr_json_settings: Annotated[
         str | None,
         cyclopts.Parameter(
@@ -496,7 +508,7 @@ def main(
         'input_dir': input_dir,
         'archive_dir': archive_dir,
         'output_dir': output_dir,
-        'ocrmypdf_kwargs': json_settings | {'deskew': deskew},
+        'ocrmypdf_kwargs': ocrmypdf_kwargs(json_settings, deskew),
         'on_success_delete': on_success_delete,
         'on_success_archive': on_success_archive,
         'poll_new_file_seconds': poll_new_file_seconds,

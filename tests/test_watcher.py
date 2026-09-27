@@ -285,6 +285,35 @@ def test_apply_conflict_policy_suffix(watcher_module, tmp_path):
     )
 
 
+@pytest.mark.parametrize(
+    'json_settings, deskew, expected',
+    [
+        ({'deskew': True}, None, True),  # OCR_DESKEW unset: JSON wins
+        ({'deskew': False}, None, False),
+        ({}, None, None),  # neither: OCRmyPDF's default
+        ({'deskew': True}, False, False),  # OCR_DESKEW set: it wins
+        ({'deskew': False}, True, True),
+        ({}, True, True),
+    ],
+)
+def test_ocrmypdf_kwargs_deskew(watcher_module, json_settings, deskew, expected):
+    kwargs = watcher_module.ocrmypdf_kwargs(
+        json_settings | {'language': ['eng']}, deskew
+    )
+    assert kwargs.get('deskew') == expected
+    assert kwargs['language'] == ['eng']
+
+
+@pytest.mark.parametrize('env, expected', [({}, None), ({'OCR_DESKEW': '1'}, True)])
+def test_deskew_unset_by_default(watcher_module, monkeypatch, env, expected):
+    monkeypatch.delenv('OCR_DESKEW', raising=False)
+    for key, value in env.items():
+        monkeypatch.setenv(key, value)
+    _command, bound, _ = watcher_module.app.parse_args(['in', 'out', 'processed'])
+    bound.apply_defaults()
+    assert bound.arguments['deskew'] is expected
+
+
 @pytest.mark.parametrize('year_month', [True, False])
 def test_watcher(data_dirs, watcher_log, resources, year_month):
     input_dir, output_dir, processed_dir, work_dir = data_dirs
