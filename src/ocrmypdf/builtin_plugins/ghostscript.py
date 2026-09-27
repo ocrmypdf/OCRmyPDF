@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Annotated
 
 from packaging.version import Version
-from pikepdf import Name, Pdf, Stream
+from pikepdf import Name, Pdf, PdfError, Stream
 from pydantic import BaseModel, Field
 
 from ocrmypdf import hookimpl
@@ -18,6 +18,11 @@ from ocrmypdf._exec import ghostscript
 from ocrmypdf._options import ProcessingMode
 from ocrmypdf.exceptions import MissingDependencyError
 from ocrmypdf.helpers import RESOURCES_XOBJECT
+from ocrmypdf.pdfa import (
+    find_nonembedded_fonts,
+    has_embedded_fonts,
+    is_standard14_font,
+)
 from ocrmypdf.subprocess import check_external_program
 
 log = logging.getLogger(__name__)
@@ -429,6 +434,48 @@ def _repair_gs106_jpeg_corruption(
     return repaired_count > 0
 
 
+def _check_font_embedding(pdf_pages) -> bool:
+    """Warn about fonts Ghostscript will substitute; decide on font subsetting.
+
+    PDF/A requires embedded fonts, so Ghostscript substitutes a font of its own
+    for every font the input does not embed. Standard 14 fonts have
+    metric-compatible substitutes, so only other fonts are worth a warning.
+
+    Subsetting fonts can damage the encoding of fonts already embedded in the
+    input (#1592), so it stays disabled whenever any font is embedded. When no
+    font is embedded, every font Ghostscript writes is one of its own
+    substitutes, which subset safely, and embedding them in full would inflate
+    the output by tens of kilobytes per font (#1369).
+
+    Returns:
+        True if Ghostscript may subset fonts.
+    """
+    nonembedded: set[str] = set()
+    any_embedded = False
+    try:
+        for page_file in pdf_pages:
+            with Pdf.open(page_file, conversion_mode='explicit') as pdf:
+                nonembedded |= find_nonembedded_fonts(pdf)
+                any_embedded = any_embedded or has_embedded_fonts(pdf)
+    except (OSError, PdfError) as e:
+        log.debug("Could not check font embedding: %s", e)
+        return False
+
+    substituted = sorted(f for f in nonembedded if not is_standard14_font(f))
+    if substituted:
+        shown = ', '.join(substituted[:5])
+        if len(substituted) > 5:
+            shown += ", ..."
+        count = f"{len(substituted)} fonts are" if len(substituted) > 1 else "1 font is"
+        log.warning(
+            f"{count} not embedded in the input file ({shown}). "
+            "PDF/A requires embedded fonts, so Ghostscript will "
+            "substitute other fonts, which may change the appearance and size of "
+            "the file. Use `--output-type pdf` to keep the fonts unchanged."
+        )
+    return bool(nonembedded) and not any_embedded
+
+
 @hookimpl
 def generate_pdfa(
     pdf_pages,
@@ -445,6 +492,7 @@ def generate_pdfa(
         context.options.ghostscript.pdfa_image_compression,
         context.options.optimize,
     )
+    subset_fonts = _check_font_embedding(pdf_pages)
 
     ghostscript.generate_pdfa(
         pdf_pages=[pdfmark, *pdf_pages],
@@ -457,6 +505,7 @@ def generate_pdfa(
         pdfa_part=pdfa_part,
         progressbar_class=progressbar_class,
         stop_on_error=stop_on_soft_error,
+        subset_fonts=subset_fonts,
     )
 
     # Record that Ghostscript produced this file, so the optimizer knows whether

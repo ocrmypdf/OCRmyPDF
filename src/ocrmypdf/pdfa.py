@@ -178,8 +178,19 @@ def find_nonembedded_cid_fonts(pdf: Pdf) -> set[str]:
         The set of ``BaseFont`` names of non-embedded CID fonts found.
     """
     found: set[str] = set()
+    for font in _iter_fonts(pdf):
+        try:
+            if font.get(Name.Subtype) == Name.Type0 and not _cid_font_is_embedded(font):
+                found.add(_font_basename(font))
+        except (AttributeError, TypeError, KeyError):
+            continue
+    return found
 
-    def scan_resources(container: Object, depth: int = 0) -> None:
+
+def _iter_fonts(pdf: Pdf) -> Iterator[Object]:
+    """Yield the font dictionaries used by pages, forms and annotations."""
+
+    def fonts_in(container: Object, depth: int = 0) -> Iterator[Object]:
         if depth > 10:
             return
         # A well-formed PDF stores dictionaries under /Resources, /Font and
@@ -188,30 +199,88 @@ def find_nonembedded_cid_fonts(pdf: Pdf) -> set[str]:
         # every one of those to "no fonts" rather than let the scan crash
         # (issue #1713).
         for font in (container.get_dict(NamePath.Resources.Font) or {}).values():
-            try:
-                if font.get(Name.Subtype) != Name.Type0:
-                    continue
-                if not _cid_font_is_embedded(font):
-                    name = font.get(Name.BaseFont, Name('/(unnamed)'))
-                    try:
-                        basefont = str(name)
-                    except UnicodeDecodeError:
-                        # Name objects are byte sequences with no mandated
-                        # encoding; e.g. CJK foundry font names are often
-                        # GBK, which is not valid UTF-8 (issue #1727). Fall
-                        # back to the hex-escaped PDF syntax form. Do not
-                        # skip the font: it is still non-embedded and must
-                        # block PDF/A conversion.
-                        basefont = name.unparse().decode('ascii', 'replace')
-                    found.add(basefont.lstrip('/'))
-            except (AttributeError, TypeError, KeyError):
-                continue
+            if isinstance(font, pikepdf.Dictionary):
+                yield font
         for xobj in (container.get_dict(NamePath.Resources.XObject) or {}).values():
-            if xobj.get(Name.Subtype) == Name.Form:
-                scan_resources(xobj, depth + 1)
+            if isinstance(xobj, pikepdf.Stream) and xobj.get(Name.Subtype) == Name.Form:
+                yield from fonts_in(xobj, depth + 1)
+
+    def appearance_streams(page: Object) -> Iterator[Object]:
+        annots = page.get(Name.Annots)
+        if not isinstance(annots, pikepdf.Array):
+            return
+        for annot in annots:
+            if not isinstance(annot, pikepdf.Dictionary):
+                continue
+            appearances = annot.get_dict(Name.AP)
+            if appearances is None:
+                continue
+            for appearance in appearances.values():
+                if isinstance(appearance, pikepdf.Stream):
+                    yield appearance
+                elif isinstance(appearance, pikepdf.Dictionary):
+                    # Appearance subdictionary keyed by state, e.g. /On /Off
+                    for state in appearance.as_dict().values():
+                        if isinstance(state, pikepdf.Stream):
+                            yield state
 
     for page in pdf.pages:
-        scan_resources(page.obj)
+        yield from fonts_in(page.obj)
+        for appearance in appearance_streams(page.obj):
+            yield from fonts_in(appearance)
+    # Default resources for form fields, which a viewer may use to regenerate
+    # their appearances
+    for font in (pdf.Root.get_dict(NamePath.AcroForm.DR.Font) or {}).values():
+        if isinstance(font, pikepdf.Dictionary):
+            yield font
+
+
+def _font_basename(font: Object) -> str:
+    """Return a font's /BaseFont as text, without the leading slash."""
+    name = font.get(Name.BaseFont, Name('/(unnamed)'))
+    try:
+        basefont = str(name)
+    except UnicodeDecodeError:
+        # Name objects are byte sequences with no mandated encoding; e.g. CJK
+        # foundry font names are often GBK, which is not valid UTF-8 (issue
+        # #1727). Fall back to the hex-escaped PDF syntax form. Do not skip the
+        # font: it is still non-embedded and must be reported.
+        basefont = name.unparse().decode('ascii', 'replace')
+    return basefont.lstrip('/')
+
+
+def _font_is_embedded(font: Object) -> bool:
+    """Return True if a font carries its own glyphs."""
+    subtype = font.get(Name.Subtype)
+    if subtype == Name.Type3:
+        return True  # Glyphs are content streams in the font itself
+    if subtype == Name.Type0:
+        return _cid_font_is_embedded(font)
+    descriptor = font.get_dict(Name.FontDescriptor)
+    return descriptor is not None and any(
+        key in descriptor for key in (Name.FontFile, Name.FontFile2, Name.FontFile3)
+    )
+
+
+def find_nonembedded_fonts(pdf: Pdf) -> set[str]:
+    """Find all fonts, simple or CID-keyed, that lack embedded glyph data.
+
+    PDF/A requires every font to be embedded, so Ghostscript substitutes and
+    embeds a replacement for each font reported here.
+
+    Args:
+        pdf: An open ``pikepdf.Pdf`` to scan.
+
+    Returns:
+        The set of ``BaseFont`` names of non-embedded fonts found.
+    """
+    found: set[str] = set()
+    for font in _iter_fonts(pdf):
+        try:
+            if not _font_is_embedded(font):
+                found.add(_font_basename(font))
+        except (AttributeError, TypeError, KeyError, ValueError):
+            continue
     return found
 
 
@@ -342,6 +411,47 @@ def add_simple_font_tounicode(pdf: Pdf) -> int:
         obj.ToUnicode = pdf.make_stream(_tounicode_cmap(mapping))
         count += 1
     return count
+
+
+def has_embedded_fonts(pdf: Pdf) -> bool:
+    """Return True if any font in the PDF carries its own glyphs."""
+    for font in _iter_fonts(pdf):
+        try:
+            if _font_is_embedded(font):
+                return True
+        except (AttributeError, TypeError, KeyError, ValueError):
+            continue
+    return False
+
+
+STANDARD_14_FONTS = frozenset(
+    {
+        'Courier',
+        'Courier-Bold',
+        'Courier-BoldOblique',
+        'Courier-Oblique',
+        'Helvetica',
+        'Helvetica-Bold',
+        'Helvetica-BoldOblique',
+        'Helvetica-Oblique',
+        'Symbol',
+        'Times-Bold',
+        'Times-BoldItalic',
+        'Times-Italic',
+        'Times-Roman',
+        'ZapfDingbats',
+    }
+)
+
+
+def is_standard14_font(basefont: str) -> bool:
+    """Return True if a font name is one of the PDF standard 14 fonts.
+
+    Every PDF viewer and Ghostscript carry metric-compatible versions of these
+    fonts, so substituting them does not change the document's appearance.
+    """
+    _prefix, _plus, name = basefont.rpartition('+')
+    return name in STANDARD_14_FONTS
 
 
 # PDF/A flavour for each --output-type that produces PDF/A. 'auto' (and any

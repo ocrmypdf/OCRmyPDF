@@ -43,6 +43,7 @@ from ocrmypdf.helpers import Resolution
 from ocrmypdf.pluginspec import GhostscriptRasterDevice
 
 from .conftest import check_ocrmypdf, run_ocrmypdf_api
+from .test_pdfa import _make_simple_font
 from .test_validation import make_opts_pm
 
 # pylint: disable=redefined-outer-name
@@ -1510,6 +1511,150 @@ class TestGeneratePdfaHook:
                 stop_on_soft_error=True,
             )
         assert gs_mock.call_args.kwargs['compression'] == expected
+
+    def _run_with_fonts(self, outdir, fonts):
+        """Run the hook on a page using fonts built by fonts(pdf) -> dict."""
+        with pikepdf.new() as pdf:
+            page = pdf.add_blank_page()
+            page.Resources = pikepdf.Dictionary(
+                Font=pikepdf.Dictionary(
+                    {f'/F{n}': font for n, font in enumerate(fonts(pdf))}
+                )
+            )
+            pdf.save(outdir / 'page.pdf')
+        context = SimpleNamespace(options=_gs_plugin_opts('--output-type', 'pdfa'))
+        with (
+            patch.object(ghostscript, 'generate_pdfa') as gs_mock,
+            patch.object(ghostscript, 'jpeg_truncation_bug', return_value=False),
+        ):
+            gs_plugin.generate_pdfa(
+                pdf_pages=[outdir / 'page.pdf'],
+                pdfmark=outdir / 'pdfmark.pdf',
+                output_file=outdir / 'out.pdf',
+                context=context,
+                pdf_version='1.7',
+                pdfa_part='2',
+                progressbar_class=None,
+                stop_on_soft_error=True,
+            )
+        return gs_mock.call_args.kwargs
+
+    def test_nonembedded_fonts_warn_and_allow_subsetting(self, outdir, caplog):
+        caplog.set_level(logging.WARNING)
+        kwargs = self._run_with_fonts(
+            outdir,
+            lambda pdf: [
+                _make_simple_font(pdf, '/Verdana'),
+                _make_simple_font(pdf, '/Verdana,Bold'),
+            ],
+        )
+        assert kwargs['subset_fonts'] is True
+        warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
+        assert len(warnings) == 1
+        message = warnings[0].getMessage()
+        assert '2 fonts' in message
+        assert 'Verdana, Verdana,Bold' in message
+        assert '--output-type pdf' in message
+
+    def test_embedded_font_keeps_subsetting_disabled(self, outdir, caplog):
+        caplog.set_level(logging.WARNING)
+        kwargs = self._run_with_fonts(
+            outdir,
+            lambda pdf: [
+                _make_simple_font(pdf, '/Verdana'),
+                _make_simple_font(pdf, '/ABCDEF+Embedded', embedded=True),
+            ],
+        )
+        assert kwargs['subset_fonts'] is False
+        assert 'Verdana' in caplog.text
+
+    def test_standard14_fonts_do_not_warn(self, outdir, caplog):
+        caplog.set_level(logging.WARNING)
+        kwargs = self._run_with_fonts(
+            outdir,
+            lambda pdf: [
+                pikepdf.Dictionary(
+                    Type=pikepdf.Name.Font,
+                    Subtype=pikepdf.Name.Type1,
+                    BaseFont=pikepdf.Name.Helvetica,
+                )
+            ],
+        )
+        assert kwargs['subset_fonts'] is True
+        assert caplog.text == ''
+
+    def test_all_fonts_embedded(self, outdir, caplog):
+        caplog.set_level(logging.WARNING)
+        kwargs = self._run_with_fonts(
+            outdir,
+            lambda pdf: [_make_simple_font(pdf, '/ABCDEF+Embedded', embedded=True)],
+        )
+        assert kwargs['subset_fonts'] is False
+        assert caplog.text == ''
+
+
+def test_generate_pdfa_uses_only_ghostscript_fonts(tmp_path):
+    """Font substitution must not depend on the platform's installed fonts."""
+    args = _capture_generate_pdfa_args(tmp_path, 'auto')
+    assert '-dNONATIVEFONTMAP' in args
+    assert '-dSubsetFonts=false' in args
+
+
+def test_generate_pdfa_subset_fonts(tmp_path):
+    captured = {}
+
+    def fake_run(args, **kwargs):
+        captured['args'] = list(args)
+        return subprocess.CompletedProcess(args, 0, None, stderr='')
+
+    with patch('ocrmypdf._exec.ghostscript.run_polling_stderr', side_effect=fake_run):
+        ghostscript.generate_pdfa(
+            pdf_pages=['dummy.pdf'],
+            output_file=tmp_path / 'out.pdf',
+            compression='auto',
+            color_conversion_strategy='RGB',
+            subset_fonts=True,
+        )
+    assert '-dSubsetFonts=false' not in captured['args']
+    assert '-dNONATIVEFONTMAP' in captured['args']
+
+
+def test_nonembedded_fonts_are_subset_in_pdfa(outdir, caplog, no_speculative_pdfa):
+    """Substituted fonts are subset, so PDF/A does not balloon (#1369)."""
+    content = b'BT /F0 24 Tf 72 700 Td (Hello World) Tj ET'
+    content += b' BT /F1 24 Tf 72 650 Td (Bold Text) Tj ET'
+    with pikepdf.new() as pdf:
+        page = pdf.add_blank_page()
+        page.Resources = pikepdf.Dictionary(
+            Font=pikepdf.Dictionary(
+                F0=_make_simple_font(pdf, '/Verdana'),
+                F1=_make_simple_font(pdf, '/Verdana,Bold'),
+            )
+        )
+        page.Contents = pdf.make_stream(content)
+        pdf.save(outdir / 'in.pdf')
+
+    caplog.set_level(logging.WARNING)
+    exitcode = run_ocrmypdf_api(
+        outdir / 'in.pdf',
+        outdir / 'out.pdf',
+        '--skip-text',
+        '--output-type',
+        'pdfa',
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
+    )
+    # Ghostscript 9.x declines to mark output with substituted fonts as PDF/A,
+    # but still writes it with the substitutes embedded.
+    assert exitcode in (ExitCode.ok, ExitCode.pdfa_conversion_failed)
+    assert 'not embedded' in caplog.text
+    with pikepdf.open(outdir / 'out.pdf') as pdf:
+        fonts = list(pdf.pages[0].Resources.Font.values())
+        assert fonts
+        for font in fonts:
+            # A six-letter tag prefix marks a subset font
+            assert str(font.BaseFont)[7] == '+', font.BaseFont
+    assert (outdir / 'out.pdf').stat().st_size < 60_000
 
 
 class TestToUnicodeMultiCharBugVersions:

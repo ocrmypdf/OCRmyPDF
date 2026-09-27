@@ -338,6 +338,7 @@ def generate_pdfa(
     pdfa_part: str = '2',
     progressbar_class=None,
     stop_on_error: bool = False,
+    subset_fonts: bool = False,
 ):
     _ensure_log_filter_installed()
     # Ghostscript's compression is all or nothing. We can either force all images
@@ -408,6 +409,18 @@ def generate_pdfa(
             f"-dMonoImageResolution={jpeg_maxdpi}",
         ]
 
+    # PDF/A requires embedded fonts, so Ghostscript substitutes any font the
+    # input does not embed. -dNONATIVEFONTMAP makes it choose from its own URW
+    # fonts instead of the platform's (fontconfig, or macOS/Windows system
+    # fonts), so the output does not depend on what fonts happen to be
+    # installed; on macOS the native map embedded tens of megabytes of system
+    # fonts (#1369). Fonts that are embedded in the input are unaffected.
+    # Subsetting fonts can damage the encoding of fonts embedded in the input
+    # (#1592), so the caller may only enable it when there are none.
+    font_args = ['-dNONATIVEFONTMAP']
+    if not subset_fonts:
+        font_args.append('-dSubsetFonts=false')
+
     # nb no need to specify ProcessColorModel when ColorConversionStrategy
     # is set; see:
     # https://bugs.ghostscript.com/show_bug.cgi?id=699392
@@ -425,9 +438,9 @@ def generate_pdfa(
         + (['-dPDFSTOPONERROR'] if stop_on_error else [])
         + compression_args
         + downsample_args
+        + font_args
         + [
             f"-dJPEGQ={effective_jpeg_quality}",  # See note above on JPEG quality
-            "-dSubsetFonts=false",  # Prevents GS from messing up some encodings
             f"-dPDFA={pdfa_part}",
             "-dPDFACompatibilityPolicy=1",
             "-o",

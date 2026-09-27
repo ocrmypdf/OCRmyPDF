@@ -18,6 +18,9 @@ from ocrmypdf.pdfa import (
     add_simple_font_tounicode,
     file_claims_pdfa,
     find_nonembedded_cid_fonts,
+    find_nonembedded_fonts,
+    has_embedded_fonts,
+    is_standard14_font,
 )
 
 from .conftest import check_ocrmypdf, run_ocrmypdf_api
@@ -887,3 +890,137 @@ class TestAddSimpleFontToUnicode:
             font = _make_simple_truetype_font(pdf, flags=4, encoding=encoding)
             font.FontDescriptor = Name.NotADictionary
             add_tounicode(pdf, font)  # must not raise
+
+
+def _make_simple_font(
+    pdf: pikepdf.Pdf, basefont: str, *, embedded: bool = False
+) -> pikepdf.Object:
+    """Build a simple (single-byte) TrueType font, optionally embedded."""
+    descriptor = pikepdf.Dictionary(
+        Type=Name.FontDescriptor,
+        FontName=Name(basefont),
+        Flags=32,
+        FontBBox=pikepdf.Array([-500, -300, 1500, 1000]),
+        ItalicAngle=0,
+        Ascent=750,
+        Descent=-250,
+        CapHeight=700,
+        StemV=80,
+    )
+    if embedded:
+        descriptor.FontFile2 = pdf.make_stream(b'\x00\x01\x00\x00 fake font program')
+    return pdf.make_indirect(
+        pikepdf.Dictionary(
+            Type=Name.Font,
+            Subtype=Name.TrueType,
+            BaseFont=Name(basefont),
+            FirstChar=32,
+            LastChar=126,
+            Widths=pikepdf.Array([600] * 95),
+            Encoding=Name.WinAnsiEncoding,
+            FontDescriptor=descriptor,
+        )
+    )
+
+
+class TestFindNonembeddedFonts:
+    def test_blank_page_reports_nothing(self):
+        with pikepdf.new() as pdf:
+            pdf.add_blank_page()
+            assert find_nonembedded_fonts(pdf) == set()
+            assert not has_embedded_fonts(pdf)
+
+    def test_detects_nonembedded_simple_and_cid_fonts(self):
+        with pikepdf.new() as pdf:
+            page = pdf.add_blank_page()
+            page.Resources = pikepdf.Dictionary(
+                Font=pikepdf.Dictionary(
+                    F0=_make_simple_font(pdf, '/Verdana,Bold'),
+                    F1=_make_cid_font(pdf, embedded=False, basefont='/TestCID'),
+                    F2=_make_simple_font(pdf, '/Embedded', embedded=True),
+                    F3=pikepdf.Dictionary(
+                        Type=Name.Font, Subtype=Name.Type1, BaseFont=Name.Helvetica
+                    ),
+                )
+            )
+            assert find_nonembedded_fonts(pdf) == {
+                'Verdana,Bold',
+                'TestCID',
+                'Helvetica',
+            }
+            assert has_embedded_fonts(pdf)
+
+    def test_nonembedded_only(self):
+        with pikepdf.new() as pdf:
+            page = pdf.add_blank_page()
+            page.Resources = pikepdf.Dictionary(
+                Font=pikepdf.Dictionary(F0=_make_simple_font(pdf, '/Verdana'))
+            )
+            assert find_nonembedded_fonts(pdf) == {'Verdana'}
+            assert not has_embedded_fonts(pdf)
+
+    def test_type3_font_counts_as_embedded(self):
+        with pikepdf.new() as pdf:
+            page = pdf.add_blank_page()
+            type3 = pdf.make_indirect(
+                pikepdf.Dictionary(
+                    Type=Name.Font,
+                    Subtype=Name.Type3,
+                    FontMatrix=pikepdf.Array([0.001, 0, 0, 0.001, 0, 0]),
+                    CharProcs=pikepdf.Dictionary(),
+                )
+            )
+            page.Resources = pikepdf.Dictionary(Font=pikepdf.Dictionary(T0=type3))
+            assert find_nonembedded_fonts(pdf) == set()
+            assert has_embedded_fonts(pdf)
+
+    def test_finds_fonts_in_annotation_appearance(self):
+        with pikepdf.new() as pdf:
+            page = pdf.add_blank_page()
+            appearance = pdf.make_stream(
+                b'',
+                Type=Name.XObject,
+                Subtype=Name.Form,
+                BBox=pikepdf.Array([0, 0, 1, 1]),
+                Resources=pikepdf.Dictionary(
+                    Font=pikepdf.Dictionary(
+                        F0=_make_simple_font(pdf, '/AnnotFont', embedded=True)
+                    )
+                ),
+            )
+            annot = pikepdf.Dictionary(
+                Type=Name.Annot,
+                Subtype=Name.FreeText,
+                Rect=pikepdf.Array([0, 0, 1, 1]),
+                AP=pikepdf.Dictionary(N=appearance),
+            )
+            page.Annots = pdf.make_indirect(pikepdf.Array([annot]))
+            assert has_embedded_fonts(pdf)
+
+    def test_finds_fonts_in_acroform_default_resources(self):
+        with pikepdf.new() as pdf:
+            pdf.add_blank_page()
+            pdf.Root.AcroForm = pikepdf.Dictionary(
+                Fields=pikepdf.Array([]),
+                DR=pikepdf.Dictionary(
+                    Font=pikepdf.Dictionary(
+                        Helv=_make_simple_font(pdf, '/FormFont', embedded=True)
+                    )
+                ),
+            )
+            assert has_embedded_fonts(pdf)
+
+
+@pytest.mark.parametrize(
+    ('name', 'expected'),
+    [
+        ('Helvetica', True),
+        ('Times-BoldItalic', True),
+        ('ABCDEF+Courier', True),
+        ('ZapfDingbats', True),
+        ('Arial', False),
+        ('Verdana,Bold', False),
+    ],
+)
+def test_is_standard14_font(name, expected):
+    assert is_standard14_font(name) == expected
