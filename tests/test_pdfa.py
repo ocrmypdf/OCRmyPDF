@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import logging
 import os
+import re
+from io import BytesIO
 
 import pikepdf
 import pytest
@@ -12,7 +14,11 @@ from pikepdf import Name
 from pikepdf.pdfa import validate_written
 
 from ocrmypdf.exceptions import ExitCode, MissingDependencyError
-from ocrmypdf.pdfa import file_claims_pdfa, find_nonembedded_cid_fonts
+from ocrmypdf.pdfa import (
+    add_simple_font_tounicode,
+    file_claims_pdfa,
+    find_nonembedded_cid_fonts,
+)
 
 from .conftest import check_ocrmypdf, run_ocrmypdf_api
 
@@ -668,3 +674,216 @@ def test_failed_speculative_conversion_logs_repairs(
         )
     assert 'Declared PDF/A conformance in the XMP metadata' in caplog.text
     assert "construct(s) pikepdf's validator does not check" in caplog.text
+
+
+def _page_text(path) -> str:
+    """Extract text without whitespace, which depends on inexact glyph widths."""
+    from pdfminer.high_level import extract_text
+
+    return ''.join(extract_text(path).split())
+
+
+def _make_simple_truetype_font(
+    pdf: pikepdf.Pdf, *, flags: int, encoding: pikepdf.Object
+) -> pikepdf.Object:
+    """Build an embedded simple TrueType font with no /ToUnicode."""
+    from importlib.resources import files
+
+    font_data = (files('ocrmypdf.data') / 'NotoSans-Regular.ttf').read_bytes()
+    descriptor = pikepdf.Dictionary(
+        Type=Name.FontDescriptor,
+        FontName=Name('/ABCDEF+NotoSans'),
+        Flags=flags,
+        FontBBox=[-600, -300, 2600, 1100],
+        ItalicAngle=0,
+        Ascent=1069,
+        Descent=-293,
+        CapHeight=714,
+        StemV=80,
+        FontFile2=pdf.make_stream(font_data),
+    )
+    return pdf.make_indirect(
+        pikepdf.Dictionary(
+            Type=Name.Font,
+            Subtype=Name.TrueType,
+            BaseFont=Name('/ABCDEF+NotoSans'),
+            FirstChar=1,
+            LastChar=255,
+            Widths=[600] * 255,
+            FontDescriptor=descriptor,
+            Encoding=encoding,
+        )
+    )
+
+
+def _differences(*glyphs: str) -> pikepdf.Dictionary:
+    return pikepdf.Dictionary(
+        Type=Name.Encoding,
+        Differences=[1, *(Name('/' + glyph) for glyph in glyphs)],
+    )
+
+
+def _write_simple_font_pdf(path, *, flags: int) -> None:
+    """Text drawn with glyph names only, as in issue #1297."""
+    with pikepdf.new() as pdf:
+        page = pdf.add_blank_page(page_size=(300, 100))
+        font = _make_simple_truetype_font(
+            pdf,
+            flags=flags,
+            encoding=_differences(
+                'G', 'r', 'adieresis', 'space', 'afii10017', 'afii10066'
+            ),
+        )
+        page.Resources = pikepdf.Dictionary(Font=pikepdf.Dictionary(F1=font))
+        page.Contents = pdf.make_stream(b'BT /F1 24 Tf 20 40 Td <010203040506> Tj ET')
+        pdf.save(path)
+
+
+@pytest.mark.parametrize('flags', [4, 32], ids=['symbolic', 'nonsymbolic'])
+def test_ghostscript_pdfa_keeps_glyph_name_text(tmp_path, outpdf, flags):
+    # Ghostscript rewrites simple TrueType fonts as CID fonts for PDF/A and
+    # loses the Unicode meaning of their glyph names (issue #1297).
+    input_pdf = tmp_path / 'glyph_names.pdf'
+    _write_simple_font_pdf(input_pdf, flags=flags)
+    assert _page_text(input_pdf) == 'GräАб'
+
+    check_ocrmypdf(
+        input_pdf,
+        outpdf,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
+        '--skip-text',
+        '--output-type',
+        'pdfa',
+        '--pdfa-backend',
+        'ghostscript',
+    )
+    assert file_claims_pdfa(outpdf)['pass']
+    assert _page_text(outpdf) == 'GräАб'
+
+
+def _tounicode_map(font: pikepdf.Object) -> dict[int, str]:
+    cmap = font.ToUnicode.read_bytes().decode('ascii')
+    mapping = {}
+    for count, block in re.findall(r'(\d+) beginbfchar\n(.*?)endbfchar', cmap, re.S):
+        entries = re.findall(r'<([0-9A-F]{2})> <([0-9A-F]+)>', block)
+        assert len(entries) == int(count) <= 100
+        mapping.update(
+            (int(code, 16), bytes.fromhex(text).decode('utf-16-be'))
+            for code, text in entries
+        )
+    return mapping
+
+
+@pytest.fixture(params=['implicit', 'explicit'])
+def add_tounicode(request):
+    """Run add_simple_font_tounicode on a PDF holding a font, return its map.
+
+    The pipeline opens PDFs with conversion_mode='explicit', where numbers are
+    pikepdf objects rather than Python ints, so both modes are tested.
+    """
+
+    def run(pdf: pikepdf.Pdf, font: pikepdf.Object) -> dict[int, str] | None:
+        page = pdf.add_blank_page()
+        page.Resources = pikepdf.Dictionary(Font=pikepdf.Dictionary(F1=font))
+        buffer = BytesIO()
+        pdf.save(buffer)
+        with pikepdf.open(buffer, conversion_mode=request.param) as reopened:
+            add_simple_font_tounicode(reopened)
+            font = reopened.pages[-1].Resources.Font.F1
+            if Name.ToUnicode not in font:
+                return None
+            return _tounicode_map(font)
+
+    return run
+
+
+class TestAddSimpleFontToUnicode:
+    def test_differences_on_symbolic_font(self, add_tounicode):
+        with pikepdf.new() as pdf:
+            font = _make_simple_truetype_font(
+                pdf, flags=4, encoding=_differences('G', 'uni0416', 'f_i')
+            )
+            # A symbolic font's base encoding is built into the font program,
+            # so only the Differences are known.
+            assert add_tounicode(pdf, font) == {1: 'G', 2: 'Ж', 3: 'fi'}
+
+    def test_differences_over_named_base_encoding(self, add_tounicode):
+        with pikepdf.new() as pdf:
+            encoding = _differences('Z')
+            encoding.BaseEncoding = Name.WinAnsiEncoding
+            font = _make_simple_truetype_font(pdf, flags=4, encoding=encoding)
+            mapping = add_tounicode(pdf, font)
+            assert mapping[1] == 'Z'
+            assert mapping[ord('A')] == 'A'
+            assert mapping[0x80] == '€'
+            assert len(mapping) > 200
+
+    def test_nonsymbolic_font_uses_standard_encoding_base(self, add_tounicode):
+        with pikepdf.new() as pdf:
+            font = _make_simple_truetype_font(pdf, flags=32, encoding=_differences('Z'))
+            mapping = add_tounicode(pdf, font)
+            assert mapping[1] == 'Z'
+            assert mapping[ord('A')] == 'A'
+            assert mapping[0x27] == '’'  # quoteright in StandardEncoding
+
+    def test_named_encoding(self, add_tounicode):
+        with pikepdf.new() as pdf:
+            font = _make_simple_truetype_font(
+                pdf, flags=32, encoding=Name.MacRomanEncoding
+            )
+            assert add_tounicode(pdf, font)[0x8A] == 'ä'
+
+    def test_unknown_glyph_name_is_unmapped(self, add_tounicode):
+        with pikepdf.new() as pdf:
+            encoding = _differences('g123')
+            encoding.BaseEncoding = Name.WinAnsiEncoding
+            font = _make_simple_truetype_font(pdf, flags=4, encoding=encoding)
+            mapping = add_tounicode(pdf, font)
+            # The base encoding's meaning of code 1 is replaced, not kept.
+            assert 1 not in mapping
+            assert mapping[ord('A')] == 'A'
+
+    def test_nothing_mappable_adds_nothing(self, add_tounicode):
+        with pikepdf.new() as pdf:
+            font = _make_simple_truetype_font(
+                pdf, flags=4, encoding=_differences('g1', 'g2')
+            )
+            assert add_tounicode(pdf, font) is None
+
+    def test_existing_tounicode_is_kept(self, add_tounicode):
+        with pikepdf.new() as pdf:
+            font = _make_simple_truetype_font(pdf, flags=4, encoding=_differences('A'))
+            font.ToUnicode = pdf.make_stream(b'keep me')
+            # The original CMap has no entries that _tounicode_map can read.
+            assert add_tounicode(pdf, font) == {}
+
+    def test_font_without_encoding_is_untouched(self, add_tounicode):
+        with pikepdf.new() as pdf:
+            font = _make_simple_truetype_font(pdf, flags=4, encoding=Name.Null)
+            del font.Encoding
+            assert add_tounicode(pdf, font) is None
+
+    def test_type0_font_is_untouched(self, add_tounicode):
+        with pikepdf.new() as pdf:
+            font = _make_cid_font(pdf, embedded=True, basefont='/ABCDEF+TestCID')
+            assert add_tounicode(pdf, font) is None
+
+    def test_large_encoding_is_split_into_blocks(self, add_tounicode):
+        with pikepdf.new() as pdf:
+            font = _make_simple_truetype_font(
+                pdf, flags=4, encoding=Name.WinAnsiEncoding
+            )
+            # _tounicode_map asserts that no bfchar block exceeds 100 entries,
+            # which Ghostscript 9.56 to 10.04 would drop.
+            assert len(add_tounicode(pdf, font)) > 200
+
+    def test_malformed_encoding_is_ignored(self, add_tounicode):
+        with pikepdf.new() as pdf:
+            encoding = pikepdf.Dictionary(
+                Differences=[1, Name.A, pikepdf.String('junk'), Name.B],
+                BaseEncoding=pikepdf.Array([]),
+            )
+            font = _make_simple_truetype_font(pdf, flags=4, encoding=encoding)
+            font.FontDescriptor = Name.NotADictionary
+            add_tounicode(pdf, font)  # must not raise

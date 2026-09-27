@@ -53,6 +53,7 @@ from ocrmypdf.imageops import (
     has_decoded_pixels,
 )
 from ocrmypdf.pdfa import (
+    add_simple_font_tounicode,
     file_claims_pdfa,
     find_nonembedded_cid_fonts,
     generate_pdfa_ps,
@@ -1059,7 +1060,12 @@ def convert_to_pdfa(input_pdf: Path, input_ps_stub: Path, context: PdfContext) -
         nonembedded = find_nonembedded_cid_fonts(pdf_file)
         if nonembedded:
             raise NonEmbeddedFontsError(nonembedded)
-        if repair_docinfo_nuls(pdf_file):
+        # Ghostscript loses the Unicode meaning of glyph names in the simple
+        # fonts it rewrites, unless it is given as /ToUnicode (issue #1297).
+        added_tounicode = add_simple_font_tounicode(pdf_file)
+        if added_tounicode:
+            log.debug('Added /ToUnicode to %d font(s)', added_tounicode)
+        if repair_docinfo_nuls(pdf_file) or added_tounicode:
             pdf_file.save(fix_docinfo_file)
         else:
             safe_symlink(input_pdf, fix_docinfo_file)

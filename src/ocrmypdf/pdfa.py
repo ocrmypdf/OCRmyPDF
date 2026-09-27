@@ -8,6 +8,7 @@ from __future__ import annotations
 import base64
 import logging
 from collections.abc import Iterator
+from contextlib import suppress
 from importlib.resources import files as package_files
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -212,6 +213,135 @@ def find_nonembedded_cid_fonts(pdf: Pdf) -> set[str]:
     for page in pdf.pages:
         scan_resources(page.obj)
     return found
+
+
+_SIMPLE_FONT_SUBTYPES = (Name.Type1, Name.MMType1, Name.TrueType)
+_SYMBOLIC_FLAG = 1 << 2
+_BFCHAR_BLOCK_SIZE = 100  # Ghostscript 9.56 to 10.04 drop larger blocks
+
+
+def _as_int(obj: object) -> int | None:
+    """Return a PDF integer as int, whether or not pikepdf converted it."""
+    if isinstance(obj, (int, pikepdf.Integer)) and not isinstance(obj, bool):
+        return int(obj)
+    return None
+
+
+def _simple_font_unicode_map(font: pikepdf.Dictionary) -> dict[int, str]:
+    """Map a simple font's character codes to Unicode using its /Encoding.
+
+    This is what PDF viewers do to extract text from a font without a
+    /ToUnicode CMap: look up the glyph name that the encoding assigns to each
+    code. Codes whose meaning depends on the font program's built-in encoding
+    are left unmapped.
+    """
+    from pdfminer.encodingdb import EncodingDB, name2unicode
+
+    encoding = font.get(Name.Encoding)
+    if isinstance(encoding, Name):
+        base: Object | None = encoding
+        differences: Object = pikepdf.Array()
+    elif isinstance(encoding, pikepdf.Dictionary):
+        base = encoding.get(Name.BaseEncoding)
+        differences = encoding.get(Name.Differences, pikepdf.Array())
+    else:
+        return {}
+
+    mapping: dict[int, str] = {}
+    if base is None:
+        # With no base encoding, a nonsymbolic TrueType font, or a
+        # nonsymbolic Type 1 font that is not embedded, starts from
+        # StandardEncoding. Any other font starts from its built-in encoding.
+        descriptor = font.get_dict(Name.FontDescriptor)
+        flags = _as_int(descriptor.get(Name.Flags, 0)) if descriptor else 0
+        embedded = descriptor is not None and any(
+            key in descriptor for key in (Name.FontFile, Name.FontFile3)
+        )
+        symbolic = flags is None or bool(flags & _SYMBOLIC_FLAG)
+        if not symbolic and (font.get(Name.Subtype) == Name.TrueType or not embedded):
+            mapping.update(EncodingDB.encodings['StandardEncoding'])
+    elif isinstance(base, Name):
+        mapping.update(EncodingDB.encodings.get(str(base)[1:], {}))
+
+    if isinstance(differences, pikepdf.Array):
+        code = 0
+        for item in differences:
+            if (number := _as_int(item)) is not None:
+                code = number
+            elif isinstance(item, Name):
+                mapping.pop(code, None)
+                with suppress(KeyError, ValueError, UnicodeDecodeError):
+                    mapping[code] = name2unicode(str(item)[1:])
+                code += 1
+    return {code: text for code, text in mapping.items() if 0 <= code <= 0xFF}
+
+
+def _tounicode_cmap(mapping: dict[int, str]) -> bytes:
+    """Write a /ToUnicode CMap for single-byte character codes."""
+    lines = [
+        '/CIDInit /ProcSet findresource begin',
+        '12 dict begin',
+        'begincmap',
+        '/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def',
+        '/CMapName /Adobe-Identity-UCS def',
+        '/CMapType 2 def',
+        '1 begincodespacerange',
+        '<00> <FF>',
+        'endcodespacerange',
+    ]
+    entries = sorted(mapping.items())
+    for start in range(0, len(entries), _BFCHAR_BLOCK_SIZE):
+        block = entries[start : start + _BFCHAR_BLOCK_SIZE]
+        lines.append(f'{len(block)} beginbfchar')
+        lines.extend(
+            f'<{code:02X}> <{text.encode("utf-16-be").hex().upper()}>'
+            for code, text in block
+        )
+        lines.append('endbfchar')
+    lines += [
+        'endcmap',
+        'CMapName currentdict /CMap defineresource pop',
+        'end',
+        'end',
+    ]
+    return '\n'.join(lines).encode('ascii')
+
+
+def add_simple_font_tounicode(pdf: Pdf) -> int:
+    """Give simple fonts that lack /ToUnicode one derived from their /Encoding.
+
+    Ghostscript rewrites simple TrueType fonts as CID fonts when it produces
+    PDF/A. When such a font has no /ToUnicode, the text is only extractable
+    through the glyph names of its /Encoding, which the rewritten font does not
+    keep, so copying the text yields garbage or nothing (issue #1297).
+    Ghostscript keeps a /ToUnicode, so writing out the mapping that viewers
+    would derive from the glyph names preserves the text.
+
+    Args:
+        pdf: An open ``pikepdf.Pdf``, modified in place.
+
+    Returns:
+        The number of fonts that were given a /ToUnicode.
+    """
+    count = 0
+    for obj in pdf.objects:
+        if not isinstance(obj, pikepdf.Dictionary):
+            continue
+        try:
+            if (
+                obj.get(Name.Type) != Name.Font
+                or obj.get(Name.Subtype) not in _SIMPLE_FONT_SUBTYPES
+                or Name.ToUnicode in obj
+            ):
+                continue
+            mapping = _simple_font_unicode_map(obj)
+        except (AttributeError, TypeError, ValueError):
+            continue
+        if not mapping:
+            continue
+        obj.ToUnicode = pdf.make_stream(_tounicode_cmap(mapping))
+        count += 1
+    return count
 
 
 # PDF/A flavour for each --output-type that produces PDF/A. 'auto' (and any
