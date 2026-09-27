@@ -224,7 +224,8 @@ UseDeviceIndependentColor (convert with device independent color)"
 __ocrmypdf_mode()
 {
     local choices="default (error if text is found)
-force   (rasterize all content and run OCR)
+force   (rasterize all content and run OCR, keeping hyperlinks)
+force-ocr-no-links (rasterize all content and run OCR, discarding hyperlinks)
 skip    (skip pages with existing text)
 redo    (re-OCR pages, replacing old invisible text)"
 

@@ -50,7 +50,9 @@ class ProcessingMode(StrEnum):
     This enum controls how OCRmyPDF handles pages that already contain text:
 
     - ``default``: Error if text is found (standard OCR behavior)
-    - ``force``: Rasterize all content and run OCR regardless of existing text
+    - ``force``: Rasterize all content and run OCR regardless of existing text;
+      hyperlinks (Link annotations) are kept
+    - ``force_ocr_no_links``: Like ``force``, but also discard hyperlinks
     - ``skip``: Skip OCR on pages that already have text
     - ``redo``: Re-OCR pages, stripping old invisible text layer
     - ``strip``: Remove the invisible OCR text layer in place; do not OCR
@@ -58,6 +60,7 @@ class ProcessingMode(StrEnum):
 
     default = 'default'
     force = 'force'
+    force_ocr_no_links = 'force-ocr-no-links'
     skip = 'skip'
     redo = 'redo'
     # User-facing value is '--mode strip'; the member is named strip_text to
@@ -172,8 +175,13 @@ class OcrOptions(BaseModel):
     # Backward compatibility properties for force_ocr, skip_text, redo_ocr
     @property
     def force_ocr(self) -> bool:
-        """Backward compatibility alias for mode == ProcessingMode.force."""
-        return self.mode == ProcessingMode.force
+        """Backward compatibility alias for a force mode (see is_force_mode)."""
+        return self.is_force_mode
+
+    @property
+    def is_force_mode(self) -> bool:
+        """True if the mode rasterizes all content (force or force-ocr-no-links)."""
+        return self.mode in (ProcessingMode.force, ProcessingMode.force_ocr_no_links)
 
     @property
     def skip_text(self) -> bool:
@@ -368,14 +376,18 @@ class OcrOptions(BaseModel):
 
             if legacy_count == 1:
                 expected_mode = legacy_true[0][1]
-                if mode_is_set and current_mode != expected_mode:
+                compatible_modes = {expected_mode}
+                if expected_mode == ProcessingMode.force:
+                    compatible_modes.add(ProcessingMode.force_ocr_no_links)
+                if mode_is_set and current_mode not in compatible_modes:
                     legacy_flag = f"--{expected_mode.value.replace('_', '-')}-ocr"
                     raise ValueError(
                         f"Conflicting options: --mode {current_mode.value} "
                         f"cannot be used with {legacy_flag} or similar legacy flag."
                     )
                 # Set mode from legacy option
-                data['mode'] = expected_mode
+                if not mode_is_set:
+                    data['mode'] = expected_mode
 
         return data
 
@@ -425,7 +437,7 @@ class OcrOptions(BaseModel):
             [
                 self.deskew,
                 self.clean_final,
-                self.mode == ProcessingMode.force,
+                self.is_force_mode,
                 self.remove_background,
             ]
         )

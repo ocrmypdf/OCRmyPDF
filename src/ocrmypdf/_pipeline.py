@@ -26,6 +26,7 @@ import img2pdf
 import pikepdf
 from PIL import Image, ImageColor, ImageDraw
 
+from ocrmypdf._annots import set_annotation_print_flags
 from ocrmypdf._concurrent import Executor
 from ocrmypdf._exec import unpaper
 from ocrmypdf._jobcontext import PageContext, PdfContext
@@ -297,7 +298,7 @@ def validate_pdfinfo_options(context: PdfContext) -> None:
                 "Chances are it is a pure digital "
                 "document that does not need OCR."
             )
-            if options.mode != ProcessingMode.force:
+            if not options.is_force_mode:
                 log.info(
                     "Use the option --force-ocr (or --mode force) to produce an "
                     "image of the form and all filled form fields. The output PDF "
@@ -397,7 +398,7 @@ def is_ocr_required(page_context: PageContext) -> bool:
                 "page already has text! - aborting (use --force-ocr or --mode force "
                 "to force OCR; see also help for --skip-text, --redo-ocr, and --mode)"
             )
-        elif options.mode == ProcessingMode.force:
+        elif options.is_force_mode:
             log.info("page already has text! - rasterizing text and running OCR anyway")
             ocr_required = True
         elif options.mode == ProcessingMode.redo:
@@ -420,14 +421,14 @@ def is_ocr_required(page_context: PageContext) -> bool:
         # ahead and rasterize. If not forced, then pretend there's no text
         # on the page at all so we don't lose anything.
         # This could be made smarter by explicitly searching for vector art.
-        if options.mode == ProcessingMode.force and options.oversample:
+        if options.is_force_mode and options.oversample:
             # The user really wants to reprocess this file
             log.info(
                 "page has no images - "
                 f"rasterizing at {options.oversample} DPI because "
                 "--force-ocr --oversample (or --mode force --oversample) was specified"
             )
-        elif options.mode == ProcessingMode.force:
+        elif options.is_force_mode:
             # Warn the user they might not want to do this
             log.warning(
                 "page has no images - "
@@ -765,7 +766,7 @@ def create_ocr_image(image: Path, page_context: PageContext) -> Path:
                 )
                 im = downsample_image(im, size)
 
-        if options.mode != ProcessingMode.force:
+        if not options.is_force_mode:
             # Do not mask text areas when forcing OCR, because we need to OCR
             # all text areas
             mask = None  # Exclude both visible and invisible text from OCR
@@ -1083,7 +1084,12 @@ def convert_to_pdfa(input_pdf: Path, input_ps_stub: Path, context: PdfContext) -
         added_tounicode = add_simple_font_tounicode(pdf_file)
         if added_tounicode:
             log.debug('Added /ToUnicode to %d font(s)', added_tounicode)
-        if repair_docinfo_nuls(pdf_file) or added_tounicode:
+        modified = repair_docinfo_nuls(pdf_file) or bool(added_tounicode)
+        # Ghostscript drops annotations without the Print flag, hyperlinks
+        # included, when it converts to PDF/A.
+        if set_annotation_print_flags(pdf_file):
+            modified = True
+        if modified:
             pdf_file.save(fix_docinfo_file)
         else:
             safe_symlink(input_pdf, fix_docinfo_file)

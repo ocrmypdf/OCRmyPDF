@@ -70,7 +70,8 @@ existing text are handled:
 | Mode | Behavior | Legacy equivalent |
 |------|----------|-------------------|
 | `default` | Error if text is found | (no flag) |
-| `force` | Rasterize all content and run OCR | `--force-ocr` |
+| `force` | Rasterize all content and run OCR, keeping hyperlinks | `--force-ocr` |
+| `force-ocr-no-links` | Like `force`, but also discard hyperlinks | |
 | `skip` | Skip pages with existing text | `--skip-text` |
 | `redo` | Re-OCR pages, stripping old OCR layer | `--redo-ocr` |
 
@@ -120,6 +121,12 @@ text, and flattening form fields or interactive objects into their visual
 representation. This is useful for redoing OCR, for fixing OCR text
 with a damaged character map (text is selectable but not searchable),
 and destroying redacted information.
+
+Hyperlinks (link annotations) are kept, so links to web pages and to other
+places in the document still work in the rasterized output; they are clickable
+areas over the page image. Other annotations are flattened into the image.
+Use `--mode force-ocr-no-links` to rasterize in the same way but discard the
+hyperlinks too, for example when the link targets themselves are sensitive.
 
 ### Tagged PDFs and structural markup
 

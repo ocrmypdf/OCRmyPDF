@@ -361,7 +361,9 @@ Online documentation is located at:
         default=ProcessingMode.default.value,
         help="Processing mode for pages with existing text. "
         "'default' errors if text is found. "
-        "'force' rasterizes all content and runs OCR (same as --force-ocr). "
+        "'force' rasterizes all content and runs OCR, keeping hyperlinks "
+        "(same as --force-ocr). "
+        "'force-ocr-no-links' is like 'force' but also discards hyperlinks. "
         "'skip' skips pages with existing text (same as --skip-text). "
         "'redo' re-OCRs pages, replacing old invisible text (same as --redo-ocr). "
         "'strip' removes the invisible OCR text layer without rasterizing or "
@@ -375,7 +377,7 @@ Online documentation is located at:
         '--force-ocr',
         action='store_true',
         help="Rasterize any text or vector objects on each page, apply OCR, and "
-        "save the rastered output (this rewrites the PDF). "
+        "save the rastered output (this rewrites the PDF). Hyperlinks are kept. "
         "Equivalent to --mode force.",
     )
     ocrsettings.add_argument(

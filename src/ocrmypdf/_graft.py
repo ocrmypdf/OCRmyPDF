@@ -29,6 +29,7 @@ from pikepdf import (
     unparse_content_stream,
 )
 
+from ocrmypdf._annots import link_annotations, transfer_link_annotations
 from ocrmypdf._jobcontext import PdfContext
 from ocrmypdf._options import ProcessingMode
 from ocrmypdf._pipeline import VECTOR_PAGE_DPI
@@ -424,7 +425,8 @@ def discard_structure_tree(pdf: Pdf) -> bool:
     When OCRmyPDF rasterizes pages (force) or strips and rewrites the text layer
     (redo), those MCIDs are destroyed or renumbered, leaving the tree dangling
     and inconsistent with the new content. We cannot rebuild it to match, so we
-    discard it; the page-level ``/StructParents`` keys go too. Returns True if
+    discard it; the page-level ``/StructParents`` keys and the annotations'
+    ``/StructParent`` keys go too. Returns True if
     the catalog was modified.
     """
     modified = False
@@ -439,6 +441,10 @@ def discard_structure_tree(pdf: Pdf) -> bool:
             if Name.StructParents in page.obj:
                 del page.obj[Name.StructParents]
                 modified = True
+            for annot in page.obj.get(Name.Annots, []):
+                if isinstance(annot, Dictionary) and Name.StructParent in annot:
+                    del annot[Name.StructParent]
+                    modified = True
     except (KeyError, TypeError, AttributeError):
         return modified
     if modified:
@@ -511,6 +517,14 @@ class OcrGrafter:
             # We are updating the old page with a rasterized PDF of the new
             # page (without changing objgen, to preserve references)
             log.debug("Emplacement update")
+            base_page = self.pdf_base.pages[pageno]
+            links = []
+            if self.context.options.mode != ProcessingMode.force_ocr_no_links:
+                links = link_annotations(base_page)
+            old_mediabox = cast(
+                tuple[float, float, float, float],
+                tuple(float(v) for v in base_page.mediabox),
+            )
             with Pdf.open(path_image, conversion_mode='explicit') as pdf_image:
                 self.emplacements += 1
                 foreign_image_page = pdf_image.pages[0]
@@ -521,6 +535,15 @@ class OcrGrafter:
                 )
                 del self.pdf_base.pages[-1]
             emplaced_page = True
+            if links:
+                # The image page shows the old page as displayed, then turned
+                # by the orientation correction.
+                transfer_link_annotations(
+                    links,
+                    self.pdf_base.pages[pageno],
+                    old_mediabox=old_mediabox,
+                    rotation=(content_rotation - autorotate_correction) % 360,
+                )
 
         if self.use_sandwich_renderer:
             # Sandwich renderer: graft pre-rendered PDF immediately
@@ -583,7 +606,8 @@ class OcrGrafter:
 
         discard_text_search_index(self.pdf_base)
         discard_page_thumbnails(self.pdf_base)
-        if self.context.options.mode in (ProcessingMode.force, ProcessingMode.redo):
+        options = self.context.options
+        if options.is_force_mode or options.mode == ProcessingMode.redo:
             discard_structure_tree(self.pdf_base)
         self.pdf_base.save(self.output_file)
         self.pdf_base.close()

@@ -16,7 +16,8 @@ complete -c ocrmypdf -l remove-vectors -d "don't send vector objects to OCR"
 
 function __fish_ocrmypdf_mode
     echo -e "default\t"(_ "error if text is found")
-    echo -e "force\t"(_ "rasterize all content and run OCR")
+    echo -e "force\t"(_ "rasterize all content and run OCR, keeping hyperlinks")
+    echo -e "force-ocr-no-links\t"(_ "rasterize all content and run OCR, discarding hyperlinks")
     echo -e "skip\t"(_ "skip pages with existing text")
     echo -e "redo\t"(_ "re-OCR pages, replacing old invisible text")
 end
