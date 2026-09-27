@@ -65,6 +65,7 @@ from ocrmypdf.pdfa import (
     get_pdf_save_settings as get_pdf_save_settings,  # re-exported
 )
 from ocrmypdf.pdfinfo import Colorspace, Encoding, FloatRect, Ink, PageInfo, PdfInfo
+from ocrmypdf.pdfinfo.info import PageResolutionProfile
 from ocrmypdf.pluginspec import GhostscriptRasterDevice, OrientationConfidence
 
 try:
@@ -536,11 +537,28 @@ def get_orientation_correction(preview: Path, page_context: PageContext) -> int:
     return 0
 
 
+def _use_weighted_dpi(dpi_profile: PageResolutionProfile) -> bool:
+    """Decide whether a small high resolution region should not set the page DPI.
+
+    Rendering the whole page at the resolution of a small high-detail patch can
+    produce enormous page images, so we fall back to the area-weighted DPI.
+    That reasoning does not apply when the maximum-DPI images span essentially
+    the whole page (e.g. a full-page text mask over a low resolution
+    background): then the maximum DPI is the page's native resolution, and
+    rendering at it costs little more than the image already contains. The 0.9
+    coverage threshold allows for scans cropped slightly smaller than the page.
+    """
+    return (
+        dpi_profile.average_to_max_dpi_ratio < 0.8
+        and dpi_profile.max_dpi_page_coverage < 0.9
+    )
+
+
 def calculate_image_dpi(page_context: PageContext) -> Resolution:
     """Calculate the DPI for the page image."""
     pageinfo = page_context.pageinfo
     dpi_profile = pageinfo.page_dpi_profile()
-    if dpi_profile and dpi_profile.average_to_max_dpi_ratio < 0.8:
+    if dpi_profile and _use_weighted_dpi(dpi_profile):
         image_dpi = Resolution(dpi_profile.weighted_dpi, dpi_profile.weighted_dpi)
     else:
         image_dpi = pageinfo.dpi
@@ -555,7 +573,7 @@ def calculate_raster_dpi(page_context: PageContext):
     dpi_profile = page_context.pageinfo.page_dpi_profile()
     canvas_dpi = get_canvas_square_dpi(page_context, image_dpi)
     page_dpi = get_page_square_dpi(page_context, image_dpi)
-    if dpi_profile and dpi_profile.average_to_max_dpi_ratio < 0.8:
+    if dpi_profile and _use_weighted_dpi(dpi_profile):
         log.warning(
             "Weighted average image DPI is %0.1f, max DPI is %0.1f. "
             "The discrepancy may indicate a high detail region on this page, "

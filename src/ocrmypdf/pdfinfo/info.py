@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import logging
+import math
 import statistics
 from collections.abc import Callable, Container, Iterable, Iterator
 from contextlib import nullcontext
@@ -84,6 +85,13 @@ class PageResolutionProfile(NamedTuple):
     """The maximum-DPI area of the page divided by the total drawn area.
 
     This indicates the prevalence of high-resolution content on the page.
+    """
+
+    max_dpi_page_coverage: float = 0.0
+    """The printed area of all maximum-DPI images divided by the page area.
+
+    Capped at 1.0. A value near 1.0 means the highest resolution content spans
+    the whole page, rather than being a small high-detail region.
     """
 
 
@@ -348,11 +356,22 @@ class PageInfo:
 
         arg_max_dpi = image_dpis.index(max_dpi)
         max_area_ratio = image_areas[arg_max_dpi] / total_drawn_area
+
+        page_area = float(self.width_inches * self.height_inches)
+        max_dpi_area = sum(
+            area
+            for dpi, area in zip(image_dpis, image_areas, strict=True)
+            if math.isclose(dpi, max_dpi, rel_tol=0.01)
+        )
+        max_dpi_page_coverage = (
+            min(1.0, max_dpi_area / page_area) if page_area > 0 else 0.0
+        )
         return PageResolutionProfile(
             weighted_dpi,
             max_dpi,
             dpi_average_max_ratio,
             max_area_ratio,
+            max_dpi_page_coverage,
         )
 
     def __repr__(self):

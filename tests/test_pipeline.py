@@ -73,6 +73,48 @@ def test_dpi_needed(image, text, vector, result, rgb_image, outdir):
     assert _pipeline.get_page_square_dpi(ctx) == result
 
 
+def _mixed_dpi_page_context(path, patches):
+    """Build a 2x2 inch page from (dpi, x, y, size) image patches, in inches."""
+    c = Canvas(str(path), pagesize=(2 * inch, 2 * inch))
+    for dpi, x, y, size in patches:
+        pixels = round(dpi * size)
+        im = ImageReader(Image.new('L', (pixels, pixels), 128))
+        c.drawImage(im, x * inch, y * inch, width=size * inch, height=size * inch)
+    c.showPage()
+    c.save()
+    ctx = Mock()
+    ctx.options.oversample = 0
+    ctx.pageinfo = pdfinfo.PdfInfo(path)[0]
+    return ctx
+
+
+def test_image_dpi_full_page_high_res_layer(outdir, caplog):
+    # A low resolution background under a high resolution layer that also
+    # covers the whole page (e.g. an MRC scan's text layer) must be rendered
+    # at the high resolution.
+    ctx = _mixed_dpi_page_context(
+        outdir / 'layers.pdf', [(150, 0, 0, 2), (300, 0, 0, 2)]
+    )
+    assert _pipeline.calculate_image_dpi(ctx) == Resolution(300, 300)
+    with caplog.at_level(logging.WARNING):
+        canvas_dpi, _ = _pipeline.calculate_raster_dpi(ctx)
+    assert canvas_dpi == Resolution(300, 300)
+    assert 'Weighted average image DPI' not in caplog.text
+
+
+def test_image_dpi_small_high_res_patch(outdir, caplog):
+    # A small high resolution patch should not force the whole page to be
+    # rendered at its resolution.
+    ctx = _mixed_dpi_page_context(
+        outdir / 'patch.pdf', [(150, 0, 0, 2), (600, 0.5, 0.5, 0.2)]
+    )
+    image_dpi = _pipeline.calculate_image_dpi(ctx)
+    assert image_dpi.x < 200
+    with caplog.at_level(logging.WARNING):
+        _pipeline.calculate_raster_dpi(ctx)
+    assert 'Weighted average image DPI' in caplog.text
+
+
 @pytest.mark.parametrize(
     # Name for nicer -v output
     'name,input,output',
