@@ -43,7 +43,12 @@ def raster(tmp_path):
 def make_context(tmp_path, *, textareas=(), mode=ProcessingMode.skip, filter_ocr_image):
     """Build the smallest context create_ocr_image needs."""
     return SimpleNamespace(
-        options=SimpleNamespace(mode=mode, max_ocr_image_mpixels=None),
+        options=SimpleNamespace(
+            mode=mode,
+            is_force_mode=mode
+            in (ProcessingMode.force, ProcessingMode.force_ocr_no_links),
+            max_ocr_image_mpixels=None,
+        ),
         pageinfo=SimpleNamespace(
             get_textareas=lambda visible, corrupt: iter(textareas)
         ),
