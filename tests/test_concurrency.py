@@ -4,8 +4,10 @@
 from __future__ import annotations
 
 import itertools
+import multiprocessing
 import os
 import platform
+import subprocess
 import sys
 import threading
 
@@ -18,7 +20,7 @@ from ocrmypdf import ExitCode
 from ocrmypdf._concurrent import SerialExecutor
 from ocrmypdf.builtin_plugins.concurrency import get_progressbar_class
 
-from .conftest import run_ocrmypdf_api
+from .conftest import TESTS_ROOT, run_ocrmypdf_api
 
 NOOP_PLUGIN = 'tests/plugins/tesseract_noop.py'
 
@@ -247,3 +249,66 @@ def test_installing_a_different_plugin_set_waits_for_in_flight_jobs(
     assert second_installed.is_set()
     assert (tmp_path / 'first.pdf').exists()
     assert (tmp_path / 'second.pdf').exists()
+
+
+_SPAWN_SCRIPT = """
+import multiprocessing
+import sys
+
+import ocrmypdf
+
+if __name__ == '__main__':
+    multiprocessing.set_start_method(sys.argv[3])
+    ocrmypdf.ocr(
+        sys.argv[1],
+        sys.argv[2],
+        use_threads=False,
+        jobs=2,
+        optimize=0,
+        output_type='pdf',
+        progress_bar=False,
+        plugins=['tests/plugins/tesseract_cache.py'],
+    )
+"""
+
+
+@pytest.mark.parametrize(
+    'start_method',
+    [
+        'spawn',
+        pytest.param(
+            'forkserver',
+            marks=pytest.mark.skipif(
+                'forkserver' not in multiprocessing.get_all_start_methods(),
+                reason="forkserver not available",
+            ),
+        ),
+    ],
+)
+def test_process_workers_see_plugin_options(start_method, resources, tmp_path):
+    """Plugin option namespaces must resolve in non-forked worker processes.
+
+    Workers started by spawn or forkserver do not inherit the parent's plugin
+    option model registry, so ``options.tesseract`` must still work there
+    (#1757).
+    """
+    script = tmp_path / 'spawn_ocr.py'
+    script.write_text(_SPAWN_SCRIPT)
+    outpdf = tmp_path / 'out.pdf'
+    p = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            str(resources / 'trivial.pdf'),
+            str(outpdf),
+            start_method,
+        ],
+        capture_output=True,
+        text=True,
+        cwd=TESTS_ROOT.parent,
+        timeout=180,
+        check=False,
+    )
+    assert p.returncode == 0, p.stderr
+    assert "has no attribute 'tesseract'" not in p.stderr
+    assert outpdf.exists()

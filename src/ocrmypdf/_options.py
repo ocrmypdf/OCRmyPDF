@@ -5,10 +5,12 @@
 
 from __future__ import annotations
 
+import importlib
 import json
 import logging
 import os
 import shlex
+import sys
 import unicodedata
 from collections.abc import Sequence
 from enum import StrEnum
@@ -150,6 +152,30 @@ def _pages_from_ranges(ranges: str, total_pages: int | None = None) -> set[int]:
 
     log.debug("OCRing only these pages: %s", pages)
     return set(pages)
+
+
+def _register_plugin_models_by_path(plugin_models: dict[str, str]) -> None:
+    """Register plugin option models given as ``{namespace: 'module:qualname'}``.
+
+    Namespaces that are already registered are left alone. Models that cannot
+    be imported are skipped; accessing their namespace will then fail with the
+    usual error.
+    """
+    for namespace, path in plugin_models.items():
+        if namespace in _plugin_option_models:
+            continue
+        module_name, _, qualname = path.partition(':')
+        try:
+            module = sys.modules.get(module_name) or importlib.import_module(
+                module_name
+            )
+            obj: Any = module
+            for part in qualname.split('.'):
+                obj = getattr(obj, part)
+        except (ImportError, AttributeError) as e:
+            log.debug("Could not restore plugin option model %s: %s", path, e)
+            continue
+        _plugin_option_models[namespace] = obj
 
 
 class OcrOptions(BaseModel):
@@ -505,6 +531,16 @@ class OcrOptions(BaseModel):
             if filtered_extra:
                 serializable_data['_extra_attrs'] = _serialize_value(filtered_extra)
 
+        # Plugin option models are recorded by import path so that a worker
+        # process, which does not inherit the parent's registry, can resolve
+        # plugin namespaces such as options.tesseract.
+        plugin_models = {
+            namespace: f'{model.__module__}:{model.__qualname__}'
+            for namespace, model in _plugin_option_models.items()
+        }
+        if plugin_models:
+            serializable_data['_plugin_models'] = plugin_models
+
         return json.dumps(serializable_data)
 
     @classmethod
@@ -533,6 +569,10 @@ class OcrOptions(BaseModel):
         deserialized_data = {}
         extra_attrs = {}
 
+        plugin_models = data.pop('_plugin_models', None)
+        if plugin_models:
+            _register_plugin_models_by_path(plugin_models)
+
         for key, value in data.items():
             if key == '_extra_attrs':
                 extra_attrs = _deserialize_value(value)
@@ -560,6 +600,22 @@ class OcrOptions(BaseModel):
         """
         global _plugin_option_models
         _plugin_option_models.update(models)
+
+    def __getstate__(self) -> dict[Any, Any]:
+        state = super().__getstate__()
+        # Model classes pickle by reference. Carrying them lets processes that
+        # were not forked from the parent (spawn, forkserver) resolve plugin
+        # namespaces after unpickling.
+        state['_ocrmypdf_plugin_models'] = dict(_plugin_option_models)
+        return state
+
+    def __setstate__(self, state: dict[Any, Any]) -> None:
+        state = dict(state)
+        plugin_models = state.pop('_ocrmypdf_plugin_models', None)
+        if plugin_models:
+            for namespace, model in plugin_models.items():
+                _plugin_option_models.setdefault(namespace, model)
+        super().__setstate__(state)
 
     def _get_plugin_options(self, namespace: str) -> Any:
         """Get or create a plugin options instance for the given namespace.
