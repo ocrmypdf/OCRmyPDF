@@ -129,6 +129,76 @@ def _gs_error_reported(stream) -> bool:
     return bool(match)
 
 
+# Ghostscript 10 reports the font file it substitutes for a missing font;
+# Ghostscript 9 reports the name of the substitute
+_RE_GS10_FONT_LOADED = re.compile(
+    r'^Loading font (?P<requested>.+?) \(or substitute\) from (?P<substitute>.+)$',
+    re.MULTILINE,
+)
+_RE_GS9_FONT_SUBSTITUTED = re.compile(
+    r'^Substituting font (?P<substitute>\S+) for (?P<requested>.+)\.$',
+    re.MULTILINE,
+)
+_RE_BOLD = re.compile(r'bold|black|heavy', re.IGNORECASE)
+_RE_ITALIC = re.compile(r'italic|oblique', re.IGNORECASE)
+# Names such as n019004l, used by old URW font files, say nothing about style
+_RE_URW_FILE_NAME = re.compile(r'^[a-z]\d{6}l$')
+
+
+def find_style_lost_substitutions(stderr: str) -> list[tuple[str, str, str]]:
+    """Find substitute fonts that lack the bold or italic style of the original.
+
+    PDF/A requires embedded fonts, so Ghostscript substitutes one of its own
+    fonts for each font the input does not embed. The substitute should have
+    the style the font's name asks for, such as ``Verdana,Bold``, but some
+    Ghostscript versions pick a regular face for font families their Fontmap
+    does not know, and the output silently loses the styling.
+
+    Args:
+        stderr: Ghostscript's output.
+
+    Returns:
+        (requested font, substitute font, lost style) for each substitution
+        that lost bold, italic or both, in order of appearance.
+    """
+    matches = sorted(
+        [
+            *_RE_GS10_FONT_LOADED.finditer(stderr),
+            *_RE_GS9_FONT_SUBSTITUTED.finditer(stderr),
+        ],
+        key=lambda m: m.start(),
+    )
+    found = []
+    for match in matches:
+        requested = match['requested'].strip()
+        substitute = Path(match['substitute'].strip()).stem
+        if _RE_URW_FILE_NAME.match(substitute):
+            continue
+        lost = []
+        if _RE_BOLD.search(requested) and not _RE_BOLD.search(substitute):
+            lost.append('bold')
+        if _RE_ITALIC.search(requested) and not _RE_ITALIC.search(substitute):
+            lost.append('italic')
+        if lost:
+            found.append((requested, substitute, ' and '.join(lost)))
+    return found
+
+
+def _warn_style_lost_substitutions(stderr: str) -> None:
+    lost = find_style_lost_substitutions(stderr)
+    if not lost:
+        return
+    details = ', '.join(
+        f"{requested} (replaced by {substitute}, {style} lost)"
+        for requested, substitute, style in lost
+    )
+    log.warning(
+        f"Ghostscript substituted fonts without the style of the original, so "
+        f"the output loses that styling: {details}. Use `--output-type pdf` to "
+        "keep the original fonts, or embed the fonts in the input file."
+    )
+
+
 def _gs_devicen_reported(stream) -> bool:
     """Did Ghostscript warn about a DeviceN with inappropriate alternate?
 
@@ -482,3 +552,4 @@ def generate_pdfa(
             # liable to render blank in some viewers, so raise regardless of the
             # strategy and tailor the guidance to what was attempted.
             raise ColorConversionNeededError(color_conversion_strategy)
+        _warn_style_lost_substitutions(stderr)

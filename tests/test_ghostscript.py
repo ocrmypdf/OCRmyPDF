@@ -487,6 +487,101 @@ def test_no_devicen_warning_does_not_raise(outdir):
         )
 
 
+# Ghostscript 10.08 output for non-embedded TrueType fonts in a family its
+# Fontmap does not know, substituting from its own fonts
+_GS10_FONT_STDERR = """\
+Loading font Arial (or substitute) from /usr/share/ghostscript/Resource/Font/NimbusSans-Regular
+Loading font Verdana,Bold (or substitute) from /usr/share/ghostscript/Resource/Font/NimbusSans-Regular
+Loading font Verdana,Italic (or substitute) from /usr/share/ghostscript/Resource/Font/NimbusSans-Italic
+Loading font Verdana,BoldItalic (or substitute) from /usr/share/ghostscript/Resource/Font/NimbusSans-Italic
+Loading font Arial-BoldMT (or substitute) from /usr/share/ghostscript/Resource/Font/NimbusSans-Bold
+"""
+
+# Ghostscript 9.55 output for the same fonts, which it substitutes correctly
+_GS9_FONT_STDERR = """\
+Substituting font Helvetica-Bold for Verdana,Bold.
+Loading NimbusSans-Bold font from /usr/share/ghostscript/9.55.0/Resource/Font/NimbusSans-Bold... 5233892 3786660 2547976 1163976 4 done.
+Substituting font Helvetica-Oblique for Verdana,Italic.
+Loading NimbusSans-Italic font from /usr/share/ghostscript/9.55.0/Resource/Font/NimbusSans-Italic... 5340404 3982653 2641920 1241265 4 done.
+Substituting font Helvetica-BoldOblique for Verdana,BoldItalic.
+"""
+
+
+def test_style_lost_substitutions_gs10():
+    assert ghostscript.find_style_lost_substitutions(_GS10_FONT_STDERR) == [
+        ('Verdana,Bold', 'NimbusSans-Regular', 'bold'),
+        ('Verdana,BoldItalic', 'NimbusSans-Italic', 'bold'),
+    ]
+
+
+def test_style_lost_substitutions_gs9():
+    stderr = _GS9_FONT_STDERR + 'Substituting font Helvetica for Tahoma,Bold.\n'
+    assert ghostscript.find_style_lost_substitutions(stderr) == [
+        ('Tahoma,Bold', 'Helvetica', 'bold'),
+    ]
+
+
+def test_style_lost_substitutions_both_styles():
+    stderr = (
+        'Loading font Georgia,BoldItalic (or substitute) from '
+        '/gs/Resource/Font/NimbusRoman-Regular\n'
+    )
+    assert ghostscript.find_style_lost_substitutions(stderr) == [
+        ('Georgia,BoldItalic', 'NimbusRoman-Regular', 'bold and italic'),
+    ]
+
+
+def test_style_lost_substitutions_ignores_unstyled_names():
+    """Font file names that say nothing about style can't be judged."""
+    stderr = (
+        'Loading font Verdana,Bold (or substitute) from /gs/fonts/n019004l.pfb\n'
+        'Loading font Verdana (or substitute) from /gs/Resource/Font/NimbusSans-Bold\n'
+    )
+    assert ghostscript.find_style_lost_substitutions(stderr) == []
+
+
+def test_generate_pdfa_warns_when_substitute_loses_style(outdir, caplog):
+    (outdir / 'input.pdf').write_bytes(b'%PDF-1.5\n%fake\n')
+    with (
+        patch('ocrmypdf._exec.ghostscript.version', return_value=Version('10.08.0')),
+        patch('ocrmypdf._exec.ghostscript.run_polling_stderr') as run_mock,
+    ):
+        run_mock.return_value = subprocess.CompletedProcess(
+            ['gs'], returncode=0, stdout='', stderr=_GS10_FONT_STDERR
+        )
+        ghostscript.generate_pdfa(
+            pdf_pages=[outdir / 'input.pdf'],
+            output_file=outdir / 'out.pdf',
+            compression='auto',
+            color_conversion_strategy='LeaveColorUnchanged',
+        )
+    warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
+    assert len(warnings) == 1
+    message = warnings[0].getMessage()
+    assert 'Verdana,Bold' in message
+    assert 'Verdana,BoldItalic' in message
+    assert 'Verdana,Italic' not in message.replace('Verdana,BoldItalic', '')
+    assert '--output-type pdf' in message
+
+
+def test_generate_pdfa_no_style_warning_for_correct_substitutes(outdir, caplog):
+    (outdir / 'input.pdf').write_bytes(b'%PDF-1.5\n%fake\n')
+    with (
+        patch('ocrmypdf._exec.ghostscript.version', return_value=Version('9.55.0')),
+        patch('ocrmypdf._exec.ghostscript.run_polling_stderr') as run_mock,
+    ):
+        run_mock.return_value = subprocess.CompletedProcess(
+            ['gs'], returncode=0, stdout='', stderr=_GS9_FONT_STDERR
+        )
+        ghostscript.generate_pdfa(
+            pdf_pages=[outdir / 'input.pdf'],
+            output_file=outdir / 'out.pdf',
+            compression='auto',
+            color_conversion_strategy='LeaveColorUnchanged',
+        )
+    assert not [r for r in caplog.records if r.levelno >= logging.WARNING]
+
+
 def test_rasterize_pdf_errors(resources, no_outpdf, caplog):
     with patch('ocrmypdf._exec.ghostscript.run') as mock:
         # ghostscript can produce empty files with return code 0

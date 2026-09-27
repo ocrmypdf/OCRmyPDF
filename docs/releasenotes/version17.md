@@ -76,6 +76,10 @@
   substitutes are also subset. OCRmyPDF now warns when fonts other than the
   standard 14 will be substituted, since that changes the document's
   appearance, and suggests `--output-type pdf`. {issue}`1369`
+- OCRmyPDF now warns when a font Ghostscript substitutes lacks the bold or
+  italic style its name asks for, e.g. when Ghostscript 10 replaces
+  `Verdana,Bold` with a regular-weight font, since the output then silently
+  loses that styling.
 
 **Fixes**
 
