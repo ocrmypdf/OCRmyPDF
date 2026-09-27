@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import logging
 import warnings
+import zlib
 from unittest.mock import Mock
 
 import pikepdf
@@ -266,3 +267,79 @@ def test_triage_pdf_silent_without_image_dpi(resources, tmp_path, caplog):
     _pipeline.triage('trivial.pdf', resources / 'trivial.pdf', output_file, options)
 
     assert '--image-dpi' not in caplog.text
+
+
+def _predictor_image_pdf(path, filter_as_array):
+    """A PDF whose image is Flate-compressed with a TIFF predictor."""
+    width, height = 64, 64
+    data = zlib.compress(bytes(range(256)) * (width * height * 3 // 256))
+    filter_ = pikepdf.Name.FlateDecode
+    decodeparms = pikepdf.Dictionary(Predictor=2, Colors=3, Columns=width)
+    if filter_as_array:
+        filter_ = pikepdf.Array([filter_])
+        decodeparms = pikepdf.Array([decodeparms])
+    pdf = pikepdf.new()
+    image = pikepdf.Stream(pdf, data)
+    image.stream_dict = pikepdf.Dictionary(
+        Type=pikepdf.Name.XObject,
+        Subtype=pikepdf.Name.Image,
+        Width=width,
+        Height=height,
+        ColorSpace=pikepdf.Name.DeviceRGB,
+        BitsPerComponent=8,
+        Filter=filter_,
+        DecodeParms=decodeparms,
+    )
+    pdf.add_blank_page(page_size=(width, height))
+    pdf.pages[0].Resources = pikepdf.Dictionary(XObject=pikepdf.Dictionary(Im0=image))
+    pdf.pages[0].Contents = pdf.make_stream(b'q 64 0 0 64 0 0 cm /Im0 Do Q')
+    pdf.save(path, compress_streams=False)
+    return data
+
+
+@pytest.mark.parametrize('filter_as_array', [True, False])
+def test_triage_preserves_flate_predictor(tmp_path, filter_as_array):
+    """Triage must not let qpdf strip a Flate predictor (#1620)."""
+    input_file = tmp_path / 'predictor.pdf'
+    output_file = tmp_path / 'triaged.pdf'
+    data = _predictor_image_pdf(input_file, filter_as_array=filter_as_array)
+    options = Mock()
+    options.image_dpi = None
+
+    _pipeline.triage('predictor.pdf', input_file, output_file, options)
+
+    with pikepdf.open(output_file) as pdf:
+        image = pdf.pages[0].Resources.XObject.Im0
+        assert image.Filter == pikepdf.Name.FlateDecode
+        assert image.DecodeParms.Predictor == 2
+        assert image.read_raw_bytes() == data
+
+
+def test_unwrap_single_filter_arrays():
+    pdf = pikepdf.new()
+    single = pdf.make_stream(b'x', Filter=pikepdf.Array([pikepdf.Name.FlateDecode]))
+    single_dp = pdf.make_stream(
+        b'x',
+        Filter=pikepdf.Array([pikepdf.Name.FlateDecode]),
+        DecodeParms=pikepdf.Array([pikepdf.Dictionary(Predictor=12, Columns=4)]),
+    )
+    null_dp = pdf.make_stream(
+        b'x',
+        Filter=pikepdf.Array([pikepdf.Name.FlateDecode]),
+        DecodeParms=pikepdf.Array([None]),
+    )
+    chain = pdf.make_stream(
+        b'x',
+        Filter=pikepdf.Array([pikepdf.Name.FlateDecode, pikepdf.Name.DCTDecode]),
+    )
+
+    _pipeline.unwrap_single_filter_arrays(pdf)
+
+    assert single.Filter == pikepdf.Name.FlateDecode
+    assert pikepdf.Name.DecodeParms not in single
+    assert single_dp.Filter == pikepdf.Name.FlateDecode
+    assert single_dp.DecodeParms.Predictor == 12
+    assert null_dp.Filter == pikepdf.Name.FlateDecode
+    assert pikepdf.Name.DecodeParms not in null_dp
+    assert isinstance(chain.Filter, pikepdf.Array)
+    assert len(chain.Filter) == 2

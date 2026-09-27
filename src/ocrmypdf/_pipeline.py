@@ -180,6 +180,32 @@ def _pdf_guess_version(input_file: Path, search_window=1024) -> str:
     return ''
 
 
+def unwrap_single_filter_arrays(pdf: pikepdf.Pdf) -> None:
+    """Rewrite ``/Filter [/X]`` as the equivalent ``/Filter /X``.
+
+    When saving with ``compress_streams=True``, qpdf leaves streams already
+    compressed with /FlateDecode untouched, but only recognizes the filter
+    when it is a name. As a one-element array, qpdf decodes and recompresses
+    the stream, discarding any predictor, which can inflate images by 30% or
+    more (#1620).
+    """
+    for obj in pdf.objects:
+        if not isinstance(obj, pikepdf.Stream):
+            continue
+        filter_ = obj.get(pikepdf.Name.Filter)
+        if not isinstance(filter_, pikepdf.Array) or len(filter_) != 1:
+            continue
+        decodeparms = obj.get(pikepdf.Name.DecodeParms)
+        if isinstance(decodeparms, pikepdf.Array):
+            if len(decodeparms) != 1:
+                continue
+            if isinstance(decodeparms[0], pikepdf.Dictionary):
+                obj.DecodeParms = decodeparms[0]
+            else:
+                del obj.DecodeParms
+        obj.Filter = filter_[0]
+
+
 def triage(
     original_filename: str, input_file: Path, output_file: Path, options: OcrOptions
 ) -> Path:
@@ -199,6 +225,7 @@ def triage(
                         if (repairs := repair_page_boxes(page))
                     }
                     log_box_repairs(repairs_by_page)
+                    unwrap_single_filter_arrays(pdf)
                     pdf.save(output_file)
             except pikepdf.PdfError as e:
                 raise InputFileError() from e
