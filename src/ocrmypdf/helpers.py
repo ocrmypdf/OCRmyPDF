@@ -30,6 +30,8 @@ from typing import (
 import img2pdf
 import pikepdf
 
+from ocrmypdf._stream_check import check_streams
+
 if TYPE_CHECKING:
     from _typeshed import StrOrBytesPath
 
@@ -256,15 +258,26 @@ def is_file_writable(test_file: StrOrBytesPath) -> bool:
         return False
 
 
+class _DiscardingParser(pikepdf.StreamParser):
+    """Parse a content stream only to find syntax errors."""
+
+    def handle_object(self, *_args):
+        pass
+
+    def handle_eof(self):
+        pass
+
+
 def check_pdf(input_file: Path, progress: Callable[[int], None] | None = None) -> bool:
     """Check if a PDF complies with the PDF specification.
 
-    Checks for proper formatting and proper linearization. Uses pikepdf (which in
-    turn, uses QPDF) to perform the checks.
+    Checks that every stream can be decoded, that page content streams parse,
+    and that linearization, if present, is correct. Uses pikepdf (which in
+    turn, uses QPDF) and Pillow to perform the checks.
 
     Args:
         input_file: The PDF to check.
-        progress: Called with the percentage of streams decoded so far.
+        progress: Called with the percentage of objects checked so far.
     """
     try:
         pdf = pikepdf.open(input_file, conversion_mode='explicit')
@@ -275,7 +288,11 @@ def check_pdf(input_file: Path, progress: Callable[[int], None] | None = None) -
         with pdf:
             with warnings.catch_warnings():
                 warnings.filterwarnings('ignore', message=r'pikepdf.*JBIG2.*')
-                messages = pdf.check_pdf_syntax(progress)
+                messages = check_streams(pdf, progress)
+                parser = _DiscardingParser()
+                for page in pdf.pages:
+                    page.parse_contents(parser)
+            messages.extend(f"WARNING: {w}" for w in pdf.get_warnings())
             success = True
             for msg in messages:
                 if 'error' in msg.lower():
