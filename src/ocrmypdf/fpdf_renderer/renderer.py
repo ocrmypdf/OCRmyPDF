@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 import unicodedata
 from dataclasses import dataclass
-from math import atan, cos, degrees, radians, sin, sqrt
+from math import atan, copysign, cos, degrees, radians, sin, sqrt
 from pathlib import Path
 from typing import cast
 
@@ -135,6 +135,7 @@ class WordRenderData:
     word_tz: float
     is_rtl: bool
     shaped: bool
+    width: float = 0.0  # word length along the baseline, in points
 
 
 @dataclass
@@ -409,6 +410,13 @@ class Fpdf2PdfRenderer:
         # which indicates the line is rotated, not merely skewed.
         if textangle == 0.0 and abs(slope) > 1.0:
             textangle = degrees(atan(slope))
+            # Tesseract's slopes for rotated lines are noisy: take a line
+            # within a couple of degrees of vertical as exactly vertical. A
+            # spurious tilt makes the baseline drift across a long column,
+            # and text extractors then split words where it drifts.
+            if abs(textangle) > 88.0:
+                textangle = copysign(90.0, textangle)
+            textangle = self._orient_steep_line(textangle, line)
             # The original baseline slope and intercept are not meaningful
             # after extracting rotation; recalculate intercept from font
             # metrics below.
@@ -428,9 +436,17 @@ class Fpdf2PdfRenderer:
         # Get the line dimensions in the un-rotated coordinate system
         # Transform line bbox corners to get the un-rotated dimensions
         inv_line_matrix = line_size_aabb_matrix.inverse()
-        # Transform bottom-right corner to get line dimensions in rotated space
-        _, _, line_size_width, line_size_height = transform_box(
-            inv_line_matrix, line_left_pt, line_top_pt, line_right_pt, line_bottom_pt
+        # The un-rotated line box starts at whichever corner of the page bbox
+        # the rotation brings to its top-left; that is the page bbox's
+        # top-left corner only when the line is not rotated.
+        line_size_left, line_size_top, line_size_width, line_size_height = (
+            transform_box(
+                inv_line_matrix,
+                line_left_pt,
+                line_top_pt,
+                line_right_pt,
+                line_bottom_pt,
+            )
         )
 
         # Get baseline intercept
@@ -452,12 +468,12 @@ class Fpdf2PdfRenderer:
 
         # Build baseline_matrix: transforms from page coords to baseline coords
         # 1. Start with line_size_aabb_matrix (translates to line corner, rotates)
-        # 2. Translate down to bottom of un-rotated line (line_size_height)
+        # 2. Move to the bottom-left of the un-rotated line box
         # 3. Apply baseline intercept offset
         # 4. Rotate by baseline slope
         baseline_matrix = (
             line_size_aabb_matrix.translated(
-                0, line_size_height
+                line_size_left, line_size_top + line_size_height
             )  # Move to bottom of line
             .translated(0, intercept_pt)  # Apply baseline intercept
             .rotated(slope_angle_deg)  # Rotate by baseline slope
@@ -488,6 +504,9 @@ class Fpdf2PdfRenderer:
         # Get inverse of baseline_matrix for transforming word bboxes
         inv_baseline_matrix = baseline_matrix.inverse()
 
+        textangle_rad = radians(textangle)
+        line_is_vertical = abs(sin(textangle_rad)) > abs(cos(textangle_rad))
+
         # Collect words to render
         words: list[OcrElement | None] = [
             w for w in line.children if w.ocr_class == OcrClass.WORD and w.text
@@ -517,7 +536,14 @@ class Fpdf2PdfRenderer:
             word_top_pt = self.coord_transform.px_to_pt(word.bbox.top)
             word_right_pt = self.coord_transform.px_to_pt(word.bbox.right)
             word_bottom_pt = self.coord_transform.px_to_pt(word.bbox.bottom)
-            word_width_pt = word_right_pt - word_left_pt
+            # Measure the word along the page axis closest to the baseline.
+            # For vertical lines the page-x extent is the column thickness,
+            # and fitting the word to it would squash the glyphs, leaving
+            # gaps that text extractors report as spaces.
+            if line_is_vertical:
+                word_width_pt = word_bottom_pt - word_top_pt
+            else:
+                word_width_pt = word_right_pt - word_left_pt
 
             # Debug rendering: draw word bbox (in page coordinates)
             if self.debug_options.render_word_bbox:
@@ -581,6 +607,7 @@ class Fpdf2PdfRenderer:
                     word_tz=word_tz,
                     is_rtl=word_is_rtl,
                     shaped=word_shaped,
+                    width=word_width_pt,
                 )
             )
 
@@ -600,6 +627,53 @@ class Fpdf2PdfRenderer:
             font_size,
             total_rotation_deg,
         )
+
+    def _orient_steep_line(self, textangle: float, line: OcrElement) -> float:
+        """Choose which way along a steep baseline the line's text reads.
+
+        When Tesseract encodes a rotated or vertical line as a steep baseline
+        slope, the slope only fixes the axis of the line: its sign is
+        unreliable, so the angle derived from it may point backwards. Text
+        rendered backwards puts each word's glyphs in the opposite order to
+        the words themselves, scrambling the characters when extracted.
+
+        Words are listed in reading order, so orient the line to make that
+        order advance along the baseline. A line with a single word gives no
+        such evidence: vertical CJK text reads top to bottom, and anything
+        else keeps the angle from the slope.
+
+        Args:
+            textangle: Counter-clockwise rotation derived from the slope
+            line: The line element
+
+        Returns:
+            The rotation, possibly turned by 180 degrees.
+        """
+        theta = radians(textangle)
+        # Baseline direction in page coordinates (y down)
+        ux, uy = cos(theta), -sin(theta)
+        words = [
+            w
+            for w in line.children
+            if w.ocr_class == OcrClass.WORD and w.text and w.bbox is not None
+        ]
+        progress = 0.0
+        if len(words) >= 2:
+            first, last = words[0].bbox, words[-1].bbox
+            assert first is not None and last is not None
+            dx = (last.left + last.right - first.left - first.right) / 2
+            dy = (last.top + last.bottom - first.top - first.bottom) / 2
+            progress = dx * ux + dy * uy
+            if _is_rtl_text(''.join(w.text or '' for w in words)):
+                # Right-to-left words advance against the baseline direction
+                progress = -progress
+        elif words and self._is_cjk_only(words[0].text or ''):
+            if abs(uy) > abs(ux):
+                # Vertical CJK: read downward
+                progress = uy
+        if progress < 0:
+            textangle = textangle - 180.0 if textangle > 0 else textangle + 180.0
+        return textangle
 
     def _check_aspect_ratio_plausible(
         self,
@@ -787,18 +861,37 @@ class Fpdf2PdfRenderer:
                     dy_pdf = -(py_curr_f - py_prev_f)
                     ops.append(f'{dx_pdf:.2f} {dy_pdf:.2f} Td')
 
+            # Use word_tz (fits word into its hOCR bbox) — Td handles
+            # inter-word gaps, so Tz should not stretch to fill them,
+            # except between CJK words as described below.
+            word_tz = word.word_tz
+
             # Determine text to render
             if not is_last:
                 next_word = word_render_data[i + 1]
                 advance = next_word.x_baseline - word.x_baseline
 
+                both_cjk = self._is_cjk_only(word.text) and self._is_cjk_only(
+                    next_word.text
+                )
                 # Add trailing space for text extraction unless both are CJK
-                if advance > 0 and not (
-                    self._is_cjk_only(word.text) and self._is_cjk_only(next_word.text)
-                ):
+                if advance > 0 and not both_cjk:
                     text_to_render = word.text + ' '
                 else:
                     text_to_render = word.text
+                    # CJK words carry no separator, so stretch the word to
+                    # meet the next one; otherwise extractors infer a space
+                    # from the gap. Word boxes hug the ink, so punctuation
+                    # leaves up to about an em of gap. Wider gaps are left
+                    # alone, since they probably separate unrelated text.
+                    gap = advance - word.width
+                    if (
+                        both_cjk
+                        and word.width > 0
+                        and advance > 0
+                        and gap <= 2 * font_size
+                    ):
+                        word_tz = word.word_tz * advance / word.width
             else:
                 # Line-final words also need a trailing space, or extractors
                 # that skip positional analysis (pdfminer defaults, pypdf)
@@ -811,9 +904,7 @@ class Fpdf2PdfRenderer:
                 else:
                     text_to_render = word.text
 
-            # Use word_tz (fits word into its hOCR bbox) — Td handles
-            # inter-word gaps, so Tz should not stretch to fill them.
-            ops.append(f'{word.word_tz:.2f} Tz')
+            ops.append(f'{word_tz:.2f} Tz')
             ops.append(
                 self._encode_shaped_text(
                     pdf, text_to_render, word.is_rtl, shaped=word.shaped

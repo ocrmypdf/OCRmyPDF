@@ -18,7 +18,7 @@ from ocrmypdf.fpdf_renderer import (
     Fpdf2PdfRenderer,
 )
 from ocrmypdf.hocrtransform.hocr_parser import HocrParser
-from ocrmypdf.models.ocr_element import OcrClass
+from ocrmypdf.models.ocr_element import Baseline, BoundingBox, OcrClass, OcrElement
 
 
 @pytest.fixture
@@ -619,3 +619,233 @@ class TestWordSegmentation:
         text_no_newlines = extracted_text.replace("\n", " ")
         # There should be spaces in the extracted text
         assert " " in text_no_newlines
+
+
+def _rotated_line_page(
+    words: list[tuple[str, tuple[int, int, int, int]]], slope: float
+) -> OcrElement:
+    """Build a page with one line whose rotation is encoded as a steep slope.
+
+    Tesseract reports vertical and 90-degree rotated lines this way, without
+    a textangle, and the sign of the slope is unreliable.
+    """
+    word_elements = [
+        OcrElement(
+            ocr_class=OcrClass.WORD,
+            text=text,
+            bbox=BoundingBox(left=box[0], top=box[1], right=box[2], bottom=box[3]),
+        )
+        for text, box in words
+    ]
+    line = OcrElement(
+        ocr_class=OcrClass.LINE,
+        bbox=BoundingBox(
+            left=min(box[0] for _, box in words),
+            top=min(box[1] for _, box in words),
+            right=max(box[2] for _, box in words),
+            bottom=max(box[3] for _, box in words),
+        ),
+        # A steep line has a meaningless intercept, like the ones Tesseract gives
+        baseline=Baseline(slope=slope, intercept=10032 if abs(slope) > 1 else 0),
+        children=word_elements,
+    )
+    return OcrElement(
+        ocr_class=OcrClass.PAGE,
+        bbox=BoundingBox(left=0, top=0, right=612, bottom=792),
+        children=[line],
+    )
+
+
+# Vertical Japanese column, words stacked top to bottom with small gaps
+VERTICAL_CJK_WORDS = [
+    ("その", (300, 100, 330, 160)),
+    ("まま", (300, 165, 330, 225)),
+    ("男", (300, 230, 330, 260)),
+]
+
+
+class TestRotatedLines:
+    """Lines whose rotation Tesseract encodes as a steep baseline slope (#1244)."""
+
+    def _render(self, page, multi_font_manager, tmp_path) -> Path:
+        output_path = tmp_path / "rotated.pdf"
+        Fpdf2PdfRenderer(
+            page=page, dpi=72, multi_font_manager=multi_font_manager
+        ).render(output_path)
+        return output_path
+
+    @pytest.mark.parametrize('slope', [-912.0, 912.0])
+    def test_vertical_cjk_no_spaces_and_in_order(
+        self, slope, multi_font_manager, tmp_path, pdftotext
+    ):
+        page = _rotated_line_page(VERTICAL_CJK_WORDS, slope)
+        output_path = self._render(page, multi_font_manager, tmp_path)
+        text = pdftotext(output_path)
+        assert "そのまま男" in text
+
+    @pytest.mark.parametrize('slope', [-912.0, 912.0])
+    def test_vertical_cjk_no_spaces_pdfium(self, slope, multi_font_manager, tmp_path):
+        pdfium = pytest.importorskip('pypdfium2')
+        page = _rotated_line_page(VERTICAL_CJK_WORDS, slope)
+        output_path = self._render(page, multi_font_manager, tmp_path)
+        pdf = pdfium.PdfDocument(output_path)
+        text = pdf[0].get_textpage().get_text_range()
+        assert text.strip() == "そのまま男"
+
+    @pytest.mark.parametrize('slope', [-211.8, 211.8])
+    def test_long_vertical_line_slight_slope(self, slope, multi_font_manager, tmp_path):
+        """A near-vertical slope must not tilt a long column of text.
+
+        Tesseract's slope for a vertical line deviates from vertical by a
+        fraction of a degree; rendered faithfully, the baseline drifts across
+        the column and poppler's raw mode splits words along the way.
+        """
+        text = "次の瞬間背中いや休全体に衝撃が走る"
+        words = [
+            (char, (300, 100 + 36 * i, 336, 130 + 36 * i))
+            for i, char in enumerate(text)
+        ]
+        page = _rotated_line_page(words, slope)
+        output_path = self._render(page, multi_font_manager, tmp_path)
+        raw = subprocess.check_output(
+            ['pdftotext', '-raw', '-enc', 'UTF-8', str(output_path), '-'],
+            text=True,
+            encoding='utf-8',
+        )
+        assert raw.strip() == text
+
+    @pytest.mark.parametrize('slope', [-912.0, 912.0])
+    def test_vertical_single_word_reads_top_to_bottom(
+        self, slope, multi_font_manager, tmp_path
+    ):
+        pdfium = pytest.importorskip('pypdfium2')
+        page = _rotated_line_page([("男の両足", (300, 100, 330, 220))], slope)
+        output_path = self._render(page, multi_font_manager, tmp_path)
+        pdf = pdfium.PdfDocument(output_path)
+        textpage = pdf[0].get_textpage()
+        assert textpage.get_text_range().strip() == "男の両足"
+        page_height = pdf[0].get_height()
+        # First character is at the top of the column (pdfium y is up)
+        _, _, _, first_top = textpage.get_charbox(0)
+        _, _, _, last_top = textpage.get_charbox(3)
+        assert page_height - first_top < page_height - last_top
+
+    @pytest.mark.parametrize('slope', [-912.0, 912.0])
+    def test_vertical_word_fills_its_box(self, slope, multi_font_manager, tmp_path):
+        """A vertical word's glyphs should span its box along the column.
+
+        The word's advance must be scaled to the box length measured along
+        the baseline, not to the column's thickness.
+        """
+        pdfium = pytest.importorskip('pypdfium2')
+        page = _rotated_line_page(VERTICAL_CJK_WORDS, slope)
+        output_path = self._render(page, multi_font_manager, tmp_path)
+        pdf = pdfium.PdfDocument(output_path)
+        textpage = pdf[0].get_textpage()
+        page_height = pdf[0].get_height()
+        # The first word "その" occupies y=100..160 in page (y-down) coords
+        boxes = [textpage.get_charbox(i) for i in range(2)]
+        top = min(page_height - b[3] for b in boxes)
+        bottom = max(page_height - b[1] for b in boxes)
+        assert bottom - top > 0.85 * 60
+
+    @pytest.mark.parametrize('slope', [-300.0, 300.0])
+    @pytest.mark.parametrize('upward', [True, False], ids=['upward', 'downward'])
+    def test_rotated_latin(self, upward, slope, multi_font_manager, tmp_path):
+        """Latin text rotated 90 degrees, reading up or down the page (#1632).
+
+        Each word's first letter must be at the reading start of that word's
+        box, whichever sign Tesseract gave the slope.
+        """
+        pdfium = pytest.importorskip('pypdfium2')
+        top_box, bottom_box = (300, 280, 330, 380), (300, 400, 330, 500)
+        if upward:
+            words = [("Hello", bottom_box), ("World", top_box)]
+        else:
+            words = [("Hello", top_box), ("World", bottom_box)]
+        page = _rotated_line_page(words, slope)
+        output_path = self._render(page, multi_font_manager, tmp_path)
+        pdf = pdfium.PdfDocument(output_path)
+        textpage = pdf[0].get_textpage()
+        text = textpage.get_text_range()
+        assert text.split() == ["Hello", "World"]
+        page_height = pdf[0].get_height()
+
+        def centre_y(char_index):
+            _, bottom, _, top = textpage.get_charbox(char_index)
+            return page_height - (top + bottom) / 2
+
+        for word, box in words:
+            first = text.index(word)
+            first_y = centre_y(first)
+            last_y = centre_y(first + len(word) - 1)
+            assert box[1] <= first_y <= box[3]
+            assert box[1] <= last_y <= box[3]
+            if upward:
+                assert first_y > last_y
+            else:
+                assert first_y < last_y
+
+        # Glyphs lie across the column, not beside it
+        for i, char in enumerate(text):
+            if char.strip():
+                left, _, right, _ = textpage.get_charbox(i)
+                assert 295 <= (left + right) / 2 <= 335, char
+
+    @pytest.mark.parametrize('slope', [-912.0, 912.0])
+    def test_vertical_cjk_glyphs_within_column(
+        self, slope, multi_font_manager, tmp_path
+    ):
+        pdfium = pytest.importorskip('pypdfium2')
+        page = _rotated_line_page(VERTICAL_CJK_WORDS, slope)
+        output_path = self._render(page, multi_font_manager, tmp_path)
+        textpage = pdfium.PdfDocument(output_path)[0].get_textpage()
+        for i in range(textpage.count_chars()):
+            left, _, right, _ = textpage.get_charbox(i)
+            assert left >= 300 and right <= 330
+
+    def test_horizontal_latin_unchanged(self, multi_font_manager, tmp_path):
+        pdfium = pytest.importorskip('pypdfium2')
+        words = [
+            ("Alpha", (100, 100, 180, 130)),
+            ("Beta", (195, 100, 260, 130)),
+            ("Gamma", (275, 100, 380, 130)),
+        ]
+        page = _rotated_line_page(words, 0.0)
+        output_path = self._render(page, multi_font_manager, tmp_path)
+        textpage = pdfium.PdfDocument(output_path)[0].get_textpage()
+        assert textpage.get_text_range().split() == ["Alpha", "Beta", "Gamma"]
+        # "Alpha" spans its box horizontally
+        left = textpage.get_charbox(0)[0]
+        right = textpage.get_charbox(4)[2]
+        assert left == pytest.approx(100, abs=3)
+        assert right == pytest.approx(180, abs=3)
+
+    def test_horizontal_cjk_small_gap_no_inferred_space(
+        self, multi_font_manager, tmp_path
+    ):
+        """Adjacent CJK words with a small gap should not gain a space."""
+        pdfium = pytest.importorskip('pypdfium2')
+        words = [
+            ("你好", (100, 100, 160, 130)),
+            ("世界", (170, 100, 230, 130)),
+        ]
+        page = _rotated_line_page(words, 0.0)
+        output_path = self._render(page, multi_font_manager, tmp_path)
+        text = pdfium.PdfDocument(output_path)[0].get_textpage().get_text_range()
+        assert text.strip() == "你好世界"
+
+    def test_horizontal_cjk_wide_gap_keeps_separation(
+        self, multi_font_manager, tmp_path
+    ):
+        """CJK words far apart are not stretched to meet each other."""
+        pdfium = pytest.importorskip('pypdfium2')
+        words = [
+            ("你好", (100, 100, 160, 130)),
+            ("世界", (400, 100, 460, 130)),
+        ]
+        page = _rotated_line_page(words, 0.0)
+        output_path = self._render(page, multi_font_manager, tmp_path)
+        textpage = pdfium.PdfDocument(output_path)[0].get_textpage()
+        # "好" ends near the right edge of its own box
+        assert textpage.get_charbox(1)[2] < 170
