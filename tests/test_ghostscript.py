@@ -531,6 +531,17 @@ def test_style_lost_substitutions_both_styles():
     ]
 
 
+def test_style_lost_substitutions_trailing_period():
+    """Ghostscript 9.5x's new interpreter ends the message with a period."""
+    stderr = (
+        'Loading font Verdana,Bold (or substitute) from '
+        '/usr/share/ghostscript/9.55.0/Resource/Font/NimbusSans-Regular.\n'
+    )
+    assert ghostscript.find_style_lost_substitutions(stderr) == [
+        ('Verdana,Bold', 'NimbusSans-Regular', 'bold'),
+    ]
+
+
 def test_style_lost_substitutions_ignores_unstyled_names():
     """Font file names that say nothing about style can't be judged."""
     stderr = (

@@ -171,7 +171,8 @@ def find_style_lost_substitutions(stderr: str) -> list[tuple[str, str, str]]:
     found = []
     for match in matches:
         requested = match['requested'].strip()
-        substitute = Path(match['substitute'].strip()).stem
+        # Ghostscript 9.5x ends the message with a period
+        substitute = Path(match['substitute'].strip().rstrip('.')).stem
         if _RE_URW_FILE_NAME.match(substitute):
             continue
         lost = []
