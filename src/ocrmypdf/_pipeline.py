@@ -339,8 +339,12 @@ def validate_pdfinfo_options(context: PdfContext) -> None:
 
 
 def _vector_page_dpi(pageinfo: PageInfo) -> int:
-    """Get a DPI to use for vector pages, if the page has vector content."""
-    return VECTOR_PAGE_DPI if pageinfo.has_vector or pageinfo.has_text else 0
+    """Get a DPI to use for pages with vector content or visible text.
+
+    Invisible text, such as a prior OCR layer, does not need to be rasterized
+    legibly, so it does not raise the DPI.
+    """
+    return VECTOR_PAGE_DPI if pageinfo.has_vector or pageinfo.has_visible_text else 0
 
 
 def get_page_square_dpi(

@@ -73,6 +73,41 @@ def test_dpi_needed(image, text, vector, result, rgb_image, outdir):
     assert _pipeline.get_page_square_dpi(ctx) == result
 
 
+def test_dpi_invisible_text_layer_uses_image_dpi(outdir):
+    # A scan with an invisible text layer from prior OCR must be rasterized
+    # at the scan's resolution, not upsampled to the vector page resolution.
+    pdf = pikepdf.Pdf.new()
+    page = pdf.add_blank_page(page_size=(2 * 72, 2 * 72))
+    image = pikepdf.Stream(pdf, bytes([128]) * (300 * 300))
+    image.Type = pikepdf.Name.XObject
+    image.Subtype = pikepdf.Name.Image
+    image.Width, image.Height = 300, 300
+    image.ColorSpace = pikepdf.Name.DeviceGray
+    image.BitsPerComponent = 8
+    font = pikepdf.Dictionary(
+        Type=pikepdf.Name.Font,
+        Subtype=pikepdf.Name.Type1,
+        BaseFont=pikepdf.Name.Helvetica,
+    )
+    page.Resources = pikepdf.Dictionary(
+        XObject=pikepdf.Dictionary(Im0=image), Font=pikepdf.Dictionary(F1=font)
+    )
+    page.Contents = pikepdf.Stream(
+        pdf,
+        b'q 144 0 0 144 0 0 cm /Im0 Do Q BT 3 Tr /F1 12 Tf 10 10 Td (Hello) Tj ET',
+    )
+    pdf.save(outdir / 'invisible.pdf')
+
+    ctx = Mock()
+    ctx.options.oversample = 0
+    ctx.options.is_force_mode = True
+    ctx.pageinfo = pdfinfo.PdfInfo(outdir / 'invisible.pdf')[0]
+    assert ctx.pageinfo.has_text
+
+    assert _pipeline.get_page_square_dpi(ctx) == Resolution(150, 150)
+    assert _pipeline.get_canvas_square_dpi(ctx) == Resolution(150, 150)
+
+
 def _mixed_dpi_page_context(path, patches):
     """Build a 2x2 inch page from (dpi, x, y, size) image patches, in inches."""
     c = Canvas(str(path), pagesize=(2 * inch, 2 * inch))

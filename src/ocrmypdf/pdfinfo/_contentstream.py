@@ -11,7 +11,14 @@ from math import hypot, inf, isclose
 from typing import NamedTuple
 from warnings import warn
 
-from pikepdf import Matrix, Name, Object, PdfInlineImage, parse_content_stream
+from pikepdf import (
+    Dictionary,
+    Matrix,
+    Name,
+    Object,
+    PdfInlineImage,
+    parse_content_stream,
+)
 
 from ocrmypdf.helpers import Resolution
 from ocrmypdf.pdfinfo._types import UNIT_SQUARE, Ink
@@ -24,6 +31,8 @@ class XobjectSettings(NamedTuple):
     shorthand: tuple[float, float, float, float, float, float]
     stack_depth: int
     fill_ink: Ink
+    text_render_mode: int = 0
+    glyphless_font: bool = False
 
 
 class InlineSettings(NamedTuple):
@@ -43,6 +52,7 @@ class ContentsInfo(NamedTuple):
     found_vector: bool
     found_text: bool
     name_index: Mapping[str, list[XobjectSettings]]
+    found_visible_text: bool = False
 
 
 class TextboxInfo(NamedTuple):
@@ -59,6 +69,15 @@ class VectorMarker:
 
 class TextMarker:
     """Sentinel indicating text drawing operations were found on a page."""
+
+
+class VisibleTextMarker(TextMarker):
+    """Sentinel indicating text that is drawn visibly was found on a page.
+
+    Text is invisible when drawn with text render mode 3 (neither fill nor
+    stroke) or 7 (clip only), or with a glyphless font such as those used by
+    OCR engines to place an invisible text layer over a scanned image.
+    """
 
 
 def _is_unit_square(shorthand):
@@ -122,6 +141,65 @@ def _operand_floats(operands) -> list[float] | None:
         return None
 
 
+_INVISIBLE_TEXT_RENDER_MODES = frozenset({3, 7})
+
+# Fonts with no visible glyphs, used by OCR engines (including Tesseract and
+# OCRmyPDF itself) to draw an invisible text layer
+_GLYPHLESS_FONT_NAMES = frozenset({'glyphlessfont', 'occulta', 'occulta-regular'})
+
+_SUBSET_PREFIX = re.compile(r'^[A-Z]{6}\+')
+
+
+def _is_glyphless_font(font: Object | None) -> bool:
+    """Check if a font dictionary is a known glyphless font, by its name."""
+    if not isinstance(font, Dictionary):
+        return False
+    basefont = font.get(Name.BaseFont)
+    if not isinstance(basefont, Name):
+        return False
+    # PDF names are byte sequences in no particular encoding, so str() may
+    # raise on non-UTF-8 names; unparse() gives the escaped PDF syntax form.
+    name = basefont.unparse().decode('ascii', 'replace').removeprefix('/')
+    name = _SUBSET_PREFIX.sub('', name, count=1)
+    return name.lower() in _GLYPHLESS_FONT_NAMES
+
+
+def _font_resources(container: Object) -> Dictionary | None:
+    """Get the /Font resource dictionary of a page or Form XObject.
+
+    A page may inherit its resources from its ancestors in the page tree.
+    """
+    node = container
+    for _ in range(64):  # Guard against cycles in the page tree
+        try:
+            resources = node.get(Name.Resources)
+        except (AttributeError, TypeError, ValueError):
+            return None
+        if isinstance(resources, Dictionary):
+            fonts = resources.get(Name.Font)
+            return fonts if isinstance(fonts, Dictionary) else None
+        if node.get(Name.Type) != Name.Page and node.get(Name.Type) != Name.Pages:
+            return None
+        parent = node.get(Name.Parent)
+        if not isinstance(parent, Dictionary):
+            return None
+        node = parent
+    return None
+
+
+def _text_render_mode(operands) -> int | None:
+    """Get the text render mode from the operands of Tr, or None if invalid."""
+    if len(operands) != 1:
+        return None
+    try:
+        mode = float(operands[0])
+    except (TypeError, ValueError):
+        return None
+    if not mode.is_integer() or not 0 <= mode <= 7:
+        return None
+    return int(mode)
+
+
 def _normalize_stack(graphobjs):
     """Convert runs of qQ's in the stack into single graphobjs."""
     for operands, operator in graphobjs:
@@ -134,13 +212,19 @@ def _normalize_stack(graphobjs):
 
 
 def _interpret_contents(
-    contentstream: Object, initial_shorthand=UNIT_SQUARE, initial_fill_ink=Ink.mono
+    contentstream: Object,
+    initial_shorthand=UNIT_SQUARE,
+    initial_fill_ink=Ink.mono,
+    initial_text_render_mode: int = 0,
+    initial_glyphless_font: bool = False,
 ):
     """Interpret the PDF content stream.
 
     The stack represents the state of the PDF graphics stack.  We track the
     current transformation matrix (CTM) and the current fill color (so that
-    image masks, which are painted with the fill color, can be classified);
+    image masks, which are painted with the fill color, can be classified)
+    and enough of the text state to decide whether text is visible (the text
+    render mode, and whether the current font is a known glyphless font);
     a full implementation would need to track many other items.
 
     The CTM is initialized to the mapping from user space to device space.
@@ -166,23 +250,31 @@ def _interpret_contents(
     ctm = Matrix(initial_shorthand)
     fill_ink = initial_fill_ink  # PDF default fill color is black
     fill_space = '/DeviceGray'  # current fill colorspace name (for sc/scn)
+    text_render_mode = initial_text_render_mode
+    glyphless_font = initial_glyphless_font
+    font_resources = _font_resources(contentstream)
+    glyphless_cache: dict[str, bool] = {}
     xobject_settings: list[XobjectSettings] = []
     inline_images: list[InlineSettings] = []
     name_index = defaultdict(lambda: [])
     found_vector = False
     found_text = False
+    found_visible_text = False
     vector_ops = set(['S', 's', 'f', 'F', 'f*', 'B', 'B*', 'b', 'b*'])
     text_showing_ops = set(["TJ", "Tj", '"', "'"])
     image_ops = set(['BI', 'ID', 'EI', 'q', 'Q', 'Do', 'cm'])
     color_ops = set(['g', 'rg', 'k', 'cs', 'sc', 'scn'])
-    operator_whitelist = ' '.join(vector_ops | text_showing_ops | image_ops | color_ops)
+    text_state_ops = set(['Tr', 'Tf'])
+    operator_whitelist = ' '.join(
+        vector_ops | text_showing_ops | image_ops | color_ops | text_state_ops
+    )
 
     for n, graphobj in enumerate(
         _normalize_stack(parse_content_stream(contentstream, operator_whitelist))
     ):
         operands, operator = graphobj
         if operator == 'q':
-            stack.append((ctm, fill_ink, fill_space))
+            stack.append((ctm, fill_ink, fill_space, text_render_mode, glyphless_font))
             if len(stack) > 32:  # See docstring
                 if len(stack) > 128:
                     raise RuntimeError(
@@ -191,7 +283,13 @@ def _interpret_contents(
                 warn("PDF graphics stack overflowed spec limit")
         elif operator == 'Q':
             try:
-                ctm, fill_ink, fill_space = stack.pop()
+                (
+                    ctm,
+                    fill_ink,
+                    fill_space,
+                    text_render_mode,
+                    glyphless_font,
+                ) = stack.pop()
             except IndexError:
                 # Keeping the state the same seems to be the only sensible thing
                 # to do. Just pretend nothing happened, keep calm and carry on.
@@ -246,6 +344,8 @@ def _interpret_contents(
                 shorthand=ctm.shorthand,
                 stack_depth=len(stack),
                 fill_ink=fill_ink,
+                text_render_mode=text_render_mode,
+                glyphless_font=glyphless_font,
             )
             xobject_settings.append(settings)
             name_index[str(image_name)].append(settings)
@@ -260,8 +360,27 @@ def _interpret_contents(
             inline_images.append(inline)
         elif operator in vector_ops:
             found_vector = True
+        elif operator == 'Tr':
+            if (mode := _text_render_mode(operands)) is not None:
+                text_render_mode = mode
+        elif operator == 'Tf':
+            if operands and isinstance(operands[0], Name):
+                font_key = operands[0].unparse().decode('ascii', 'replace')
+                if font_key not in glyphless_cache:
+                    font = (
+                        font_resources.get(operands[0])
+                        if font_resources is not None
+                        else None
+                    )
+                    glyphless_cache[font_key] = _is_glyphless_font(font)
+                glyphless_font = glyphless_cache[font_key]
         elif operator in text_showing_ops:
             found_text = True
+            if (
+                text_render_mode not in _INVISIBLE_TEXT_RENDER_MODES
+                and not glyphless_font
+            ):
+                found_visible_text = True
 
     return ContentsInfo(
         xobject_settings=xobject_settings,
@@ -269,6 +388,7 @@ def _interpret_contents(
         found_vector=found_vector,
         found_text=found_text,
         name_index=name_index,
+        found_visible_text=found_visible_text,
     )
 
 

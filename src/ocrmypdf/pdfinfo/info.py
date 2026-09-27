@@ -23,7 +23,12 @@ from ocrmypdf._concurrent import Executor, SerialExecutor
 from ocrmypdf._pageboxes import coerce_box
 from ocrmypdf.exceptions import EncryptedPdfError
 from ocrmypdf.helpers import Resolution
-from ocrmypdf.pdfinfo._contentstream import TextboxInfo, TextMarker, VectorMarker
+from ocrmypdf.pdfinfo._contentstream import (
+    TextboxInfo,
+    TextMarker,
+    VectorMarker,
+    VisibleTextMarker,
+)
 from ocrmypdf.pdfinfo._image import ImageInfo, _process_content_streams
 from ocrmypdf.pdfinfo._types import FloatRect
 from ocrmypdf.pdfinfo._worker import _pdf_pageinfo_concurrent
@@ -99,6 +104,7 @@ class PageInfo:
     """Information about type of contents on each page in a PDF."""
 
     _has_text: bool | None
+    _has_visible_text: bool | None
     _has_vector: bool | None
     _images: list[ImageInfo] = []
 
@@ -167,6 +173,7 @@ class PageInfo:
         if check_this_page:
             self._has_vector = False
             self._has_text = False
+            self._has_visible_text = False
             self._images = []
             for info in _process_content_streams(
                 pdf=pdf, container=page.obj, shorthand=userunit_shorthand
@@ -175,6 +182,8 @@ class PageInfo:
                     self._has_vector = True
                 elif isinstance(info, TextMarker):
                     self._has_text = True
+                    if isinstance(info, VisibleTextMarker):
+                        self._has_visible_text = True
                 elif isinstance(info, ImageInfo):
                     self._images.append(info)
                 else:
@@ -182,6 +191,7 @@ class PageInfo:
         else:
             self._has_vector = None  # i.e. "no information"
             self._has_text = None
+            self._has_visible_text = None
             self._images = []
 
         self._dpi = None
@@ -202,6 +212,16 @@ class PageInfo:
     def has_text(self) -> bool:
         """Return True if page has text, False if not or unknown."""
         return bool(self._has_text)
+
+    @property
+    def has_visible_text(self) -> bool:
+        """Return True if page has visible text, False if not or unknown.
+
+        Text drawn in an invisible text render mode or with a glyphless font,
+        such as an OCR text layer over a scanned image, is not visible.
+        Such text still counts towards :attr:`has_text`.
+        """
+        return bool(self._has_visible_text)
 
     @property
     def has_corrupt_text(self) -> bool:

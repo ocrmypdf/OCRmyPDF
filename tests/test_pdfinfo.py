@@ -571,3 +571,207 @@ def test_do_without_operand():
     with pytest.warns(UserWarning, match="malformed"):
         info = _interpret_contents(stream)
     assert info.xobject_settings == []
+
+
+def _text_stream(body: bytes, basefont=None, conversion_mode='implicit'):
+    """Build a content stream whose /F1 font has the given BaseFont.
+
+    Returns the owning Pdf too, which must be kept alive while the stream is used.
+    """
+    p = pikepdf.Pdf.new(conversion_mode=conversion_mode)
+    stream = pikepdf.Stream(p, body)
+    if basefont is not None:
+        if isinstance(basefont, str):
+            basefont = pikepdf.Name(basefont)
+        font = pikepdf.Dictionary(
+            Type=pikepdf.Name.Font, Subtype=pikepdf.Name.Type0, BaseFont=basefont
+        )
+        stream.Resources = pikepdf.Dictionary(Font=pikepdf.Dictionary(F1=font))
+    return p, stream
+
+
+@pytest.mark.parametrize('conversion_mode', ['explicit', 'implicit'])
+@pytest.mark.parametrize(
+    'body, visible',
+    [
+        (b'BT /F1 12 Tf (Hi) Tj ET', True),
+        (b'BT 0 Tr /F1 12 Tf (Hi) Tj ET', True),
+        (b'BT 3 Tr /F1 12 Tf (Hi) Tj ET', False),
+        (b'BT 7 Tr /F1 12 Tf (Hi) Tj ET', False),
+        (b'BT 3 Tr /F1 12 Tf [(Hi)] TJ (x) \' 1 2 (y) " ET', False),
+        # Text render mode persists across BT/ET
+        (b'3 Tr BT /F1 12 Tf (Hi) Tj ET BT (Hi) Tj ET', False),
+        # ...but is restored by Q
+        (b'q 3 Tr BT /F1 12 Tf (Hi) Tj ET Q BT /F1 12 Tf (Hi) Tj ET', True),
+        (b'q 3 Tr Q BT /F1 12 Tf (Hi) Tj ET', True),
+        # Visible text after invisible text in the same block
+        (b'BT 3 Tr /F1 12 Tf (Hi) Tj 0 Tr (Hi) Tj ET', True),
+    ],
+)
+def test_text_render_mode_visibility(body, visible, conversion_mode):
+    _pdf, stream = _text_stream(body, '/Helvetica', conversion_mode=conversion_mode)
+    info = _interpret_contents(stream)
+    assert info.found_text
+    assert info.found_visible_text is visible
+
+
+@pytest.mark.parametrize(
+    'basefont, visible',
+    [
+        ('/GlyphLessFont', False),
+        ('/PGGPHE+GlyphLessFont', False),
+        ('/glyphlessfont', False),
+        ('/Occulta', False),
+        ('/MPDFAA+Occulta-Regular', False),
+        ('/Helvetica', True),
+        ('/MPDFAA+NotoSans', True),
+        ('/pggphe+GlyphLessFont', True),  # not a subset prefix
+        ('/GlyphLessFontX', True),
+    ],
+)
+def test_glyphless_font_visibility(basefont, visible):
+    _pdf, stream = _text_stream(b'BT /F1 12 Tf (Hi) Tj ET', basefont)
+    info = _interpret_contents(stream)
+    assert info.found_text
+    assert info.found_visible_text is visible
+
+
+def test_glyphless_font_then_real_font():
+    _pdf, stream = _text_stream(
+        b'BT /F1 12 Tf (Hi) Tj /F2 12 Tf (Hi) Tj ET', '/GlyphLessFont'
+    )
+    stream.Resources.Font.F2 = pikepdf.Dictionary(
+        Type=pikepdf.Name.Font,
+        Subtype=pikepdf.Name.Type1,
+        BaseFont=pikepdf.Name.Helvetica,
+    )
+    assert _interpret_contents(stream).found_visible_text
+
+
+def test_glyphless_font_restored_by_q():
+    _pdf, stream = _text_stream(
+        b'BT /F2 12 Tf ET q BT /F1 12 Tf (Hi) Tj ET Q BT (Hi) Tj ET', '/GlyphLessFont'
+    )
+    stream.Resources.Font.F2 = pikepdf.Dictionary(
+        Type=pikepdf.Name.Font,
+        Subtype=pikepdf.Name.Type1,
+        BaseFont=pikepdf.Name.Helvetica,
+    )
+    assert _interpret_contents(stream).found_visible_text
+
+
+def test_glyphless_font_inherited_from_page_tree():
+    pdf = pikepdf.Pdf.new()
+    page = pdf.add_blank_page()
+    del page.obj.Resources
+    font = pikepdf.Dictionary(
+        Type=pikepdf.Name.Font,
+        Subtype=pikepdf.Name.Type0,
+        BaseFont=pikepdf.Name('/GlyphLessFont'),
+    )
+    pdf.Root.Pages.Resources = pikepdf.Dictionary(Font=pikepdf.Dictionary(F1=font))
+    page.Contents = pikepdf.Stream(pdf, b'BT /F1 12 Tf (Hi) Tj ET')
+    info = _interpret_contents(page.obj)
+    assert info.found_text
+    assert not info.found_visible_text
+
+
+def test_non_utf8_font_name_does_not_crash():
+    gbk_name = pikepdf.Object.parse(b'/#b7#bd#d5#fd#b4#f3#ba#da_GBK+ZEFSzV-12')
+    _pdf, stream = _text_stream(b'BT /F1 12 Tf (Hi) Tj ET', gbk_name)
+    info = _interpret_contents(stream)
+    assert info.found_visible_text
+
+
+@pytest.mark.parametrize(
+    'resources',
+    [
+        None,
+        pikepdf.Array([]),
+        pikepdf.Dictionary(Font=pikepdf.Array([])),
+        pikepdf.Dictionary(Font=pikepdf.Dictionary(F1=pikepdf.Array([]))),
+        pikepdf.Dictionary(Font=pikepdf.Dictionary(F1=pikepdf.Dictionary())),
+        pikepdf.Dictionary(
+            Font=pikepdf.Dictionary(F1=pikepdf.Dictionary(BaseFont=pikepdf.Array([])))
+        ),
+    ],
+)
+def test_malformed_font_resources_count_as_visible(resources):
+    _pdf, stream = _text_stream(b'BT /F1 12 Tf (Hi) Tj ET')
+    if resources is not None:
+        stream.Resources = resources
+    info = _interpret_contents(stream)
+    assert info.found_text
+    assert info.found_visible_text
+
+
+@pytest.mark.parametrize(
+    'body',
+    [
+        b'BT /Tr Tr (Hi) Tj ET',
+        b'BT Tr (Hi) Tj ET',
+        b'BT Tf (Hi) Tj ET',
+        b'BT 3.5 Tr (Hi) Tj ET',
+    ],
+)
+def test_malformed_text_state_operators(body):
+    # Malformed operands leave the text state unchanged rather than raising
+    _pdf, stream = _text_stream(body, '/Helvetica')
+    info = _interpret_contents(stream)
+    assert info.found_text
+    assert info.found_visible_text
+
+
+def _invisible_ocr_layer_pdf(path, *, in_form: bool, tr_in_form: bool = True):
+    """A 150 dpi scan with an invisible (3 Tr) text layer, like prior OCR."""
+    pdf = pikepdf.Pdf.new()
+    page = pdf.add_blank_page(page_size=(72, 72))
+    im = Image.new('L', (150, 150), 128)
+    image = pikepdf.Stream(pdf, im.tobytes())
+    image.Type = pikepdf.Name.XObject
+    image.Subtype = pikepdf.Name.Image
+    image.Width, image.Height = 150, 150
+    image.ColorSpace = pikepdf.Name.DeviceGray
+    image.BitsPerComponent = 8
+    font = pikepdf.Dictionary(
+        Type=pikepdf.Name.Font,
+        Subtype=pikepdf.Name.Type1,
+        BaseFont=pikepdf.Name.Helvetica,
+    )
+    page.Resources = pikepdf.Dictionary(
+        XObject=pikepdf.Dictionary(Im0=image), Font=pikepdf.Dictionary(F1=font)
+    )
+    text = b'BT %s/F1 12 Tf 10 10 Td (Hello) Tj ET' % (b'3 Tr ' if tr_in_form else b'')
+    if in_form:
+        form = pikepdf.Stream(pdf, text)
+        form.Type = pikepdf.Name.XObject
+        form.Subtype = pikepdf.Name.Form
+        form.BBox = [0, 0, 72, 72]
+        form.Resources = pikepdf.Dictionary(Font=pikepdf.Dictionary(F1=font))
+        page.Resources.XObject.Fx0 = form
+        prefix = b'' if tr_in_form else b'3 Tr '
+        text = prefix + b'q /Fx0 Do Q'
+    page.Contents = pikepdf.Stream(pdf, b'q 72 0 0 72 0 0 cm /Im0 Do Q ' + text)
+    pdf.save(path)
+    return path
+
+
+@pytest.mark.parametrize(
+    'in_form, tr_in_form', [(False, True), (True, True), (True, False)]
+)
+def test_pageinfo_invisible_text(outdir, in_form, tr_in_form):
+    path = _invisible_ocr_layer_pdf(
+        outdir / 'invisible.pdf', in_form=in_form, tr_in_form=tr_in_form
+    )
+    page = pdfinfo.PdfInfo(path)[0]
+    assert page.has_text
+    assert not page.has_visible_text
+    assert page.dpi == Resolution(150, 150)
+    # PageInfo crosses the worker-process boundary
+    assert not pickle.loads(pickle.dumps(page)).has_visible_text
+
+
+def test_pageinfo_visible_text(single_page_text):
+    page = pdfinfo.PdfInfo(single_page_text)[0]
+    assert page.has_text
+    assert page.has_visible_text

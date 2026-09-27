@@ -26,6 +26,7 @@ from ocrmypdf.pdfinfo._contentstream import (
     ContentsInfo,
     TextMarker,
     VectorMarker,
+    VisibleTextMarker,
     _get_dpi,
     _interpret_contents,
     _is_unit_square,
@@ -350,11 +351,19 @@ def _find_form_xobject_images(pdf: Pdf, container: Object, contentsinfo: Content
                 container=form_xobject,
                 shorthand=ctm_shorthand,
                 initial_fill_ink=settings.fill_ink,
+                initial_text_render_mode=settings.text_render_mode,
+                initial_glyphless_font=settings.glyphless_font,
             )
 
 
 def _process_content_streams(
-    *, pdf: Pdf, container: Object, shorthand=None, initial_fill_ink=Ink.mono
+    *,
+    pdf: Pdf,
+    container: Object,
+    shorthand=None,
+    initial_fill_ink=Ink.mono,
+    initial_text_render_mode: int = 0,
+    initial_glyphless_font: bool = False,
 ) -> Iterator[VectorMarker | TextMarker | ImageInfo]:
     """Find all individual instances of images drawn in the container.
 
@@ -397,11 +406,19 @@ def _process_content_streams(
     else:
         return
 
-    contentsinfo = _interpret_contents(container, initial_shorthand, initial_fill_ink)
+    contentsinfo = _interpret_contents(
+        container,
+        initial_shorthand,
+        initial_fill_ink,
+        initial_text_render_mode,
+        initial_glyphless_font,
+    )
 
     if contentsinfo.found_vector:
         yield VectorMarker()
-    if contentsinfo.found_text:
+    if contentsinfo.found_visible_text:
+        yield VisibleTextMarker()
+    elif contentsinfo.found_text:
         yield TextMarker()
     yield from _find_inline_images(contentsinfo)
     yield from _find_regular_images(container, contentsinfo)
