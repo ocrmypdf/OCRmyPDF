@@ -61,6 +61,21 @@
   brings in `jsonschema`, `referencing` and `fonttools`, all packaged by
   Debian and Red Hat. PDF/A files are saved with the settings pikepdf pins
   for the PDF/A flavour, so that later steps do not invalidate them.
+- `--force-ocr` (`--mode force`) now keeps hyperlinks. Link annotations are
+  moved onto the rasterized page, with their clickable areas mapped to the
+  new page's coordinates, and their borders are removed since the page image
+  already shows them. The same applies when `--deskew` or `--clean-final`
+  rasterize a page. Other annotations are still drawn into the page image. The
+  new mode `--mode force-ocr-no-links` behaves as `--force-ocr` did before,
+  discarding hyperlinks too. {issue}`605`
+- When Ghostscript makes the PDF/A and the input has fonts that are not
+  embedded, Ghostscript now always picks substitutes from its own fonts
+  (`-dNONATIVEFONTMAP`) rather than the platform's installed fonts, so output
+  is the same on every platform; on macOS, native font lookup could embed
+  tens of megabytes of system fonts. If no font in the file is embedded, the
+  substitutes are also subset. OCRmyPDF now warns when fonts other than the
+  standard 14 will be substituted, since that changes the document's
+  appearance, and suggests `--output-type pdf`. {issue}`1369`
 
 **Fixes**
 
@@ -84,6 +99,33 @@
   requires, so the file was an ordinary PDF. The rebuilt file is now given the
   PDF/A declarations directly, without Ghostscript, as intended; if that fails
   the existing Ghostscript fallback runs. {issue}`1751`
+- When Ghostscript made the PDF/A, every hyperlink whose annotation lacked the
+  Print flag was deleted, which is most of them in practice. The flag is now
+  set before Ghostscript runs. {issue}`605`
+- When PDF/A output grew the file, OCRmyPDF said no reason was known if the
+  output type was the default `auto`, instead of pointing to PDF/A
+  conversion. {issue}`1369`
+- When Ghostscript made the PDF/A, XMP metadata with no document-info
+  equivalent, such as `dc:contributor`, `dc:subject` and `dc:date`, was lost.
+  Such properties are now copied from the input, and those PDF/A does not
+  permit are removed as before. The report of metadata that could not be
+  copied now lists only what was actually dropped. {issue}`1220`
+- Ghostscript 10.08 gives a PDF/A made from a file without a title the title
+  `'Untitled'`, quotes included, which OCRmyPDF no longer recognized and
+  removed.
+- The Docker watcher no longer turns off `deskew` given in
+  `OCR_JSON_SETTINGS` when `OCR_DESKEW` is not set.
+- A page made of full-page images at different resolutions, such as a 150 dpi
+  background under a 300 dpi text mask, was rasterized at a weighted average
+  resolution (200 dpi) when deskewing or forcing OCR. The average is now used
+  only when the highest resolution image covers less than 90% of the page, as
+  intended for pages with a small high-detail region. {issue}`948`
+- Text copied from vertical Japanese (and other vertical or 90° rotated) OCR
+  lines was full of spurious spaces and had characters out of order. The
+  renderer now measures words along the line, orients each line by its word
+  order, since Tesseract's slope sign is unreliable, places lines reading
+  downward on their own column, and closes gaps between CJK words.
+  {issue}`1244`
 
 ## v17.12.1
 
