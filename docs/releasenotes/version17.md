@@ -7,170 +7,107 @@
 
 **Changes**
 
-- OCRmyPDF now checks PDF/A made without Ghostscript ("speculative"
-  conversion) with pikepdf's new PDF/A support, `pikepdf.pdfa`, instead of
-  veraPDF. pikepdf validates the bytes it writes, and OCRmyPDF validates the
-  final output file again after the metadata and optimization steps.
-  veraPDF is no longer needed or used, so the fast path that skips
-  Ghostscript is now taken whether or not veraPDF is installed, including in
-  the Docker image. The validator approves only constructs it recognizes
-  and knows to conform, and sends anything else to Ghostscript, as before.
-  A file containing a construct the validator does not check is reported
-  as not checked, rather than as a violation, and is also sent to
-  Ghostscript; run with `-v1` to see why a file was not approved. The
-  validator was tested against veraPDF, which the test suite still uses when
-  installed.
-- Speculative conversion now works for PDF/A-1b (`--output-type pdfa-1`),
-  which previously always went through Ghostscript. It now also repairs a
-  few common problems before validating: it replaces other output intents
-  (such as a PDF/X intent) with the sRGB PDF/A intent, removes image
-  interpolation flags, sets the Print flag on annotations that lack it, adds
-  the `/CIDSet` that PDF/A-1 requires for subset CID fonts, and removes XMP
-  metadata properties that PDF/A does not permit, logging which ones it
-  removed.
+- PDF/A made without Ghostscript ("speculative" conversion) is now validated
+  with pikepdf's PDF/A support (`pikepdf.pdfa`) instead of veraPDF, and the
+  final output is validated again after the metadata and optimization steps.
+  veraPDF is no longer used, so the Ghostscript-free path is available
+  whether or not veraPDF is installed, including in the Docker image. Files
+  the validator does not approve go to Ghostscript as before; run with `-v1`
+  to see why.
+- Speculative conversion now supports PDF/A-1b, and repairs common problems
+  that previously always sent a file to Ghostscript: it replaces other output
+  intents with sRGB, removes image interpolation flags, sets the Print flag on
+  annotations, adds the `/CIDSet` PDF/A-1 requires, and removes XMP properties
+  and hidden annotations that PDF/A does not permit.
 - New option `--pdfa-backend {auto,ghostscript,internal}` (API:
-  `pdfa_backend=`) chooses how PDF/A is produced. `auto`, the default, is
-  the existing behaviour: OCRmyPDF's own conversion first, Ghostscript if the
-  validator does not approve it. `internal` never uses Ghostscript for
-  PDF/A, so JPEG images pass through unchanged; if the validator does not
-  approve the file, the `pdfa` output types fail with exit code 10 and log
-  the validator's findings, and `--output-type auto` outputs a regular PDF.
-  `ghostscript` always converts with Ghostscript and requires it.
-  `--pdfa-image-compression`, `--ghostscript-jpeg-quality` and
-  `--ghostscript-jpeg-maxdpi` only take effect in Ghostscript, so they now
-  select the Ghostscript backend under `auto` (previously only
-  `--pdfa-image-compression` did, and the other two were silently ignored
-  when Ghostscript was not needed) and are an error with `internal`.
-  So are `--color-conversion-strategy` `CMYK`, `Gray` and
-  `UseDeviceIndependentColor`; `LeaveColorUnchanged` and `RGB` work with every
-  backend.
-- Speculative conversion now removes annotations that are hidden or not
-  viewable (the Hidden, Invisible, NoView or ToggleNoView flag), which PDF/A
-  does not permit, together with their pop-up annotations, and warns once
-  how many it removed. Ghostscript does the same. Such files previously
-  always went through Ghostscript.
-- When the input's creation date has no time zone, OCRmyPDF now assumes it
-  is in the local time zone, attaches that zone to the output's dates, and
-  warns that it did so; set the `TZ` environment variable to choose another
-  zone. Such dates were previously copied without a zone, which veraPDF
-  compares inconsistently in PDF/A-1.
-- With `--output-type auto`, `--force-ocr` output is now validated like any
-  other file, instead of being declared PDF/A without validation when
-  veraPDF was not installed.
+  `pdfa_backend=`). `auto`, the default, tries OCRmyPDF's own conversion and
+  then Ghostscript. `internal` never uses Ghostscript, so JPEGs pass through
+  unchanged; if the result is not approved, the `pdfa` output types fail with
+  exit code 10 and `--output-type auto` outputs a regular PDF. `ghostscript`
+  always uses Ghostscript. Options that only Ghostscript implements
+  (`--pdfa-image-compression`, `--ghostscript-jpeg-quality`,
+  `--ghostscript-jpeg-maxdpi`, and `--color-conversion-strategy` `CMYK`,
+  `Gray` or `UseDeviceIndependentColor`) now select Ghostscript under `auto`
+  and are an error with `internal`.
 - OCRmyPDF now requires `pikepdf[pdfa]` 10.14 or later. The `pdfa` extra
   brings in `jsonschema`, `referencing` and `fonttools`, all packaged by
-  Debian and Red Hat. PDF/A files are saved with the settings pikepdf pins
-  for the PDF/A flavour, so that later steps do not invalidate them.
-- `--force-ocr` (`--mode force`) now keeps hyperlinks. Link annotations are
-  moved onto the rasterized page, with their clickable areas mapped to the
-  new page's coordinates, and their borders are removed since the page image
-  already shows them. The same applies when `--deskew` or `--clean-final`
-  rasterize a page. Other annotations are still drawn into the page image. The
-  new mode `--mode force-ocr-no-links` behaves as `--force-ocr` did before,
-  discarding hyperlinks too. {issue}`605`
-- When Ghostscript makes the PDF/A and the input has fonts that are not
-  embedded, Ghostscript now always picks substitutes from its own fonts
-  (`-dNONATIVEFONTMAP`) rather than the platform's installed fonts, so output
-  is the same on every platform; on macOS, native font lookup could embed
-  tens of megabytes of system fonts. If no font in the file is embedded, the
-  substitutes are also subset. OCRmyPDF now warns when fonts other than the
-  standard 14 will be substituted, since that changes the document's
-  appearance, and suggests `--output-type pdf`. {issue}`1369`
-- OCRmyPDF now warns when a font Ghostscript substitutes lacks the bold or
-  italic style its name asks for, e.g. when Ghostscript 10 replaces
-  `Verdana,Bold` with a regular-weight font, since the output then silently
-  loses that styling.
-- When a page already has text and no OCR mode is given, OCRmyPDF now stops
-  with `PriorOcrFoundError` straight after scanning the file, instead of
-  when it reaches that page, after rasterizing and OCRing every page before
-  it. The error now names the page. Pages excluded by `--pages` are still
-  ignored. {issue}`613`
-- OCRmyPDF can now be bundled with PyInstaller without extra options: it
-  ships a PyInstaller hook that collects its builtin plugins and data files,
-  and pikepdf's PDF/A data. Builtin plugins are now imported explicitly
-  rather than discovered by scanning their package, which PyInstaller
-  could not follow, so a frozen app previously found no OCR engine.
-  Tesseract and Ghostscript must still be installed separately.
+  Debian and Red Hat.
+- `--force-ocr` now keeps hyperlinks, moving link annotations onto the
+  rasterized page; so do `--deskew` and `--clean-final`. The new mode
+  `--mode force-ocr-no-links` keeps the old behaviour. {issue}`605`
+- When Ghostscript substitutes fonts that are not embedded, it now always uses
+  its own fonts (`-dNONATIVEFONTMAP`), so output is the same on every
+  platform; on macOS, native font lookup could embed tens of megabytes of
+  system fonts. OCRmyPDF warns when fonts other than the standard 14 are
+  substituted, or when a substitute loses bold or italic styling.
+  {issue}`1369`
+- A creation date without a time zone is now taken to be local time, and the
+  output's dates get that zone, with a warning. Set `TZ` to choose another
+  zone.
+- In the default mode, a page that already has text now stops OCRmyPDF
+  straight after the initial scan, instead of after OCRing the pages before
+  it. The error names the page. {issue}`613`
+- The check of the output file is much faster: each stream is checked in the
+  cheapest way for its compression instead of being fully decoded, and a
+  progress bar is shown. JPEG 2000 and CCITT images are now checked too, but
+  JPEGs that are corrupt without being truncated are no longer detected.
+  {issue}`1570`
+- OCRmyPDF now ships a PyInstaller hook, so apps that use it can be bundled
+  without extra options. Tesseract and Ghostscript must still be installed.
   {issue}`1024`
-- `PageInfo` has a new property, `has_visible_text`, which is false for
-  text drawn invisibly, such as an OCR layer: text in render mode 3 or 7,
-  or in a glyphless font (Tesseract's and OCRmyPDF's). `has_text` is
-  unchanged.
+- New `PageInfo.has_visible_text`, which excludes invisible text such as an
+  OCR layer. `has_text` is unchanged.
 
 **Fixes**
 
-- Some PDFs produced by LaTeX contain a malformed real number in a content
-  stream, such as `0.000-50131235`. Our PDF parser reads such a token as an
-  operator, which consumes the operands of the operator that follows it and
-  leaves, for example, a `cm` with too few operands. OCRmyPDF treated that as
-  an unreadable file and stopped. It now warns and carries on with the
-  graphics state it has, as PDF viewers do. {issue}`1054`
-- The document language (`/Lang` in the PDF catalog) was not set when the
-  OCR language was given as an ISO 639-2 terminology code, which is what
-  Tesseract uses: `-l deu`, `-l fra`, `-l nld`, `-l ces`, `-l ell` and fifteen
-  others. Our language table is keyed by the bibliographic codes (`ger`,
-  `fre`, ...), so the lookup missed and the language was silently omitted.
-  Both spellings now resolve. Languages without a two-letter ISO 639-1 code,
-  such as Asturian, now get their three-letter code as BCP 47 requires,
-  instead of nothing. {issue}`1749`
-- With the default `--output-type auto`, `--force-ocr` and no verapdf
-  installed (as in the Docker image), the output was passed through labelled
-  as PDF/A without the OutputIntent and XMP conformance metadata that PDF/A
-  requires, so the file was an ordinary PDF. The rebuilt file is now given the
-  PDF/A declarations directly, without Ghostscript, as intended; if that fails
-  the existing Ghostscript fallback runs. {issue}`1751`
-- When Ghostscript made the PDF/A, every hyperlink whose annotation lacked the
-  Print flag was deleted, which is most of them in practice. The flag is now
-  set before Ghostscript runs. {issue}`605`
-- When PDF/A output grew the file, OCRmyPDF said no reason was known if the
-  output type was the default `auto`, instead of pointing to PDF/A
-  conversion. {issue}`1369`
-- When Ghostscript made the PDF/A, XMP metadata with no document-info
-  equivalent, such as `dc:contributor`, `dc:subject` and `dc:date`, was lost.
-  Such properties are now copied from the input, and those PDF/A does not
-  permit are removed as before. The report of metadata that could not be
-  copied now lists only what was actually dropped. {issue}`1220`
-- Ghostscript 10.08 gives a PDF/A made from a file without a title the title
-  `'Untitled'`, quotes included, which OCRmyPDF no longer recognized and
-  removed.
+- `--force-ocr` on a scan that already had an invisible OCR layer rasterized
+  it at no less than 400 dpi, as if the text were visible, which could
+  multiply the file size. {issue}`961`
+- Process workers (`use_threads=False` on Windows and macOS) failed on every
+  page with `'OcrOptions' object has no attribute 'tesseract'`.
+  {issue}`1757`
+- `ocrmypdf.ocr()` rejected thresholding method names such as
+  `tesseract_thresholding='adaptive-otsu'`. {issue}`1460`
+- `--rotate-pages --tesseract-timeout 0` detected page orientation but did not
+  rotate the pages. The cookbook now recommends this combination for rotating
+  or deskewing without OCR. {issue}`778`
+- With `--output-type auto` and `--force-ocr`, output was labelled PDF/A
+  without being validated or given the PDF/A declarations when veraPDF was
+  not installed, as in the Docker image. {issue}`1751`
+- Ghostscript's PDF/A conversion deleted most hyperlinks (those without the
+  Print flag). {issue}`605`
+- Text in fonts without `/ToUnicode`, which viewers extract through glyph
+  names, was garbled or lost when Ghostscript made the PDF/A. {issue}`1297`
+- XMP metadata with no document-info equivalent, such as `dc:contributor`
+  and `dc:subject`, was lost when Ghostscript made the PDF/A. {issue}`1220`
+- Images in PDFs from iText and pdftk were recompressed without their Flate
+  predictor, growing the output by about 30%. {issue}`1620`
+- Copied text from vertical Japanese and other vertical or rotated OCR lines
+  had spurious spaces and characters out of order. {issue}`1244`
+- Text set in the glyphless fallback font, used when no installed font
+  covers a script (e.g. CJK), lost characters when selected or copied in
+  Chrome and other pdfium-based viewers.
+- A page made of full-page images at different resolutions was rasterized at
+  a weighted average resolution rather than the highest. {issue}`948`
+- The document language (`/Lang`) was not set for Tesseract's language codes
+  such as `deu`, `fra` and `ces`. Languages without a two-letter code now get
+  their three-letter code. {issue}`1749`
+- Some LaTeX PDFs with malformed numbers in a content stream, such as
+  `0.000-50131235`, stopped OCRmyPDF. It now warns and continues, as viewers
+  do. {issue}`1054`
+- A `/Rotate` stored as a real number, or a `cm` operator with a non-numeric
+  operand, crashed the page scan.
+- `--force-ocr --ocr-engine none` crashed on pages with no images.
+- When OCRmyPDF's own PDF/A failed its final check, the Ghostscript fallback
+  could fail with `FileExistsError`; on Windows it always did.
+- With the default `--output-type auto`, the explanation for a file that grew
+  now points to PDF/A conversion. {issue}`1369`
+- Ghostscript 10.08's title `'Untitled'` (with quotes) for untitled files is
+  removed again.
+- The Docker image's web service could not find its Streamlit script. The
+  Docker documentation for the web service is updated. {issue}`1753`
 - The Docker watcher no longer turns off `deskew` given in
   `OCR_JSON_SETTINGS` when `OCR_DESKEW` is not set.
-- A page made of full-page images at different resolutions, such as a 150 dpi
-  background under a 300 dpi text mask, was rasterized at a weighted average
-  resolution (200 dpi) when deskewing or forcing OCR. The average is now used
-  only when the highest resolution image covers less than 90% of the page, as
-  intended for pages with a small high-detail region. {issue}`948`
-- Text copied from vertical Japanese (and other vertical or 90° rotated) OCR
-  lines was full of spurious spaces and had characters out of order. The
-  renderer now measures words along the line, orients each line by its word
-  order, since Tesseract's slope sign is unreliable, places lines reading
-  downward on their own column, and closes gaps between CJK words.
-  {issue}`1244`
-- With `--force-ocr`, a scanned page that already had an invisible OCR layer
-  was rasterized at no less than 400 dpi, as if its text were visible, so a
-  150 dpi scan was upsampled and the file grew several times over. Invisible
-  text no longer raises the resolution; pages are rasterized at their
-  images' resolution. {issue}`961`
-- Process workers (`use_threads=False` on Windows and macOS, or
-  `--no-use-threads` on Linux) failed on every page with
-  `'OcrOptions' object has no attribute 'tesseract'`, because they did not
-  receive the plugins' option models. {issue}`1757`
-- `ocrmypdf.ocr()` rejected Tesseract thresholding method names such as
-  `tesseract_thresholding='adaptive-otsu'` with a validation error; it now
-  accepts the same names as the command line, as well as numbers.
-  {issue}`1460`
-- With the default renderer, `--rotate-pages --tesseract-timeout 0` detected
-  page orientation but did not rotate the pages. The cookbook now recommends
-  that combination for rotating or deskewing pages without OCR, since
-  `--ocr-engine none` does neither. {issue}`778`
-- When OCRmyPDF's own PDF/A failed its final check and Ghostscript was used
-  instead, the second optimization pass could fail with `FileExistsError`;
-  on Windows it always did.
-- Text set in OCRmyPDF's glyphless fallback font, Occulta, which is used when
-  no installed font covers a script (e.g. CJK on systems without a CJK
-  font), could not be fully selected or copied in Chrome and other
-  pdfium-based viewers: characters were dropped, and vertical lines were
-  lost entirely. Occulta's glyphs now have extents, but still draw nothing.
 
 ## v17.12.1
 
