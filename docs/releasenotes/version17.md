@@ -75,11 +75,15 @@
   without being validated or given the PDF/A declarations when veraPDF was
   not installed, as in the Docker image. {issue}`1751`
 - Ghostscript's PDF/A conversion deleted most hyperlinks (those without the
-  Print flag). {issue}`605`
+  Print flag). Hidden annotations, which PDF/A does not permit, are now
+  removed before Ghostscript runs, with the same warning as speculative
+  conversion, instead of silently. {issue}`605`
 - Text in fonts without `/ToUnicode`, which viewers extract through glyph
   names, was garbled or lost when Ghostscript made the PDF/A. {issue}`1297`
 - XMP metadata with no document-info equivalent, such as `dc:contributor`
-  and `dc:subject`, was lost when Ghostscript made the PDF/A. {issue}`1220`
+  and `dc:subject`, was lost when Ghostscript made the PDF/A. It is now
+  copied with its whole value, including every language of a multilingual
+  property. {issue}`1220`
 - Images in PDFs from iText and pdftk were recompressed without their Flate
   predictor, growing the output by about 30%. {issue}`1620`
 - Copied text from vertical Japanese and other vertical or rotated OCR lines
