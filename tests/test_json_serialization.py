@@ -22,13 +22,7 @@ def register_plugin_models():
 
 def worker_function(options_json: str) -> str:
     """Worker function that deserializes OcrOptions from JSON and returns a result."""
-    # Register plugin models in worker process
-    from ocrmypdf._options import OcrOptions
-    from ocrmypdf.builtin_plugins.tesseract_ocr import TesseractOptions
-
-    OcrOptions.register_plugin_models({'tesseract': TesseractOptions})
-
-    # Reconstruct OcrOptions from JSON in worker process
+    # The plugin models needed for options.tesseract travel with the JSON
     options = OcrOptions.model_validate_json_safe(options_json)
 
     # Verify we can access various option types
@@ -90,8 +84,10 @@ def test_json_serialization_multiprocessing():
     }
     assert reconstructed_attrs == user_attrs
 
-    # Test multiprocessing with JSON serialization
-    with multiprocessing.Pool(processes=2) as pool:
+    # Test multiprocessing with JSON serialization. Spawn, rather than fork,
+    # since forking a process with threads (such as a pytest-xdist worker)
+    # can deadlock the child.
+    with multiprocessing.get_context('spawn').Pool(processes=2) as pool:
         # Send the JSON string to worker processes
         results = pool.map(worker_function, [options_json, options_json])
 
