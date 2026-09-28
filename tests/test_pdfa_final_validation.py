@@ -200,6 +200,62 @@ def ghostscript_calls(monkeypatch):
     return calls
 
 
+@pytest.fixture
+def copying_safe_symlink(monkeypatch):
+    """Make ``optimize``'s ``safe_symlink`` copy instead of linking.
+
+    This mimics Windows, where ``safe_symlink`` always copies files rather
+    than symlinking them, so the optimizer's output path is a real file
+    after the first pass, not a symlink.
+    """
+    import os
+    import shutil
+
+    from ocrmypdf import optimize as optimize_module
+
+    def copying(input_file, soft_link_name):
+        # Same overwrite guard as the real safe_symlink: refuse to clobber
+        # a real (non-symlink) file left by an earlier pass.
+        link_path = Path(soft_link_name)
+        if os.path.lexists(link_path):
+            if not link_path.is_symlink():
+                raise FileExistsError(f"{link_path} exists and is not a link")
+            link_path.unlink()
+        shutil.copyfile(input_file, link_path)
+
+    monkeypatch.setattr(optimize_module, 'safe_symlink', copying)
+
+
+@pytest.mark.parametrize('output_type', ['pdfa-1', 'pdfa-2'])
+def test_final_denial_falls_back_to_ghostscript_with_copying_symlink(
+    resources,
+    outpdf,
+    caplog,
+    deny_final_validation,
+    ghostscript_calls,
+    copying_safe_symlink,
+    output_type,
+):
+    """The Ghostscript-fallback optimize pass must not collide with the first.
+
+    On Windows, ``safe_symlink`` always copies (never symlinks), so the
+    first optimizer pass leaves a real file at the shared 'optimize.pdf'
+    intermediate path. When final validation of the speculative candidate
+    is denied and the pipeline falls back to Ghostscript, a second optimize
+    pass runs and must not crash trying to write to that same path
+    (``FileExistsError: ... exists and is not a link``, see #1808-style
+    Windows CI failures).
+    """
+    with caplog.at_level(logging.INFO, logger='ocrmypdf'):
+        exitcode = _run(
+            resources / 'francais.pdf', outpdf, '--output-type', output_type
+        )
+    assert exitcode == ExitCode.ok
+    assert FINAL_DENIED in caplog.text
+    assert len(ghostscript_calls) == 1
+    assert file_claims_pdfa(outpdf)['pass']
+
+
 @pytest.mark.parametrize('output_type', ['pdfa-1', 'pdfa-2'])
 def test_final_denial_falls_back_to_ghostscript(
     resources, outpdf, caplog, deny_final_validation, ghostscript_calls, output_type

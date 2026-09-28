@@ -154,4 +154,9 @@ def test_validation_performance(one_page_ocr, tmp_path):
     report = validate_written(candidate, '2b')
     elapsed = time.perf_counter() - start
     assert report.verdict == 'pass', report.summary()
-    assert elapsed < 5.0, f"validation took {elapsed:.1f} s"
+    # Locally this takes ~3 s; a pathological regression (e.g. quadratic
+    # scaling in the number of objects/pages) would be many times slower,
+    # not just somewhat slower. 20 s gives generous headroom for slow,
+    # shared CI runners (observed 6.7 s on ubuntu-22.04/py3.13) while still
+    # catching that kind of regression.
+    assert elapsed < 20.0, f"validation took {elapsed:.1f} s"

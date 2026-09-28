@@ -1309,11 +1309,14 @@ def _fix_metadata_and_optimize(
     context: PdfContext,
     executor: Executor,
     pdfa_output_type: str | None,
+    optimize_filename: str = 'optimize.pdf',
 ) -> tuple[Path, Sequence[str]]:
     """Run the metadata fixup and the optimizer, the last steps of the pipeline.
 
     A PDF/A file is saved with the settings pikepdf pins for its flavour, so
     that the bytes written remain valid PDF/A.
+
+    ``optimize_filename`` names the optimizer's output in the working folder.
     """
     optimizing = context.plugin_manager.is_optimization_enabled(context=context)
     output_type = context.options.output_type
@@ -1327,7 +1330,7 @@ def _fix_metadata_and_optimize(
         pdf_save_settings=save_settings,
         pdfa_output_type=pdfa_output_type,
     )
-    return optimize_pdf(pdf_out, context, executor)
+    return optimize_pdf(pdf_out, context, executor, optimize_filename)
 
 
 def _final_speculative_pdfa_passes(output_pdf: Path, context: PdfContext) -> bool:
@@ -1404,14 +1407,22 @@ def finish_output_pdf(
         return _fix_metadata_and_optimize(input_pdf, context, executor, None)
     pdfa_output_type = 'pdfa' if auto else output_type
 
-    def finish(pdf: Path | None) -> tuple[Path, Sequence[str]]:
+    def finish(pdf: Path | None, *, retry: bool = False) -> tuple[Path, Sequence[str]]:
         if auto:
             options.extra_attrs['_actual_output_type'] = (
                 'pdf' if pdf is None else 'pdfa'
             )
+        # The Ghostscript fallback after a rejected speculative candidate
+        # reruns these steps; the optimizer output of the first run is a
+        # real file on Windows, which safe_symlink will not overwrite.
+        optimize_filename = 'optimize-fallback.pdf' if retry else 'optimize.pdf'
         if pdf is None:
-            return _fix_metadata_and_optimize(input_pdf, context, executor, None)
-        return _fix_metadata_and_optimize(pdf, context, executor, pdfa_output_type)
+            return _fix_metadata_and_optimize(
+                input_pdf, context, executor, None, optimize_filename
+            )
+        return _fix_metadata_and_optimize(
+            pdf, context, executor, pdfa_output_type, optimize_filename
+        )
 
     if auto and _auto_keeps_regular_pdf(input_pdf):
         return finish(None)
@@ -1428,8 +1439,13 @@ def finish_output_pdf(
         # metadata undeclared too, so that the failure is reported.
         if auto:
             options.extra_attrs['_actual_output_type'] = 'pdf'
-        return _fix_metadata_and_optimize(gs_out, context, executor, None)
-    return finish(gs_out)
+        optimize_filename = (
+            'optimize-fallback.pdf' if speculative is not None else 'optimize.pdf'
+        )
+        return _fix_metadata_and_optimize(
+            gs_out, context, executor, None, optimize_filename
+        )
+    return finish(gs_out, retry=speculative is not None)
 
 
 def should_linearize(working_file: Path, context: PdfContext) -> bool:
@@ -1465,10 +1481,13 @@ def _file_size_ratio(
 
 
 def optimize_pdf(
-    input_file: Path, context: PdfContext, executor: Executor
+    input_file: Path,
+    context: PdfContext,
+    executor: Executor,
+    output_filename: str = 'optimize.pdf',
 ) -> tuple[Path, Sequence[str]]:
     """Optimize the given PDF file."""
-    output_file = context.get_path('optimize.pdf')
+    output_file = context.get_path(output_filename)
     output_pdf, messages = context.plugin_manager.optimize_pdf(
         input_pdf=input_file,
         output_pdf=output_file,
