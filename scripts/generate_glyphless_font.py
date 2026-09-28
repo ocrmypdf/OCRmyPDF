@@ -14,6 +14,9 @@ Features:
   - Zero-width for combining marks and invisible characters
   - Regular width (500 units) for Latin, Greek, Cyrillic, Arabic, Hebrew, etc.
   - Double width (1000 units) for CJK and fullwidth characters
+- Glyphs other than spaces have an outline of two isolated points spanning
+  the glyph's advance and the font's ascent to descent, so that PDF viewers
+  can compute character boxes, yet nothing is ever painted
 - Uses cmap format 13 (many-to-one) for ~12KB size vs ~780KB with format 12
 - Compatible with fpdf2 and other modern PDF libraries
 
@@ -29,10 +32,16 @@ from __future__ import annotations
 import unicodedata
 from pathlib import Path
 
-from fontTools.fontBuilder import FontBuilder
-from fontTools.ttLib import TTFont
-from fontTools.ttLib.tables._c_m_a_p import CmapSubtable
-from fontTools.ttLib.tables._g_l_y_f import Glyph
+from fontTools.fontBuilder import FontBuilder  # type: ignore[import-untyped]
+from fontTools.misc.timeTools import timestampNow  # type: ignore[import-untyped]
+from fontTools.ttLib import TTFont  # type: ignore[import-untyped]
+from fontTools.ttLib.tables._c_m_a_p import CmapSubtable  # type: ignore[import-untyped]
+from fontTools.ttLib.tables._g_l_y_f import (  # type: ignore[import-untyped]
+    Glyph,
+    GlyphCoordinates,
+    flagOnCurve,
+)
+from fontTools.ttLib.tables.ttProgram import Program  # type: ignore[import-untyped]
 
 # Output path relative to this script
 OUTPUT_PATH = Path(__file__).parent.parent / "src" / "ocrmypdf" / "data" / "Occulta.ttf"
@@ -42,14 +51,16 @@ UNITS_PER_EM = 1000
 ASCENT = 800
 DESCENT = -200
 
-# Glyph definitions: (name, advance_width, left_side_bearing)
+FONT_REVISION = 2.1
+
+# Glyph definitions: (name, advance_width, has_outline)
 GLYPHS = [
-    (".notdef", 500, 0),  # Required, used for unmapped characters
-    ("space", 500, 0),  # U+0020 SPACE
-    ("nbspace", 500, 0),  # U+00A0 NO-BREAK SPACE
-    ("blank0", 0, 0),  # Zero-width (combining marks, ZWNJ, ZWJ, BOM)
-    ("blank1", 500, 0),  # Regular width (most scripts)
-    ("blank2", 1000, 0),  # Double width (CJK, fullwidth)
+    (".notdef", 500, True),  # Required, used for unmapped characters
+    ("space", 500, False),  # U+0020 SPACE
+    ("nbspace", 500, False),  # U+00A0 NO-BREAK SPACE
+    ("blank0", 0, True),  # Zero-width (combining marks, ZWNJ, ZWJ, BOM)
+    ("blank1", 500, True),  # Regular width (most scripts)
+    ("blank2", 1000, True),  # Double width (CJK, fullwidth)
 ]
 
 # Explicit zero-width character codepoints
@@ -123,6 +134,27 @@ def build_cmap() -> dict[int, str]:
     return {cp: classify_codepoint(cp) for cp in range(0x10000)}
 
 
+def point_glyph(advance: int) -> Glyph:
+    """Create a glyph whose outline is two isolated points.
+
+    Each point is a contour of its own, at opposite corners of the glyph
+    cell: (0, DESCENT) and (advance, ASCENT). Together they give the glyph a
+    bounding box covering the cell, which some PDF viewers, notably pdfium,
+    need to compute character boxes; they drop characters whose glyphs have
+    no outline. Single-point contours have no edges, so they paint nothing in
+    any text rendering mode. A line segment would be zero-area too, but
+    monochrome rasterizers draw it as a hairline under dropout control.
+    """
+    glyph = Glyph()
+    glyph.numberOfContours = 2
+    glyph.coordinates = GlyphCoordinates([(0, DESCENT), (advance, ASCENT)])
+    glyph.endPtsOfContours = [0, 1]
+    glyph.flags = bytearray([flagOnCurve, flagOnCurve])
+    glyph.program = Program()
+    glyph.program.fromBytecode(b'')
+    return glyph
+
+
 def create_font() -> TTFont:
     """Create the Occulta glyphless font.
 
@@ -135,16 +167,19 @@ def create_font() -> TTFont:
     fb = FontBuilder(UNITS_PER_EM, isTTF=True)
     fb.setupGlyphOrder(glyph_names)
 
-    # Create empty (invisible) glyphs
+    # Create invisible glyphs; spaces are empty as in ordinary fonts
     glyphs = {}
-    for name, _, _ in GLYPHS:
-        glyph = Glyph()
-        glyph.numberOfContours = 0
+    for name, width, has_outline in GLYPHS:
+        if has_outline:
+            glyph = point_glyph(width)
+        else:
+            glyph = Glyph()
+            glyph.numberOfContours = 0
         glyphs[name] = glyph
     fb.setupGlyf(glyphs)
 
-    # Set up horizontal metrics
-    metrics = {name: (width, lsb) for name, width, lsb in GLYPHS}
+    # Set up horizontal metrics; every glyph starts at x=0
+    metrics = {name: (width, 0) for name, width, _ in GLYPHS}
     fb.setupHorizontalMetrics(metrics)
 
     # Minimal cmap to satisfy FontBuilder (we'll replace it later)
@@ -160,21 +195,27 @@ def create_font() -> TTFont:
         usWinDescent=abs(DESCENT),
         sxHeight=500,
         sCapHeight=700,
+        fsType=0,  # Installable embedding, as the license permits
     )
-    import time
-
-    # Use current time for font timestamps
-    now = int(time.time())
-    fb.setupHead(unitsPerEm=UNITS_PER_EM, created=now, modified=now)
+    now = timestampNow()
+    fb.setupHead(
+        unitsPerEm=UNITS_PER_EM,
+        fontRevision=FONT_REVISION,
+        created=now,
+        modified=now,
+    )
     fb.setupPost()
     fb.setupNameTable(
         {
+            "copyright": "Copyright 2026 James R. Barlow",
             "familyName": "Occulta",
             "styleName": "Regular",
             "uniqueFontIdentifier": "OCRmyPDF;Occulta-Regular;2026",
             "fullName": "Occulta Regular",
-            "version": "Version 2.0",
+            "version": f"Version {FONT_REVISION:.3f}",
             "psName": "Occulta-Regular",
+            "licenseDescription": "Licensed under the Apache License, Version 2.0",
+            "licenseInfoURL": "https://www.apache.org/licenses/LICENSE-2.0",
         }
     )
 

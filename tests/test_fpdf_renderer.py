@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 
 from ocrmypdf.font import MultiFontManager
+from ocrmypdf.font.font_provider import BuiltinFontProvider
 from ocrmypdf.fpdf_renderer import (
     DebugRenderOptions,
     Fpdf2MultiPageRenderer,
@@ -30,6 +31,18 @@ def font_dir():
 @pytest.fixture
 def multi_font_manager(font_dir):
     """Create MultiFontManager instance for testing."""
+    return MultiFontManager(font_dir)
+
+
+@pytest.fixture(params=['system', 'builtin'])
+def any_font_manager(request, font_dir):
+    """A font manager with system fonts, and one limited to the bundled fonts.
+
+    The bundled fonts have no CJK glyphs, so the builtin variant exercises the
+    glyphless Occulta fallback whatever fonts the host has installed.
+    """
+    if request.param == 'builtin':
+        return MultiFontManager(font_provider=BuiltinFontProvider(font_dir))
     return MultiFontManager(font_dir)
 
 
@@ -684,10 +697,10 @@ class TestRotatedLines:
         assert "そのまま男" in text
 
     @pytest.mark.parametrize('slope', [-912.0, 912.0])
-    def test_vertical_cjk_no_spaces_pdfium(self, slope, multi_font_manager, tmp_path):
+    def test_vertical_cjk_no_spaces_pdfium(self, slope, any_font_manager, tmp_path):
         pdfium = pytest.importorskip('pypdfium2')
         page = _rotated_line_page(VERTICAL_CJK_WORDS, slope)
-        output_path = self._render(page, multi_font_manager, tmp_path)
+        output_path = self._render(page, any_font_manager, tmp_path)
         pdf = pdfium.PdfDocument(output_path)
         text = pdf[0].get_textpage().get_text_range()
         assert text.strip() == "そのまま男"
@@ -716,11 +729,11 @@ class TestRotatedLines:
 
     @pytest.mark.parametrize('slope', [-912.0, 912.0])
     def test_vertical_single_word_reads_top_to_bottom(
-        self, slope, multi_font_manager, tmp_path
+        self, slope, any_font_manager, tmp_path
     ):
         pdfium = pytest.importorskip('pypdfium2')
         page = _rotated_line_page([("男の両足", (300, 100, 330, 220))], slope)
-        output_path = self._render(page, multi_font_manager, tmp_path)
+        output_path = self._render(page, any_font_manager, tmp_path)
         pdf = pdfium.PdfDocument(output_path)
         textpage = pdf[0].get_textpage()
         assert textpage.get_text_range().strip() == "男の両足"
@@ -731,7 +744,7 @@ class TestRotatedLines:
         assert page_height - first_top < page_height - last_top
 
     @pytest.mark.parametrize('slope', [-912.0, 912.0])
-    def test_vertical_word_fills_its_box(self, slope, multi_font_manager, tmp_path):
+    def test_vertical_word_fills_its_box(self, slope, any_font_manager, tmp_path):
         """A vertical word's glyphs should span its box along the column.
 
         The word's advance must be scaled to the box length measured along
@@ -739,7 +752,7 @@ class TestRotatedLines:
         """
         pdfium = pytest.importorskip('pypdfium2')
         page = _rotated_line_page(VERTICAL_CJK_WORDS, slope)
-        output_path = self._render(page, multi_font_manager, tmp_path)
+        output_path = self._render(page, any_font_manager, tmp_path)
         pdf = pdfium.PdfDocument(output_path)
         textpage = pdf[0].get_textpage()
         page_height = pdf[0].get_height()
@@ -793,12 +806,10 @@ class TestRotatedLines:
                 assert 295 <= (left + right) / 2 <= 335, char
 
     @pytest.mark.parametrize('slope', [-912.0, 912.0])
-    def test_vertical_cjk_glyphs_within_column(
-        self, slope, multi_font_manager, tmp_path
-    ):
+    def test_vertical_cjk_glyphs_within_column(self, slope, any_font_manager, tmp_path):
         pdfium = pytest.importorskip('pypdfium2')
         page = _rotated_line_page(VERTICAL_CJK_WORDS, slope)
-        output_path = self._render(page, multi_font_manager, tmp_path)
+        output_path = self._render(page, any_font_manager, tmp_path)
         textpage = pdfium.PdfDocument(output_path)[0].get_textpage()
         for i in range(textpage.count_chars()):
             left, _, right, _ = textpage.get_charbox(i)
@@ -822,7 +833,7 @@ class TestRotatedLines:
         assert right == pytest.approx(180, abs=3)
 
     def test_horizontal_cjk_small_gap_no_inferred_space(
-        self, multi_font_manager, tmp_path
+        self, any_font_manager, tmp_path
     ):
         """Adjacent CJK words with a small gap should not gain a space."""
         pdfium = pytest.importorskip('pypdfium2')
@@ -831,13 +842,11 @@ class TestRotatedLines:
             ("世界", (170, 100, 230, 130)),
         ]
         page = _rotated_line_page(words, 0.0)
-        output_path = self._render(page, multi_font_manager, tmp_path)
+        output_path = self._render(page, any_font_manager, tmp_path)
         text = pdfium.PdfDocument(output_path)[0].get_textpage().get_text_range()
         assert text.strip() == "你好世界"
 
-    def test_horizontal_cjk_wide_gap_keeps_separation(
-        self, multi_font_manager, tmp_path
-    ):
+    def test_horizontal_cjk_wide_gap_keeps_separation(self, any_font_manager, tmp_path):
         """CJK words far apart are not stretched to meet each other."""
         pdfium = pytest.importorskip('pypdfium2')
         words = [
@@ -845,7 +854,34 @@ class TestRotatedLines:
             ("世界", (400, 100, 460, 130)),
         ]
         page = _rotated_line_page(words, 0.0)
-        output_path = self._render(page, multi_font_manager, tmp_path)
+        output_path = self._render(page, any_font_manager, tmp_path)
         textpage = pdfium.PdfDocument(output_path)[0].get_textpage()
         # "好" ends near the right edge of its own box
         assert textpage.get_charbox(1)[2] < 170
+
+    def test_horizontal_cjk_pdfium(self, any_font_manager, tmp_path):
+        """Every character of a horizontal CJK line is extracted by pdfium."""
+        pdfium = pytest.importorskip('pypdfium2')
+        words = [
+            ("その", (100, 300, 160, 330)),
+            ("まま", (165, 300, 225, 330)),
+            ("男", (230, 300, 260, 330)),
+        ]
+        page = _rotated_line_page(words, 0.0)
+        output_path = self._render(page, any_font_manager, tmp_path)
+        text = pdfium.PdfDocument(output_path)[0].get_textpage().get_text_range()
+        assert text.strip() == "そのまま男"
+
+    @pytest.mark.parametrize('slope', [0.0, 912.0])
+    def test_cjk_combining_mark_pdfium(self, slope, font_dir, tmp_path):
+        """A zero-width combining mark in glyphless text keeps its place."""
+        pdfium = pytest.importorskip('pypdfium2')
+        if slope:
+            words = [("か\u3099ら", (300, 100, 330, 190)), ("男", (300, 200, 330, 230))]
+        else:
+            words = [("か\u3099ら", (100, 300, 190, 330)), ("男", (200, 300, 230, 330))]
+        page = _rotated_line_page(words, slope)
+        builtin_fonts = MultiFontManager(font_provider=BuiltinFontProvider(font_dir))
+        output_path = self._render(page, builtin_fonts, tmp_path)
+        text = pdfium.PdfDocument(output_path)[0].get_textpage().get_text_range()
+        assert text.strip() == "か\u3099ら男"
