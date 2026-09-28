@@ -98,7 +98,7 @@ def get_github_client():
         return None
 
 
-def wait_for_ci_completion(commit_sha: str, timeout_minutes: int = 30) -> bool:
+def wait_for_ci_completion(commit_sha: str, timeout_minutes: int = 45) -> bool:
     """Wait for CI to complete on the given commit.
 
     Returns True if CI passed, False otherwise.
