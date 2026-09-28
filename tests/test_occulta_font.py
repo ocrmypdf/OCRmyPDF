@@ -47,6 +47,12 @@ def test_version_consistent(font):
     assert version_string == f"Version {revision:.3f}"
 
 
+def test_not_installable(font):
+    # Preview & Print embedding only, to discourage installing a font that
+    # draws nothing as a system font
+    assert font['OS/2'].fsType == 4
+
+
 def test_no_hinting(font):
     for tag in ('fpgm', 'prep', 'cvt '):
         assert tag not in font

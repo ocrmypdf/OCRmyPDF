@@ -195,7 +195,12 @@ def create_font() -> TTFont:
         usWinDescent=abs(DESCENT),
         sxHeight=500,
         sCapHeight=700,
-        fsType=0,  # Installable embedding, as the license permits
+        # Preview & Print embedding. This is not a licensing restriction; the
+        # license permits installation. It is a guardrail against installing
+        # Occulta as a system font by accident: a font that draws nothing is
+        # confusing in font menus, and selected as a UI font it would make
+        # the desktop unreadable.
+        fsType=4,
     )
     now = timestampNow()
     fb.setupHead(
