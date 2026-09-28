@@ -144,7 +144,7 @@ Depends:
  python3-fonttools (>= 4.40),  # for pikepdf.pdfa
  python3-jsonschema (>= 4.18),  # for pikepdf.pdfa
  python3-pdfminer (>= 20181108+dfsg-3),
- python3-pikepdf (>= 10.14),
+ python3-pikepdf (>= 10.15),
  python3-referencing,  # for pikepdf.pdfa
  python3-pil,
  python3-pluggy,

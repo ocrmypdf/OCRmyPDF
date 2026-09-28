@@ -26,7 +26,6 @@ import img2pdf
 import pikepdf
 from PIL import Image, ImageColor, ImageDraw
 
-from ocrmypdf._annots import set_annotation_print_flags
 from ocrmypdf._concurrent import Executor
 from ocrmypdf._exec import unpaper
 from ocrmypdf._jobcontext import PageContext, PdfContext
@@ -60,6 +59,7 @@ from ocrmypdf.pdfa import (
     generate_pdfa_ps,
     log_prepare_result,
     output_type_to_flavour,
+    repair_annotations_for_ghostscript,
     speculative_pdfa_conversion,
 )
 from ocrmypdf.pdfa import (
@@ -1105,8 +1105,11 @@ def convert_to_pdfa(input_pdf: Path, input_ps_stub: Path, context: PdfContext) -
             log.debug('Added /ToUnicode to %d font(s)', added_tounicode)
         modified = repair_docinfo_nuls(pdf_file) or bool(added_tounicode)
         # Ghostscript drops annotations without the Print flag, hyperlinks
-        # included, when it converts to PDF/A.
-        if set_annotation_print_flags(pdf_file):
+        # included, when it converts to PDF/A. Unless Ghostscript was chosen,
+        # speculative conversion has already reported hidden annotations.
+        if repair_annotations_for_ghostscript(
+            pdf_file, report_removed=options.pdfa_backend == 'ghostscript'
+        ):
             modified = True
         if modified:
             pdf_file.save(fix_docinfo_file)

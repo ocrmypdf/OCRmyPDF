@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import logging
 from io import BytesIO
 from pathlib import Path
 
@@ -170,6 +171,74 @@ def test_ghostscript_pdfa_keeps_links(linked_pdf, outpdf):
     with Pdf.open(outpdf) as pdf:
         for annot in pdf.pages[0].Annots:
             assert int(annot.F) & 4, "PDF/A requires the Print flag"
+
+
+def _add_hidden_annotation(path: Path, *, unsupported_by_validator: bool) -> None:
+    """Add a hidden Text annotation to page 1, which PDF/A does not permit."""
+    with Pdf.open(path, allow_overwriting_input=True) as pdf:
+        pdf.pages[0].Annots.append(
+            pdf.make_indirect(
+                Dictionary(
+                    Type=Name.Annot,
+                    Subtype=Name.Text,
+                    Rect=Array([40, 100, 60, 120]),
+                    Contents=String('a hidden note'),
+                    F=2,
+                )
+            )
+        )
+        if unsupported_by_validator:
+            # pikepdf's validator does not check optional content, so
+            # speculative conversion is rejected and Ghostscript is used
+            ocg = pdf.make_indirect(Dictionary(Type=Name.OCG, Name=String('Layer')))
+            pdf.Root.OCProperties = Dictionary(
+                OCGs=Array([ocg]), D=Dictionary(ON=Array([ocg]))
+            )
+        pdf.save(path)
+
+
+def _hidden_annotation_warnings(caplog) -> list[str]:
+    return [
+        r.getMessage()
+        for r in caplog.records
+        if r.levelno == logging.WARNING and 'hidden or not viewable' in r.getMessage()
+    ]
+
+
+@pytest.mark.parametrize(
+    'pdfa_backend, unsupported_by_validator',
+    [('ghostscript', False), ('auto', True)],
+    ids=['ghostscript', 'auto-rejected'],
+)
+def test_ghostscript_pdfa_removes_hidden_annotations(
+    linked_pdf, outpdf, caplog, pdfa_backend, unsupported_by_validator
+):
+    """Hidden annotations are removed once, and reported once, on every path."""
+    _add_hidden_annotation(
+        linked_pdf, unsupported_by_validator=unsupported_by_validator
+    )
+    with caplog.at_level(logging.INFO, logger='ocrmypdf'):
+        check_ocrmypdf(
+            linked_pdf,
+            outpdf,
+            '--skip-text',
+            '--ocr-engine',
+            'none',
+            '--output-type',
+            'pdfa',
+            '--pdfa-backend',
+            pdfa_backend,
+        )
+    _check_links_intact(outpdf)
+    with Pdf.open(outpdf) as pdf:
+        contents = [str(annot.get(Name.Contents, '')) for annot in pdf.pages[0].Annots]
+        assert 'a hidden note' not in contents
+        assert 'a note' in contents
+    if unsupported_by_validator:
+        assert 'conversion was not used' in caplog.text
+    warnings = _hidden_annotation_warnings(caplog)
+    assert len(warnings) == 1, caplog.text
+    assert '1 annotation (1 Text) on page 1' in warnings[0]
 
 
 @pytest.mark.parametrize('mode_args', [('--force-ocr',), ('--mode', 'force')])

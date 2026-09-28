@@ -620,3 +620,66 @@ def test_ghostscript_pdfa_adds_no_title(pdfa_backend, resources, outpdf, request
     with pikepdf.open(outpdf) as pdf:
         assert '/Title' not in pdf.docinfo
         assert 'dc:title' not in pdf.open_metadata()
+
+
+_XMP_WHOLE_VALUES = b"""<?xpacket begin="\xef\xbb\xbf" id="W5M0MpCehiHzreSzNTczkc9d"?>
+<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="uuid:8f5a1c2e-0000-4000-8000-000000000000"
+      xmlns:dc="http://purl.org/dc/elements/1.1/">
+   <dc:rights>
+    <rdf:Alt>
+     <rdf:li xml:lang="x-default">All rights reserved</rdf:li>
+     <rdf:li xml:lang="fr-FR">Tous droits r\xc3\xa9serv\xc3\xa9s</rdf:li>
+    </rdf:Alt>
+   </dc:rights>
+   <dc:contributor>
+    <rdf:Bag><rdf:li>A</rdf:li><rdf:li>B</rdf:li></rdf:Bag>
+   </dc:contributor>
+  </rdf:Description>
+  <rdf:Description rdf:about="uuid:8f5a1c2e-0000-4000-8000-000000000000"
+      xmlns:dc="http://purl.org/dc/elements/1.1/" dc:source="scanner 7"/>
+ </rdf:RDF>
+</x:xmpmeta>
+<?xpacket end="w"?>"""
+
+
+@pytest.fixture
+def pdf_with_whole_xmp_values(resources, tmp_path) -> Path:
+    """XMP in uuid Descriptions, as Acrobat writes, with a multilingual value."""
+    path = tmp_path / 'xmp_whole_values.pdf'
+    with pikepdf.open(resources / 'trivial.pdf') as pdf:
+        pdf.Root.Metadata = pdf.make_stream(
+            _XMP_WHOLE_VALUES, Type=pikepdf.Name.Metadata, Subtype=pikepdf.Name.XML
+        )
+        pdf.save(path)
+    return path
+
+
+def test_ghostscript_pdfa_keeps_whole_xmp_values(
+    pdf_with_whole_xmp_values, outpdf, caplog
+):
+    """Every language of a language alternative survives Ghostscript PDF/A."""
+    with caplog.at_level(logging.DEBUG, logger='ocrmypdf'):
+        check_ocrmypdf(
+            pdf_with_whole_xmp_values,
+            outpdf,
+            '--output-type',
+            'pdfa',
+            '--pdfa-backend',
+            'ghostscript',
+            '--skip-text',
+            '--plugin',
+            'tests/plugins/tesseract_noop.py',
+        )
+    with pikepdf.open(outpdf) as pdf:
+        xmp = pdf.Root.Metadata.read_bytes().decode('utf-8')
+        meta = pdf.open_metadata()
+        assert meta.get('dc:rights') == 'All rights reserved'
+        assert meta.get('dc:contributor') == {'A', 'B'}
+        assert meta.get('dc:source') == 'scanner 7'
+    assert 'Tous droits réservés' in xmp
+    assert 'fr-FR' in xmp
+    report = validate_written(outpdf, '2b')
+    assert report.verdict == 'pass', report.summary()
+    assert 'were not copied' not in caplog.text

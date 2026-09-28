@@ -16,7 +16,7 @@ dependencies = [
   "img2pdf>=0.5",
   "packaging>=20",
   "pdfminer.six>=20260107",  # fixes parsing of tokens split across the read buffer/streams (gh #1361)
-  "pikepdf[pdfa]>=10.14",  # pikepdf.pdfa: PDF/A repair, validation and
+  "pikepdf[pdfa]>=10.15",  # pikepdf.pdfa: PDF/A repair, validation and
                            # verified save for speculative PDF/A conversion
   "Pillow>=12",                # imageops.has_decoded_pixels() reads Image._im,
                               # whose shape settled in 11 and is pinned by tests
@@ -116,7 +116,6 @@ module = [
   'reportlab.*',
   'fitz',
   'libxmp.utils',
-  'lxml.*',
   'pypdfium2',
   'uharfbuzz',
   'pillow_heif',

@@ -29,7 +29,7 @@
   `--ghostscript-jpeg-maxdpi`, and `--color-conversion-strategy` `CMYK`,
   `Gray` or `UseDeviceIndependentColor`) now select Ghostscript under `auto`
   and are an error with `internal`.
-- OCRmyPDF now requires `pikepdf[pdfa]` 10.14 or later. The `pdfa` extra
+- OCRmyPDF now requires `pikepdf[pdfa]` 10.15 or later. The `pdfa` extra
   brings in `jsonschema`, `referencing` and `fonttools`, all packaged by
   Debian and Red Hat.
 - `--force-ocr` now keeps hyperlinks, moving link annotations onto the

@@ -518,6 +518,47 @@ def log_prepare_result(result: PrepareResult | None) -> None:
         log.log(logging.getLevelName(level.upper()), '%s', sentence)
 
 
+def repair_annotations_for_ghostscript(pdf: Pdf, *, report_removed: bool) -> bool:
+    """Make annotation flags acceptable to PDF/A before Ghostscript converts.
+
+    Ghostscript's PDF/A conversion drops every annotation without the Print
+    flag, which loses hyperlinks from files whose producer did not set /F,
+    and drops hidden or non-viewable annotations, which PDF/A does not
+    permit. `pikepdf.pdfa.repair_annotation_flags` sets the Print flag on
+    viewable annotations and removes the others, as speculative conversion
+    does.
+
+    Args:
+        pdf: Opened PDF file, modified in place.
+        report_removed: Warn about removed annotations, as speculative
+            conversion does. Pass False if speculative conversion of the same
+            file has already reported them.
+
+    Returns:
+        True if any annotation was changed or removed.
+    """
+    from pikepdf.pdfa import PrepareResult, repair_annotation_flags
+
+    result = repair_annotation_flags(pdf)
+    if result.removed:
+        # Describe the removal in the same words as speculative conversion
+        described = PrepareResult(
+            annotations_removed=result.removed,
+            annotations_removed_pages=frozenset(result.removed_pages),
+        )
+        for _level, sentence in described.messages():
+            log.log(
+                logging.WARNING if report_removed else logging.DEBUG, '%s', sentence
+            )
+    if result.print_flags_set:
+        log.debug(
+            "Set the Print flag on %d annotation(s) so that PDF/A conversion "
+            "keeps them",
+            result.print_flags_set,
+        )
+    return bool(result.removed or result.print_flags_set)
+
+
 def prepare_pdfa(pdf: Pdf, output_type: str) -> PrepareResult:
     """Declare PDF/A in an open PDF that is to be saved as PDF/A.
 

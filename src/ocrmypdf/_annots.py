@@ -8,7 +8,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 
-from pikepdf import Array, Dictionary, Integer, Name, NamePath, NameTree, Page, Pdf
+from pikepdf import Array, Dictionary, Name, NamePath, NameTree, Page, Pdf
 
 log = logging.getLogger(__name__)
 
@@ -67,57 +67,6 @@ def remove_broken_goto_annotations(pdf: Pdf) -> bool:
                 modified = True
 
     return modified
-
-
-# Annotation flags (PDF 2.0 section 12.5.3)
-_ANNOT_INVISIBLE = 1
-_ANNOT_HIDDEN = 2
-_ANNOT_PRINT = 4
-_ANNOT_NOVIEW = 32
-_ANNOT_TOGGLE_NOVIEW = 256
-_ANNOT_NOT_VIEWABLE = (
-    _ANNOT_INVISIBLE | _ANNOT_HIDDEN | _ANNOT_NOVIEW | _ANNOT_TOGGLE_NOVIEW
-)
-
-
-def set_annotation_print_flags(pdf: Pdf) -> int:
-    """Set the Print flag on every viewable annotation that lacks it.
-
-    PDF/A requires the Print flag on annotations, and Ghostscript's PDF/A
-    conversion drops any annotation that does not have it, which loses
-    hyperlinks from files whose producer did not set /F. Annotations the
-    reader cannot see (Invisible, Hidden, NoView or ToggleNoView) are left
-    alone; PDF/A does not permit them, and Ghostscript drops them.
-
-    Args:
-        pdf: Opened PDF file.
-
-    Returns:
-        The number of annotations changed.
-    """
-    changed = 0
-    for page in pdf.pages:
-        annots = page.obj.get(Name.Annots)
-        if not isinstance(annots, Array):
-            continue
-        for annot in annots:
-            if not isinstance(annot, Dictionary):
-                continue
-            flags = annot.get(Name.F, 0)
-            if not isinstance(flags, int | Integer):
-                flags = 0
-            flags = int(flags)
-            if flags & _ANNOT_NOT_VIEWABLE or flags & _ANNOT_PRINT:
-                continue
-            annot[Name.F] = flags | _ANNOT_PRINT
-            changed += 1
-    if changed:
-        log.debug(
-            "Set the Print flag on %d annotation(s) so that PDF/A conversion "
-            "keeps them",
-            changed,
-        )
-    return changed
 
 
 def link_annotations(page: Page) -> list[Dictionary]:

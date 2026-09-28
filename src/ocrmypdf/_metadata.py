@@ -7,11 +7,12 @@ from __future__ import annotations
 
 import datetime as dt
 import logging
+import warnings
 from pathlib import Path
 from typing import Any
 
 import pikepdf
-from pikepdf import Dictionary, Name, Pdf
+from pikepdf import Dictionary, Name, Pdf, XmpTypeWarning
 from pikepdf import __version__ as PIKEPDF_VERSION
 from pikepdf.models.metadata import PdfMetadata, decode_pdf_date, encode_pdf_date
 
@@ -189,11 +190,6 @@ def _docinfo_to_copy(docinfo: dict[str, str], meta: PdfMetadata) -> dict[str, st
     return to_copy
 
 
-_RDF_NS = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'
-_RDF_DESCRIPTION = f'{{{_RDF_NS}}}Description'
-_RDF_ABOUT = f'{{{_RDF_NS}}}about'
-_XML_NS = 'http://www.w3.org/XML/1998/namespace'
-
 # XMP properties that describe this file rather than the document, and are
 # written afresh for the output, so they are never copied from the input.
 _XMP_REGENERATED_PROPERTIES = frozenset(
@@ -233,52 +229,19 @@ def _is_regenerated_xmp_property(key: str) -> bool:
     return namespace in _XMP_REGENERATED_NAMESPACES
 
 
-def _parse_xmp(pdf: Pdf):
-    """Return the rdf:RDF element of the PDF's XMP packet, or None."""
-    from lxml import etree
-
-    try:
-        data = pdf.Root.Metadata.read_bytes()
-    except (AttributeError, KeyError, TypeError, pikepdf.PdfError):
-        return None
-    parser = etree.XMLParser(
-        resolve_entities=False, no_network=True, load_dtd=False, remove_comments=True
+def _open_xmp(pdf: Pdf) -> PdfMetadata:
+    """Open the XMP metadata of a PDF for reading, tolerating malformed XMP."""
+    return pdf.open_metadata(
+        set_pikepdf_as_editor=False, update_docinfo=False, strict=False
     )
-    try:
-        root = etree.fromstring(data, parser)
-    except (etree.XMLSyntaxError, ValueError):
-        return None
-    if root.tag == f'{{{_RDF_NS}}}RDF':
-        return root
-    return root.find(f'{{{_RDF_NS}}}RDF')
 
 
-def _xmp_properties(rdf) -> dict[str, Any]:
-    """Map the Clark name of each top-level XMP property to its node.
+def _xmp_keys(pdf: Pdf) -> set[str]:
+    """Return the Clark names of the top-level XMP properties of a PDF.
 
-    Properties written as attributes of an rdf:Description map to that
-    Description. Every Description is read whatever its rdf:about, which
-    pikepdf's metadata editor does not do.
+    Properties are read from every rdf:Description, whatever its rdf:about.
     """
-
-    def is_property(name) -> bool:
-        return (
-            isinstance(name, str)
-            and name.startswith('{')
-            and name[1:].partition('}')[0] not in {_RDF_NS, _XML_NS}
-        )
-
-    properties: dict[str, Any] = {}
-    if rdf is None:
-        return properties
-    for desc in rdf.iterchildren(_RDF_DESCRIPTION):
-        for key in desc.attrib:
-            if is_property(key):
-                properties.setdefault(str(key), desc)
-        for node in desc.iterchildren():
-            if is_property(node.tag):
-                properties.setdefault(node.tag, node)
-    return properties
+    return {key for key in _open_xmp(pdf) if key.startswith('{')}
 
 
 def _copy_missing_xmp(original: Pdf, pdf: Pdf, excluded: set[str]) -> None:
@@ -286,45 +249,30 @@ def _copy_missing_xmp(original: Pdf, pdf: Pdf, excluded: set[str]) -> None:
 
     Ghostscript writes the XMP of a PDF/A from DocInfo alone, dropping
     properties that have no DocInfo equivalent, such as dc:contributor. The
-    properties are copied verbatim, keeping their structure, into a new
-    rdf:Description. Properties that are not permitted in PDF/A are removed
-    afterwards, when PDF/A is declared again.
+    properties are copied with their whole value: every language of a
+    language alternative, array order, structures and qualifiers. Properties
+    that are not permitted in PDF/A are removed afterwards, when PDF/A is
+    declared again.
 
     Args:
         original: The input PDF.
         pdf: The PDF whose XMP is to receive the properties.
         excluded: Clark names of properties not to copy.
     """
-    from copy import deepcopy
-
-    from lxml import etree
-
-    original_properties = _xmp_properties(_parse_xmp(original))
-    rdf = _parse_xmp(pdf)
-    if rdf is None:
-        return
-    present = _xmp_properties(rdf)
-    to_copy = {
-        key: node
-        for key, node in original_properties.items()
-        if key not in present
-        and key not in excluded
-        and not _is_regenerated_xmp_property(key)
-    }
-    if not to_copy:
-        return
-    # XMP requires every top-level Description to have the same rdf:about
-    existing = next(rdf.iterchildren(_RDF_DESCRIPTION), None)
-    about = existing.get(_RDF_ABOUT, '') if existing is not None else ''
-    desc = etree.SubElement(rdf, _RDF_DESCRIPTION, {_RDF_ABOUT: about})
-    for key, node in to_copy.items():
-        if node.tag == _RDF_DESCRIPTION:
-            desc.set(key, node.get(key))
-        else:
-            desc.append(deepcopy(node))
-    pdf.Root.Metadata.write(
-        etree.tostring(rdf.getroottree(), encoding='utf-8', xml_declaration=False)
-    )
+    source = _open_xmp(original)
+    keys = [
+        key
+        for key in source
+        if key.startswith('{') and not _is_regenerated_xmp_property(key)
+    ]
+    with (
+        warnings.catch_warnings(),
+        _open_xmp(pdf) as meta,
+    ):
+        # The input's XMP is copied as it is, whatever its structure;
+        # declaring PDF/A later removes or repairs what PDF/A does not permit
+        warnings.simplefilter('ignore', XmpTypeWarning)
+        meta.copy_properties(source, keys, exclude=excluded)
 
 
 # The title Ghostscript writes to the XMP of a PDF/A whose input has none;
@@ -464,9 +412,7 @@ def metadata_fixup(
             prepare_pdfa(pdf, pdfa_output_type)
         meta_missing = {
             key
-            for key in set(_xmp_properties(_parse_xmp(original)))
-            - set(_xmp_properties(_parse_xmp(pdf)))
-            - unset_keys
+            for key in _xmp_keys(original) - _xmp_keys(pdf) - unset_keys
             if not _is_regenerated_xmp_property(key)
         }
         report_on_metadata(options, meta_missing)

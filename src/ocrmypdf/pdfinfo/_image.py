@@ -7,7 +7,6 @@ from __future__ import annotations
 import logging
 from collections.abc import Iterator
 from decimal import Decimal
-from typing import cast
 
 from pikepdf import (
     Dictionary,
@@ -395,9 +394,7 @@ def _process_content_streams(
         # A Form XObject may provide its own matrix to map form space into
         # user space. Get this if one exists
         form_shorthand = container.get(Name.Matrix, Matrix())
-        # pikepdf's Matrix() stub omits the Object/Array overload, but the
-        # underlying C++ implementation accepts any 6-element numeric array.
-        form_matrix = Matrix(cast(Matrix, form_shorthand))
+        form_matrix = Matrix(form_shorthand)
 
         # Concatenate form matrix with CTM to ensure CTM is correct for
         # drawing this instance of the XObject

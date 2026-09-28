@@ -765,7 +765,7 @@ and verapdf can validate speculative PDF/A conversion.
 :::{versionchanged} 17.13.0
 veraPDF is no longer used. Speculative PDF/A conversion is checked by
 pikepdf's PDF/A support (`pikepdf.pdfa`), so OCRmyPDF requires
-`pikepdf[pdfa]` 10.14 or newer, which brings in the jsonschema, referencing
+`pikepdf[pdfa]` 10.15 or newer, which brings in the jsonschema, referencing
 and fonttools Python packages.
 :::
 
