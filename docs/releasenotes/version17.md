@@ -80,6 +80,22 @@
   italic style its name asks for, e.g. when Ghostscript 10 replaces
   `Verdana,Bold` with a regular-weight font, since the output then silently
   loses that styling.
+- When a page already has text and no OCR mode is given, OCRmyPDF now stops
+  with `PriorOcrFoundError` straight after scanning the file, instead of
+  when it reaches that page, after rasterizing and OCRing every page before
+  it. The error now names the page. Pages excluded by `--pages` are still
+  ignored. {issue}`613`
+- OCRmyPDF can now be bundled with PyInstaller without extra options: it
+  ships a PyInstaller hook that collects its builtin plugins and data files,
+  and pikepdf's PDF/A data. Builtin plugins are now imported explicitly
+  rather than discovered by scanning their package, which PyInstaller
+  could not follow, so a frozen app previously found no OCR engine.
+  Tesseract and Ghostscript must still be installed separately.
+  {issue}`1024`
+- `PageInfo` has a new property, `has_visible_text`, which is false for
+  text drawn invisibly, such as an OCR layer: text in render mode 3 or 7,
+  or in a glyphless font (Tesseract's and OCRmyPDF's). `has_text` is
+  unchanged.
 
 **Fixes**
 
@@ -130,6 +146,31 @@
   order, since Tesseract's slope sign is unreliable, places lines reading
   downward on their own column, and closes gaps between CJK words.
   {issue}`1244`
+- With `--force-ocr`, a scanned page that already had an invisible OCR layer
+  was rasterized at no less than 400 dpi, as if its text were visible, so a
+  150 dpi scan was upsampled and the file grew several times over. Invisible
+  text no longer raises the resolution; pages are rasterized at their
+  images' resolution. {issue}`961`
+- Process workers (`use_threads=False` on Windows and macOS, or
+  `--no-use-threads` on Linux) failed on every page with
+  `'OcrOptions' object has no attribute 'tesseract'`, because they did not
+  receive the plugins' option models. {issue}`1757`
+- `ocrmypdf.ocr()` rejected Tesseract thresholding method names such as
+  `tesseract_thresholding='adaptive-otsu'` with a validation error; it now
+  accepts the same names as the command line, as well as numbers.
+  {issue}`1460`
+- With the default renderer, `--rotate-pages --tesseract-timeout 0` detected
+  page orientation but did not rotate the pages. The cookbook now recommends
+  that combination for rotating or deskewing pages without OCR, since
+  `--ocr-engine none` does neither. {issue}`778`
+- When OCRmyPDF's own PDF/A failed its final check and Ghostscript was used
+  instead, the second optimization pass could fail with `FileExistsError`;
+  on Windows it always did.
+- Text set in OCRmyPDF's glyphless fallback font, Occulta, which is used when
+  no installed font covers a script (e.g. CJK on systems without a CJK
+  font), could not be fully selected or copied in Chrome and other
+  pdfium-based viewers: characters were dropped, and vertical lines were
+  lost entirely. Occulta's glyphs now have extents, but still draw nothing.
 
 ## v17.12.1
 
