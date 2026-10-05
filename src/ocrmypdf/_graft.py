@@ -732,7 +732,9 @@ class OcrGrafter:
         xobj.Type = Name.XObject
         xobj.Subtype = Name.Form
         xobj.FormType = 1
-        xobj.BBox = base_mediabox
+        # The form's content is in the text page's coordinate space; the CTM
+        # below maps it onto the base page
+        xobj.BBox = mediabox
 
         # Copy resources from text page's Resources to xobj
         # We need to handle this carefully since text_page is from a foreign PDF
@@ -850,7 +852,9 @@ class OcrGrafter:
                 xobj.Type = Name.XObject
                 xobj.Subtype = Name.Form
                 xobj.FormType = 1
-                xobj.BBox = base_mediabox
+                # The form's content is in the text page's coordinate space;
+                # the CTM maps it onto the base page
+                xobj.BBox = [float(v) for v in mediabox]
 
                 # Add font to xobj resources
                 if font_key is not None and font is not None:

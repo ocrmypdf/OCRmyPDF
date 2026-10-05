@@ -6,8 +6,11 @@ from __future__ import annotations
 from unittest.mock import patch
 
 import pikepdf
+import pytest
 
 import ocrmypdf
+
+from .conftest import RENDERERS
 
 
 def test_no_glyphless_graft(resources, outdir):
@@ -88,6 +91,73 @@ def test_redo_ocr_with_offset_mediabox(resources, outdir):
         assert b'cm' in content, (
             "Content stream should include a CTM to translate by the page origin"
         )
+
+
+def _text_layer_extents(page: pikepdf.Page) -> list[pikepdf.Rectangle]:
+    """Return the page-space extent of each grafted OCR form XObject's /BBox."""
+    extents = []
+    ctm = pikepdf.Matrix()
+    for operands, operator in pikepdf.parse_content_stream(page):
+        if operator == pikepdf.Operator('q'):
+            ctm = pikepdf.Matrix()
+        elif operator == pikepdf.Operator('cm'):
+            ctm = pikepdf.Matrix(*operands)
+        elif operator == pikepdf.Operator('Do') and str(operands[0]).startswith(
+            '/OCR-'
+        ):
+            xobj = page.Resources.XObject[operands[0]]
+            extents.append(ctm.transform(pikepdf.Rectangle(xobj.BBox)))
+    return extents
+
+
+def _assert_text_layer_covers_page(page: pikepdf.Page):
+    extents = _text_layer_extents(page)
+    assert extents, "Expected a grafted text layer"
+    mediabox = pikepdf.Rectangle(page.mediabox)
+    for extent in extents:
+        # The form /BBox clips its content, so mapped onto the page it must
+        # cover the whole page or OCR text will be lost
+        assert extent.llx <= mediabox.llx + 1
+        assert extent.lly <= mediabox.lly + 1
+        assert extent.urx >= mediabox.urx - 1
+        assert extent.ury >= mediabox.ury - 1
+
+
+@pytest.mark.parametrize('renderer', RENDERERS)
+@pytest.mark.parametrize('y_offset', [400, 1000])
+def test_text_layer_bbox_with_offset_mediabox(resources, outdir, renderer, y_offset):
+    input_pdf = outdir / 'offset_mediabox_input.pdf'
+    with pikepdf.open(resources / 'linn.pdf') as pdf:
+        page = pdf.pages[0]
+        llx, lly, urx, ury = (float(v) for v in page.MediaBox)
+        page.MediaBox = [llx, lly + y_offset, urx, ury + y_offset]
+        page.contents_add(
+            pikepdf.Stream(pdf, b'1 0 0 1 0 %d cm' % y_offset), prepend=True
+        )
+        pdf.save(input_pdf)
+
+    output_pdf = outdir / 'out.pdf'
+    ocrmypdf.ocr(input_pdf, output_pdf, pdf_renderer=renderer, output_type='pdf')
+
+    with pikepdf.open(output_pdf) as pdf:
+        _assert_text_layer_covers_page(pdf.pages[0])
+
+
+@pytest.mark.parametrize('renderer', RENDERERS)
+def test_text_layer_bbox_with_rotated_text(resources, outdir, renderer):
+    output_pdf = outdir / 'out.pdf'
+    ocrmypdf.ocr(
+        resources / 'cardinal.pdf',
+        output_pdf,
+        rotate_pages=True,
+        rotate_pages_threshold=0,
+        pdf_renderer=renderer,
+        output_type='pdf',
+    )
+
+    with pikepdf.open(output_pdf) as pdf:
+        for page in pdf.pages:
+            _assert_text_layer_covers_page(page)
 
 
 def test_strip_invisble_text():
