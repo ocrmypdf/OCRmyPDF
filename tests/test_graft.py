@@ -1,13 +1,19 @@
 # SPDX-FileCopyrightText: 2022 James R. Barlow
+# SPDX-FileCopyrightText: 2026 Som Samantray
 # SPDX-License-Identifier: MPL-2.0
 
 from __future__ import annotations
 
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import pikepdf
+import pymupdf
+import pytest
 
 import ocrmypdf
+from ocrmypdf._graft import OcrGrafter, RenderMode
+from ocrmypdf._options import ProcessingMode
 
 
 def test_no_glyphless_graft(resources, outdir):
@@ -88,6 +94,59 @@ def test_redo_ocr_with_offset_mediabox(resources, outdir):
         assert b'cm' in content, (
             "Content stream should include a CTM to translate by the page origin"
         )
+
+
+@pytest.mark.parametrize('renderer', ['fpdf2', 'sandwich'])
+def test_offset_mediabox_does_not_clip_grafted_text(renderer, tmp_path):
+    """Grafted text uses its own coordinates even when the page origin is offset."""
+    base = pikepdf.Pdf.new()
+    page = base.add_blank_page(page_size=(612, 792))
+    page.MediaBox = [0, 400, 612, 1192]
+
+    text_pdf = pikepdf.Pdf.new()
+    text_page = text_pdf.add_blank_page(page_size=(612, 792))
+    font = text_pdf.make_indirect(
+        pikepdf.Dictionary(
+            Type=pikepdf.Name.Font,
+            Subtype=pikepdf.Name.Type1,
+            BaseFont=pikepdf.Name.Helvetica,
+        )
+    )
+    text_page.Resources = pikepdf.Dictionary(Font=pikepdf.Dictionary(F1=font))
+    text_page.Contents = text_pdf.make_stream(
+        b'BT /F1 12 Tf 72 700 Td (Top line) Tj 0 -600 Td (Bottom line) Tj ET'
+    )
+    text_path = tmp_path / 'text.pdf'
+    text_pdf.save(text_path)
+
+    grafter = OcrGrafter.__new__(OcrGrafter)
+    grafter.pdf_base = base
+    grafter.context = SimpleNamespace(
+        options=SimpleNamespace(mode=ProcessingMode.default)
+    )
+    grafter.render_mode = RenderMode.UNDERNEATH
+
+    if renderer == 'fpdf2':
+        grafter._graft_fpdf2_text_layer(0, text_page, 0)
+    else:
+        grafter._graft_sandwich_text_layer(pageno=0, textpdf=text_path, text_rotation=0)
+
+    output_path = tmp_path / f'{renderer}.pdf'
+    base.save(output_path)
+
+    with pymupdf.open(output_path) as document:
+        assert document[0].get_text() == 'Top line\nBottom line\n'
+        words = {word[4]: word[1] for word in document[0].get_text('words')}
+        assert words['Top'] == pytest.approx(79.1)
+        assert words['Bottom'] == pytest.approx(679.1)
+
+    with pikepdf.open(output_path) as output:
+        xobj = next(
+            xobj
+            for xobj in output.pages[0].Resources.XObject.values()
+            if xobj.Subtype == pikepdf.Name.Form
+        )
+        assert [float(value) for value in xobj.BBox] == [0, 0, 612, 792]
 
 
 def test_strip_invisble_text():

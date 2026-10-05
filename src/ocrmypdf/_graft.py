@@ -732,7 +732,7 @@ class OcrGrafter:
         xobj.Type = Name.XObject
         xobj.Subtype = Name.Form
         xobj.FormType = 1
-        xobj.BBox = base_mediabox
+        xobj.BBox = mediabox
 
         # Copy resources from text page's Resources to xobj
         # We need to handle this carefully since text_page is from a foreign PDF
@@ -850,7 +850,7 @@ class OcrGrafter:
                 xobj.Type = Name.XObject
                 xobj.Subtype = Name.Form
                 xobj.FormType = 1
-                xobj.BBox = base_mediabox
+                xobj.BBox = [float(value) for value in mediabox]
 
                 # Add font to xobj resources
                 if font_key is not None and font is not None:
