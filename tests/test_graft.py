@@ -116,9 +116,6 @@ def test_offset_mediabox_does_not_clip_grafted_text(renderer, tmp_path):
     text_page.Contents = text_pdf.make_stream(
         b'BT /F1 12 Tf 72 700 Td (Top line) Tj 0 -600 Td (Bottom line) Tj ET'
     )
-    text_path = tmp_path / 'text.pdf'
-    text_pdf.save(text_path)
-
     grafter = OcrGrafter.__new__(OcrGrafter)
     grafter.pdf_base = base
     grafter.context = SimpleNamespace(
@@ -129,6 +126,8 @@ def test_offset_mediabox_does_not_clip_grafted_text(renderer, tmp_path):
     if renderer == 'fpdf2':
         grafter._graft_fpdf2_text_layer(0, text_page, 0)
     else:
+        text_path = tmp_path / 'text.pdf'
+        text_pdf.save(text_path)
         grafter._graft_sandwich_text_layer(pageno=0, textpdf=text_path, text_rotation=0)
 
     output_path = tmp_path / f'{renderer}.pdf'
