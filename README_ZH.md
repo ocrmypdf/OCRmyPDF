@@ -165,7 +165,7 @@ OCRmyPDF 提供插件接口，允许扩展或替换其能力。以下是我们�
 
 - [Going paperless with OCRmyPDF](https://medium.com/@ikirichenko/going-paperless-with-ocrmypdf-e2f36143f46a)
 - [Converting a scanned document into a compressed searchable PDF with redactions](https://medium.com/@treyharris/converting-a-scanned-document-into-a-compressed-searchable-pdf-with-redactions-63f61c34fe4c)
-- [c't 1-2014，第 59 页](https://heise.de/-2279695)：德国领先 IT 杂志 c't 对 OCRmyPDF v1.0 的详细介绍
+- [c't 1-2014，第 59 页](https://web.archive.org/web/20220115123833/https://www.heise.de/ct/ausgabe/2014-1-kurz-vorgestellt-Texterkennung-2279695.html)：德国领先 IT 杂志 c't 对 OCRmyPDF v1.0 的详细介绍
 - [heise Open Source, 09/2014: Texterkennung mit OCRmyPDF](https://heise.de/-2356670)
 - [heise Durchsuchbare PDF-Dokumente mit OCRmyPDF erstellen](https://www.heise.de/ratgeber/Durchsuchbare-PDF-Dokumente-mit-OCRmyPDF-erstellen-4607592.html)
 - [Excellent Utilities: OCRmyPDF](https://www.linuxlinks.com/excellent-utilities-ocrmypdf-add-ocr-text-layer-scanned-pdfs/)
