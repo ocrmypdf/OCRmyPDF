@@ -9,12 +9,14 @@ from __future__ import annotations
 import logging
 import os
 import re
+import stat
 import sys
 from collections.abc import Iterable, Iterator, Sequence
 from contextlib import suppress
 from io import BytesIO
 from pathlib import Path
 from shutil import copyfileobj
+from tempfile import mkstemp
 from typing import TYPE_CHECKING, BinaryIO, TypeVar, cast
 
 if TYPE_CHECKING:
@@ -1564,6 +1566,82 @@ def merge_sidecars(txt_files: Iterable[Path | None], context: PdfContext) -> Pat
     return output_file
 
 
+def _keep_owner_and_mode(path: Path, original: os.stat_result) -> bool:
+    """Give ``path`` the owner and permissions of the file it will replace.
+
+    Returns False if that is not possible.
+    """
+    try:
+        if hasattr(os, 'chown'):
+            created = path.stat()
+            if (created.st_uid, created.st_gid) != (original.st_uid, original.st_gid):
+                os.chown(path, original.st_uid, original.st_gid)
+        path.chmod(stat.S_IMODE(original.st_mode))
+    except OSError:
+        return False
+    return True
+
+
+def _discard_temp_file(temp_file: Path) -> None:
+    with suppress(OSError):
+        # Windows will not delete a file that has taken on the read-only attribute
+        temp_file.chmod(stat.S_IWRITE | stat.S_IREAD)
+        temp_file.unlink(missing_ok=True)
+
+
+def _replace_existing_file(input_stream: BinaryIO, output_file: Path) -> bool:
+    """Replace an existing output file, without ever leaving it incomplete.
+
+    Writing over a file in place empties it first, so a run that is killed or
+    fails while writing destroys the previous contents. When the input and
+    output are the same file, those are the only copy of the user's document.
+    Instead, the new contents are written to a temporary file alongside, which
+    is then renamed over the output file.
+
+    Renaming creates a new file, so this is only done when nothing else about
+    the output file would change. Returns False, having changed nothing, if
+    the output is not an existing regular file, has other hard links, cannot
+    keep its owner and permissions, or cannot be renamed over (for example, a
+    file that is bind-mounted into a container). The caller then writes in
+    place. A symbolic link is followed and the file it refers to is replaced.
+
+    Errors while writing the new contents are raised, since writing in place
+    would likely fail in the same way, after emptying the output file.
+    """
+    try:
+        target = output_file.resolve(strict=True)
+        original = target.stat()
+    except OSError:
+        return False
+    if not stat.S_ISREG(original.st_mode) or original.st_nlink > 1:
+        return False
+    try:
+        fd, temp_name = mkstemp(
+            dir=target.parent, prefix=f'.{target.name}.', suffix='.tmp'
+        )
+    except OSError:
+        return False
+    temp_file = Path(temp_name)
+    try:
+        with os.fdopen(fd, 'wb') as temp_stream:
+            copyfileobj(input_stream, temp_stream)
+            temp_stream.flush()
+            os.fsync(temp_stream.fileno())
+        if _keep_owner_and_mode(temp_file, original):
+            try:
+                temp_file.replace(target)
+            except OSError as e:
+                log.debug('Could not rename over %s, writing in place: %s', target, e)
+            else:
+                return True
+    except BaseException:
+        _discard_temp_file(temp_file)
+        raise
+    _discard_temp_file(temp_file)
+    input_stream.seek(0)
+    return False
+
+
 def copy_final(input_file: Path, output_file: PathOrIO) -> None:
     """Copy the final temporary file to the output destination.
 
@@ -1597,5 +1675,8 @@ def copy_final(input_file: Path, output_file: PathOrIO) -> None:
             # get the appropriate umask, ownership, etc.
             # The `hasattr` check above already ruled out stream-like objects.
             assert isinstance(output_file, str | bytes | os.PathLike)
-            with Path(os.fsdecode(output_file)).open('w+b') as output_stream:
+            output_path = Path(os.fsdecode(output_file))
+            if _replace_existing_file(input_stream, output_path):
+                return
+            with output_path.open('w+b') as output_stream:
                 copyfileobj(input_stream, output_stream)
