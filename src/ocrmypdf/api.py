@@ -55,7 +55,7 @@ from contextlib import contextmanager
 from enum import IntEnum
 from io import IOBase
 from pathlib import Path
-from typing import BinaryIO, overload
+from typing import Any, BinaryIO, overload
 from warnings import warn
 
 from pydantic import BaseModel
@@ -371,8 +371,8 @@ def configure_stdout_protection() -> bool:
 
 
 def _check_no_conflicting_ocr_params(
-    locals_dict: dict,
-    kwargs: dict,
+    locals_dict: dict[str, Any],
+    kwargs: dict[str, Any],
     excluded: set[str] | None = None,
 ) -> None:
     """Check that no individual OCR parameters conflict with OcrOptions.
@@ -420,7 +420,7 @@ def _check_no_conflicting_ocr_params(
         )
 
 
-def _remap_language_to_languages(options_kwargs: dict) -> None:
+def _remap_language_to_languages(options_kwargs: dict[str, Any]) -> None:
     """Map the public API 'language' parameter to OcrOptions 'languages' field.
 
     The public API uses 'language' (matching CLI --language) but OcrOptions
@@ -448,7 +448,7 @@ def _remap_language_to_languages(options_kwargs: dict) -> None:
         del options_kwargs['language']
 
 
-def _remap_jpg_quality_to_jpeg_quality(options_kwargs: dict) -> None:
+def _remap_jpg_quality_to_jpeg_quality(options_kwargs: dict[str, Any]) -> None:
     """Map the deprecated 'jpg_quality' parameter to 'jpeg_quality'.
 
     'jpg_quality' was the original API parameter name. 'jpeg_quality' is the

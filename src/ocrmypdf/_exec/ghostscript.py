@@ -9,6 +9,7 @@ import logging
 import os
 import re
 from collections import deque
+from dataclasses import dataclass
 from os import fspath
 from pathlib import Path
 from subprocess import PIPE, CalledProcessError
@@ -145,7 +146,16 @@ _RE_ITALIC = re.compile(r'italic|oblique', re.IGNORECASE)
 _RE_URW_FILE_NAME = re.compile(r'^[a-z]\d{6}l$')
 
 
-def find_style_lost_substitutions(stderr: str) -> list[tuple[str, str, str]]:
+@dataclass(frozen=True, slots=True)
+class StyleLostSubstitution:
+    """A font substitution that lost the bold or italic style of the original."""
+
+    requested: str
+    substitute: str
+    lost_style: str
+
+
+def find_style_lost_substitutions(stderr: str) -> list[StyleLostSubstitution]:
     """Find substitute fonts that lack the bold or italic style of the original.
 
     PDF/A requires embedded fonts, so Ghostscript substitutes one of its own
@@ -158,8 +168,8 @@ def find_style_lost_substitutions(stderr: str) -> list[tuple[str, str, str]]:
         stderr: Ghostscript's output.
 
     Returns:
-        (requested font, substitute font, lost style) for each substitution
-        that lost bold, italic or both, in order of appearance.
+        Each substitution that lost bold, italic or both, in order of
+        appearance.
     """
     matches = sorted(
         [
@@ -168,7 +178,7 @@ def find_style_lost_substitutions(stderr: str) -> list[tuple[str, str, str]]:
         ],
         key=lambda m: m.start(),
     )
-    found = []
+    found: list[StyleLostSubstitution] = []
     for match in matches:
         requested = match['requested'].strip()
         # Ghostscript 9.5x ends the message with a period
@@ -181,7 +191,9 @@ def find_style_lost_substitutions(stderr: str) -> list[tuple[str, str, str]]:
         if _RE_ITALIC.search(requested) and not _RE_ITALIC.search(substitute):
             lost.append('italic')
         if lost:
-            found.append((requested, substitute, ' and '.join(lost)))
+            found.append(
+                StyleLostSubstitution(requested, substitute, ' and '.join(lost))
+            )
     return found
 
 
@@ -190,8 +202,8 @@ def _warn_style_lost_substitutions(stderr: str) -> None:
     if not lost:
         return
     details = ', '.join(
-        f"{requested} (replaced by {substitute}, {style} lost)"
-        for requested, substitute, style in lost
+        f"{sub.requested} (replaced by {sub.substitute}, {sub.lost_style} lost)"
+        for sub in lost
     )
     log.warning(
         f"Ghostscript substituted fonts without the style of the original, so "

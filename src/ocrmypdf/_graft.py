@@ -46,7 +46,7 @@ class RenderMode(Enum):
     UNDERNEATH = 1
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class Fpdf2PageInfo:
     """Information needed to render and graft an fpdf2 page."""
 
@@ -57,7 +57,7 @@ class Fpdf2PageInfo:
     emplaced_page: bool
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class Fpdf2ParsedPage:
     """Parsed page data ready for fpdf2 rendering."""
 
@@ -214,6 +214,15 @@ _PAINTING_OPERATORS = frozenset(
 )
 
 
+@dataclass(frozen=True, slots=True)
+class _StrippedContent:
+    """A content stream rebuilt without its invisible text."""
+
+    content: bytes
+    vestigial: bool
+    """True if the content stream paints nothing at all."""
+
+
 def _strip_invisible_text_from_form_xobjects(
     pdf: Pdf,
     resources: Object,
@@ -241,16 +250,16 @@ def _strip_invisible_text_from_form_xobjects(
     # A Form XObject may reference itself transitively, so never revisit one.
     # Mark it as painting while in progress, so a recursive Do is kept.
     visited[key] = False
-    content, vestigial = _strip_invisible_text_from_content(
+    stripped = _strip_invisible_text_from_content(
         pdf,
         xobj,
         xobj.get(Name.Resources, Dictionary()),
         visited,
         inherited_render_mode,
     )
-    xobj.write(content)
-    visited[key] = vestigial
-    return vestigial
+    xobj.write(stripped.content)
+    visited[key] = stripped.vestigial
+    return stripped.vestigial
 
 
 def _strip_invisible_text_from_content(
@@ -259,11 +268,8 @@ def _strip_invisible_text_from_content(
     resources: Object,
     visited: dict[tuple[int, int], bool],
     initial_render_mode: int = 0,
-) -> tuple[bytes, bool]:
-    """Strip render-mode-3 text objects from ``obj``'s content stream.
-
-    Returns the rebuilt content stream and whether it paints nothing at all.
-    """
+) -> _StrippedContent:
+    """Strip render-mode-3 text objects from ``obj``'s content stream."""
     stream = []
     in_text_obj = False
     render_mode = initial_render_mode
@@ -327,21 +333,21 @@ def _strip_invisible_text_from_content(
 
     # pikepdf's Collection[...] parameter doesn't structurally match our
     # _ObjectList-based tuples even though it works fine at runtime.
-    return (
-        unparse_content_stream(
+    return _StrippedContent(
+        content=unparse_content_stream(
             cast('list[tuple[Collection[Object], Operator]]', stream)
         ),
-        vestigial,
+        vestigial=vestigial,
     )
 
 
 def strip_invisible_text(pdf: Pdf, page: Page):
     # get_resources resolves resources inherited from the page tree
     resources = page.get_resources()
-    content_stream, _vestigial = _strip_invisible_text_from_content(
+    stripped = _strip_invisible_text_from_content(
         pdf, page, Dictionary() if resources is None else resources, {}
     )
-    page.Contents = Stream(pdf, content_stream)
+    page.Contents = Stream(pdf, stripped.content)
 
 
 def discard_text_search_index(pdf: Pdf) -> bool:

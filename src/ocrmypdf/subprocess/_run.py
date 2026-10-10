@@ -16,6 +16,7 @@ import os
 import sys
 from collections.abc import Callable, Mapping, Sequence
 from contextlib import suppress
+from dataclasses import dataclass
 from pathlib import Path
 from subprocess import CalledProcessError, CompletedProcess, Popen
 from subprocess import run as subprocess_run
@@ -54,7 +55,8 @@ def run(
             status code. If False, the return value will indicate success or failure.
         kwargs: Additional arguments to pass to ``subprocess.run``.
     """
-    args, env, process_log, _text = _fix_process_args(args, env, kwargs)
+    setup = _fix_process_args(args, env, kwargs)
+    args, env, process_log = setup.args, setup.env, setup.process_log
 
     stderr = None
     stderr_name = 'stderr' if not logs_errors_to_stdout else 'stdout'
@@ -95,8 +97,9 @@ def run_polling_stderr(
     addition the expected encoding= and errors= arguments should be set. Note
     that if stdout is already set up, it need not be binary.
     """
-    args, env, process_log, text = _fix_process_args(args, env, kwargs)
-    assert text, "Must use text=True"
+    setup = _fix_process_args(args, env, kwargs)
+    args, env, process_log = setup.args, setup.env, setup.process_log
+    assert setup.text, "Must use text=True"
 
     with Popen(args, env=env, **kwargs) as proc:
         lines = []
@@ -115,9 +118,17 @@ def run_polling_stderr(
         return CompletedProcess(args, proc.returncode, None, stderr=stderr)
 
 
-def _fix_process_args(
-    args: Args, env: Environ | None, kwargs
-) -> tuple[Args, Environ, logging.Logger, bool]:
+@dataclass(frozen=True, slots=True)
+class _ProcessSetup:
+    """The resolved arguments, environment and logger for running a process."""
+
+    args: Args
+    env: Environ
+    process_log: logging.Logger
+    text: bool
+
+
+def _fix_process_args(args: Args, env: Environ | None, kwargs) -> _ProcessSetup:
     if not env:
         env = os.environ
 
@@ -134,4 +145,4 @@ def _fix_process_args(
     process_log = log.getChild(Path(program).name)
     text = bool(kwargs.get('text', False))
 
-    return args, env, process_log, text
+    return _ProcessSetup(args, env, process_log, text)

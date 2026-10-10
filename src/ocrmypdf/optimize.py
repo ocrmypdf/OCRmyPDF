@@ -29,7 +29,8 @@ import logging
 import sys
 import tempfile
 import threading
-from collections.abc import Callable, Iterator, MutableSet, Sequence
+from collections.abc import Callable, Iterator, Mapping, MutableSet, Sequence
+from dataclasses import dataclass
 from os import fspath
 from pathlib import Path
 from struct import pack as struct_pack
@@ -417,7 +418,15 @@ def extract_image_generic(
     return None
 
 
-def _find_image_xrefs(pdf: Pdf):
+@dataclass(frozen=True, slots=True)
+class _ImageXrefs:
+    """The images to consider optimizing, and where each is first used."""
+
+    working_xrefs: frozenset[Xref]
+    pageno_for_xref: Mapping[Xref, int]
+
+
+def _find_image_xrefs(pdf: Pdf) -> _ImageXrefs:
     """Find the xrefs of the images that pages and their Form XObjects use.
 
     Returns the xrefs of the images to consider for optimization, and the
@@ -453,8 +462,10 @@ def _find_image_xrefs(pdf: Pdf):
             if xref not in pageno_for_xref:
                 pageno_for_xref[xref] = pageno
 
-    working_xrefs = include_xrefs - exclude_xrefs
-    return working_xrefs, pageno_for_xref
+    return _ImageXrefs(
+        working_xrefs=frozenset(include_xrefs - exclude_xrefs),
+        pageno_for_xref=pageno_for_xref,
+    )
 
 
 def extract_images(
@@ -479,8 +490,9 @@ def extract_images(
     extension. extract_fn must also extract the file it finds interesting.
     """
     errors = 0
-    working_xrefs, pageno_for_xref = _find_image_xrefs(pdf)
-    for xref in working_xrefs:
+    image_xrefs = _find_image_xrefs(pdf)
+    pageno_for_xref = image_xrefs.pageno_for_xref
+    for xref in image_xrefs.working_xrefs:
         image = pdf.get_object((xref, 0))
         try:
             result = extract_fn(
@@ -581,9 +593,25 @@ def convert_to_jbig2(
         im_obj.write(jbig2_im_data, filter=Name.JBIG2Decode, decode_parms=None)
 
 
+@dataclass(frozen=True, slots=True)
+class _JpegResult:
+    """A recompressed JPEG; ``opt_jpg`` is None if it was not made smaller."""
+
+    xref: Xref
+    opt_jpg: Path | None
+
+
+@dataclass(frozen=True, slots=True)
+class _DeflateResult:
+    """A deflated JPEG; ``compdata`` is empty if it was not made smaller."""
+
+    xref: Xref
+    compdata: bytes
+
+
 def _optimize_jpeg(
     xref: Xref, in_jpg: Path, opt_jpg: Path, jpeg_quality: int
-) -> tuple[Xref, Path | None]:
+) -> _JpegResult:
     with Image.open(in_jpg) as im:
         save_kwargs: dict[str, Any] = {'optimize': True}
         if isinstance(jpeg_quality, int) and 0 < jpeg_quality <= 100:
@@ -593,8 +621,8 @@ def _optimize_jpeg(
     if opt_jpg.stat().st_size > in_jpg.stat().st_size:
         log.debug(f"xref {xref}, jpeg, made larger - skip")
         opt_jpg.unlink()
-        return xref, None
-    return xref, opt_jpg
+        return _JpegResult(xref, None)
+    return _JpegResult(xref, opt_jpg)
 
 
 def transcode_jpegs(
@@ -608,11 +636,11 @@ def transcode_jpegs(
             opt_jpg = in_jpg.with_suffix('.opt.jpg')
             yield xref, in_jpg, opt_jpg, options.jpeg_quality
 
-    def finish_jpeg(result: tuple[Xref, Path | None], pbar: ProgressBar):
-        xref, opt_jpg = result
-        if opt_jpg:
-            compdata = opt_jpg.read_bytes()  # JPEG can inserted into PDF as is
-            im_obj = pdf.get_object(xref, 0)
+    def finish_jpeg(result: _JpegResult, pbar: ProgressBar):
+        if result.opt_jpg:
+            # JPEG can inserted into PDF as is
+            compdata = result.opt_jpg.read_bytes()
+            im_obj = pdf.get_object(result.xref, 0)
             im_obj.write(compdata, filter=Name.DCTDecode)
         pbar.update()
 
@@ -673,17 +701,17 @@ def _find_deflatable_jpeg(
 
 def _deflate_jpeg(
     pdf: Pdf, lock: threading.Lock, xref: Xref, complevel: int
-) -> tuple[Xref, bytes]:
+) -> _DeflateResult:
     with lock:
         xobj = pdf.get_object(xref, 0)
         try:
             data = xobj.read_raw_bytes()
         except PdfError:
-            return xref, b''
+            return _DeflateResult(xref, b'')
     compdata = compress(data, complevel)
     if len(compdata) >= len(data):
-        return xref, b''
-    return xref, compdata
+        return _DeflateResult(xref, b'')
+    return _DeflateResult(xref, compdata)
 
 
 def deflate_jpegs(pdf: Pdf, root: Path, options, executor: Executor) -> None:
@@ -708,12 +736,11 @@ def deflate_jpegs(pdf: Pdf, root: Path, options, executor: Executor) -> None:
         for xref in jpegs:
             yield pdf, lock, xref, complevel
 
-    def finish(result: tuple[Xref, bytes], pbar: ProgressBar):
-        xref, compdata = result
-        if len(compdata) > 0:
+    def finish(result: _DeflateResult, pbar: ProgressBar):
+        if len(result.compdata) > 0:
             with lock:
-                xobj = pdf.get_object(xref, 0)
-                xobj.write(compdata, filter=[Name.FlateDecode, Name.DCTDecode])
+                xobj = pdf.get_object(result.xref, 0)
+                xobj.write(result.compdata, filter=[Name.FlateDecode, Name.DCTDecode])
         pbar.update()
 
     executor(

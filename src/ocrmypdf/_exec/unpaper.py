@@ -9,6 +9,7 @@ import logging
 import os
 from collections.abc import Iterator
 from contextlib import contextmanager
+from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
 from subprocess import PIPE, STDOUT
@@ -51,8 +52,17 @@ version = PROBE.version
 available = PROBE.available
 
 
+@dataclass(frozen=True, slots=True)
+class _UnpaperIO:
+    """The files and working directory for one run of unpaper."""
+
+    input_png: Path
+    output_pnm: Path
+    tmpdir: Path
+
+
 @contextmanager
-def _setup_unpaper_io(input_file: Path) -> Iterator[tuple[Path, Path, Path]]:
+def _setup_unpaper_io(input_file: Path) -> Iterator[_UnpaperIO]:
     with Image.open(input_file) as im:
         if im.width * im.height >= UNPAPER_IMAGE_PIXEL_LIMIT:
             raise UnpaperImageTooLargeError(w=im.width, h=im.height)
@@ -64,7 +74,7 @@ def _setup_unpaper_io(input_file: Path) -> Iterator[tuple[Path, Path, Path]]:
         # unpaper can write .png too, but it seems to write them slowly
         # adds a few seconds to test suite - so just use pnm
         output_pnm = tmppath / 'output.pnm'
-        yield input_png, output_pnm, tmppath
+        yield _UnpaperIO(input_png, output_pnm, tmppath)
 
 
 def run_unpaper(
@@ -72,7 +82,8 @@ def run_unpaper(
 ) -> None:
     args_unpaper = ['unpaper', '-v', '--dpi', str(round(dpi, 6))] + mode_args
 
-    with _setup_unpaper_io(input_file) as (input_png, output_pnm, tmpdir):
+    with _setup_unpaper_io(input_file) as io:
+        input_png, output_pnm, tmpdir = io.input_png, io.output_pnm, io.tmpdir
         # To prevent any shenanigans from accepting arbitrary parameters in
         # --unpaper-args, we:
         # 1) run with cwd set to a tmpdir with only unpaper's files

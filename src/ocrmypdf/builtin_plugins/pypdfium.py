@@ -7,6 +7,7 @@ from __future__ import annotations
 import logging
 import threading
 from contextlib import closing
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
@@ -62,13 +63,30 @@ def _expand_cropbox_to_mediabox(page) -> None:
     page.set_cropbox(*mediabox)
 
 
+@dataclass(frozen=True, slots=True)
+class _RenderedBitmap:
+    """A rendered page, and the size in pixels it is expected to have."""
+
+    bitmap: pdfium.PdfBitmap
+    expected_width: int
+    expected_height: int
+
+
+@dataclass(frozen=True, slots=True)
+class _OutputImage:
+    """An image ready to save, and the format to save it in."""
+
+    image: Image.Image
+    format_name: Literal['PNG', 'TIFF', 'JPEG']
+
+
 def _render_page_to_bitmap(
     page: pdfium.PdfPage,
     raster_device: str,
     raster_dpi: Resolution,
     rotation: int | None,
     use_cropbox: bool,
-) -> tuple[pdfium.PdfBitmap, int, int]:
+) -> _RenderedBitmap:
     """Render a PDF page to a bitmap."""
     # Round DPI to match Ghostscript's precision
     raster_dpi = raster_dpi.round(6)
@@ -116,7 +134,7 @@ def _render_page_to_bitmap(
         # Note: pypdfium2 doesn't have a direct equivalent to filter_vector
         # This would require more complex implementation if needed
     )
-    return bitmap, expected_width, expected_height
+    return _RenderedBitmap(bitmap, expected_width, expected_height)
 
 
 # PIL image mode to build from each PDFium bitmap format. PDFium hands back
@@ -213,7 +231,7 @@ def _process_image_for_output(
     stop_on_soft_error: bool,
     expected_width: int | None = None,
     expected_height: int | None = None,
-) -> tuple[Image.Image, Literal['PNG', 'TIFF', 'JPEG']]:
+) -> _OutputImage:
     """Process PIL image for output format and set DPI metadata."""
     # Correct dimensions if slightly off (within 2 pixels tolerance)
     if expected_width and expected_height:
@@ -297,7 +315,7 @@ def _process_image_for_output(
         else:
             log.warning(f"Unsupported raster device {raster_device}, using PNG")
 
-    return pil_image, format_name
+    return _OutputImage(pil_image, format_name)
 
 
 def _save_image(pil_image: Image.Image, output_file: Path, format_name: str) -> None:
@@ -349,25 +367,27 @@ def rasterize_pdf_page(
         closing(pdf[pageno - 1]) as page,
     ):
         # Render the page to a bitmap
-        bitmap, expected_width, expected_height = _render_page_to_bitmap(
+        rendered = _render_page_to_bitmap(
             page, raster_device, raster_dpi, rotation, use_cropbox
         )
-        with closing(bitmap):
+        with closing(rendered.bitmap):
             # Convert to PIL Image, which must own its pixels because closing the
             # bitmap frees the buffer PIL would otherwise alias.
-            pil_image = _bitmap_to_pil(bitmap, expected_width, expected_height)
+            pil_image = _bitmap_to_pil(
+                rendered.bitmap, rendered.expected_width, rendered.expected_height
+            )
 
     # Process and save image outside the lock (PIL operations are thread-safe)
-    pil_image, format_name = _process_image_for_output(
+    output = _process_image_for_output(
         pil_image,
         raster_device,
         raster_dpi,
         page_dpi,
         stop_on_soft_error,
-        expected_width,
-        expected_height,
+        rendered.expected_width,
+        rendered.expected_height,
     )
 
-    _save_image(pil_image, output_file, format_name)
+    _save_image(output.image, output_file, output.format_name)
 
     return output_file

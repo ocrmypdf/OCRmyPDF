@@ -13,11 +13,12 @@ import stat
 import sys
 from collections.abc import Iterable, Iterator, Sequence
 from contextlib import suppress
+from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
 from shutil import copyfileobj
 from tempfile import mkstemp
-from typing import TYPE_CHECKING, BinaryIO, TypeVar, cast
+from typing import TYPE_CHECKING, BinaryIO, Generic, TypeVar, cast
 
 if TYPE_CHECKING:
     from pikepdf.pdfa import Report
@@ -80,6 +81,64 @@ except ImportError:
 
 
 T = TypeVar("T")
+
+
+@dataclass(frozen=True, slots=True)
+class RasterDpi:
+    """The resolutions used to rasterize a page."""
+
+    canvas: Resolution
+    """Resolution of the rasterized canvas."""
+
+    page: Resolution
+    """Resolution recorded as the page's own."""
+
+
+@dataclass(frozen=True, slots=True)
+class OcrEngineOutput:
+    """What the OCR engine produced for a page."""
+
+    text: Path
+    """Text sidecar file."""
+
+    ocr: Path | None = None
+    """hOCR file or text-only PDF, depending on the renderer."""
+
+    ocr_tree: OcrElement | None = None
+    """Direct OcrElement tree (when using generate_ocr() API)."""
+
+
+@dataclass(frozen=True, slots=True)
+class FinishedPdf:
+    """The output PDF, with the messages the optimizer produced for it."""
+
+    pdf: Path
+    optimize_messages: Sequence[str]
+
+
+@dataclass(frozen=True, slots=True)
+class FileSizeRatio:
+    """How an output file's size compares to its input."""
+
+    ratio: float
+    """Input size divided by output size."""
+
+    savings: float
+    """Fraction of the input size that was saved."""
+
+
+@dataclass(frozen=True, slots=True)
+class CompressedRange(Generic[T]):
+    """A range of 1-based indices and the element found there.
+
+    If the element is None, the range represents a skipped range of indices.
+    """
+
+    first: int
+    last: int
+    item: T | None
+
+
 log = logging.getLogger(__name__)
 
 VECTOR_PAGE_DPI = 400
@@ -587,7 +646,7 @@ def calculate_image_dpi(page_context: PageContext) -> Resolution:
     return image_dpi
 
 
-def calculate_raster_dpi(page_context: PageContext):
+def calculate_raster_dpi(page_context: PageContext) -> RasterDpi:
     """Calculate the DPI for rasterization."""
     # Produce the page image with square resolution or else deskew and OCR
     # will not work properly.
@@ -605,7 +664,7 @@ def calculate_raster_dpi(page_context: PageContext):
             dpi_profile.max_dpi,
             canvas_dpi.to_scalar(),
         )
-    return canvas_dpi, page_dpi
+    return RasterDpi(canvas=canvas_dpi, page=page_dpi)
 
 
 def _select_raster_device(pageinfo: PageInfo) -> GhostscriptRasterDevice:
@@ -684,7 +743,8 @@ def rasterize(
         f"Rasterize with {device}, rotation {correction}, mediabox {pageinfo.mediabox}"
     )
 
-    canvas_dpi, page_dpi = calculate_raster_dpi(page_context)
+    raster_dpi = calculate_raster_dpi(page_context)
+    canvas_dpi, page_dpi = raster_dpi.canvas, raster_dpi.page
 
     page_context.plugin_manager.rasterize_pdf_page(
         input_file=input_file,
@@ -837,7 +897,7 @@ def create_ocr_image(image: Path, page_context: PageContext) -> Path:
     return output_file
 
 
-def ocr_engine_hocr(input_file: Path, page_context: PageContext) -> tuple[Path, Path]:
+def ocr_engine_hocr(input_file: Path, page_context: PageContext) -> OcrEngineOutput:
     """Run the OCR engine and generate hOCR output."""
     hocr_out = page_context.get_path('ocr_hocr.hocr')
     hocr_text_out = page_context.get_path('ocr_hocr.txt')
@@ -850,12 +910,10 @@ def ocr_engine_hocr(input_file: Path, page_context: PageContext) -> tuple[Path, 
         output_text=hocr_text_out,
         options=options,
     )
-    return hocr_out, hocr_text_out
+    return OcrEngineOutput(text=hocr_text_out, ocr=hocr_out)
 
 
-def ocr_engine_direct(
-    input_file: Path, page_context: PageContext
-) -> tuple[OcrElement, Path]:
+def ocr_engine_direct(input_file: Path, page_context: PageContext) -> OcrEngineOutput:
     """Run the OCR engine and return OcrElement tree directly.
 
     This is the modern path for OCR engines that support the generate_ocr() API.
@@ -866,7 +924,7 @@ def ocr_engine_direct(
         page_context: The page context with options and path utilities.
 
     Returns:
-        A tuple of (OcrElement tree, path to text sidecar file).
+        The OcrElement tree and the path to the text sidecar file.
     """
     text_out = page_context.get_path('ocr_direct.txt')
     options = page_context.options
@@ -881,7 +939,7 @@ def ocr_engine_direct(
     # Write text sidecar file
     text_out.write_text(text_content, encoding='utf-8')
 
-    return ocr_tree, text_out
+    return OcrEngineOutput(text=text_out, ocr_tree=ocr_tree)
 
 
 def should_visible_page_image_use_jpg(pageinfo: PageInfo) -> bool:
@@ -970,7 +1028,7 @@ def create_pdf_page_from_image(
 
 def ocr_engine_textonly_pdf(
     input_image: Path, page_context: PageContext
-) -> tuple[Path, Path]:
+) -> OcrEngineOutput:
     """Run the OCR engine and generate a text-only PDF (will look blank)."""
     output_pdf = page_context.get_path('ocr_tess.pdf')
     output_text = page_context.get_path('ocr_tess.txt')
@@ -983,7 +1041,7 @@ def ocr_engine_textonly_pdf(
         output_text=output_text,
         options=options,
     )
-    return output_pdf, output_text
+    return OcrEngineOutput(text=output_text, ocr=output_pdf)
 
 
 def _offset_rect(rect: tuple[float, float, float, float], offset: tuple[float, float]):
@@ -1315,7 +1373,7 @@ def _fix_metadata_and_optimize(
     executor: Executor,
     pdfa_output_type: str | None,
     optimize_filename: str = 'optimize.pdf',
-) -> tuple[Path, Sequence[str]]:
+) -> FinishedPdf:
     """Run the metadata fixup and the optimizer, the last steps of the pipeline.
 
     A PDF/A file is saved with the settings pikepdf pins for its flavour, so
@@ -1377,7 +1435,7 @@ def _final_speculative_pdfa_passes(output_pdf: Path, context: PdfContext) -> boo
 
 def finish_output_pdf(
     input_pdf: Path, context: PdfContext, executor: Executor
-) -> tuple[Path, Sequence[str]]:
+) -> FinishedPdf:
     """Produce the output file: convert to PDF/A if needed, fix metadata, optimize.
 
     For the 'pdfa' output types and 'auto', PDF/A is attempted first by
@@ -1412,7 +1470,7 @@ def finish_output_pdf(
         return _fix_metadata_and_optimize(input_pdf, context, executor, None)
     pdfa_output_type = 'pdfa' if auto else output_type
 
-    def finish(pdf: Path | None, *, retry: bool = False) -> tuple[Path, Sequence[str]]:
+    def finish(pdf: Path | None, *, retry: bool = False) -> FinishedPdf:
         if auto:
             options.extra_attrs['_actual_output_type'] = (
                 'pdf' if pdf is None else 'pdfa'
@@ -1435,7 +1493,7 @@ def finish_output_pdf(
     speculative = try_speculative_pdfa(input_pdf, context)
     if speculative is not None:
         result = finish(speculative)
-        if _final_speculative_pdfa_passes(result[0], context):
+        if _final_speculative_pdfa_passes(result.pdf, context):
             return result
 
     gs_out = _pdfa_without_speculation(input_pdf, context)
@@ -1462,9 +1520,7 @@ def should_linearize(working_file: Path, context: PdfContext) -> bool:
     return filesize > (context.options.fast_web_view * 1_000_000)
 
 
-def _file_size_ratio(
-    input_file: Path, output_file: Path
-) -> tuple[float | None, float | None]:
+def _file_size_ratio(input_file: Path, output_file: Path) -> FileSizeRatio | None:
     """Calculate ratio of input to output file sizes and percentage savings.
 
     Args:
@@ -1472,17 +1528,16 @@ def _file_size_ratio(
         output_file (Path): The path to the output file.
 
     Returns:
-        tuple[float | None, float | None]: A tuple containing the file size
-        ratio and the percentage savings achieved by the output file size
-        compared to the input file size.
+        The file size ratio and the savings achieved by the output file size
+        compared to the input file size, or None if the output file is empty.
     """
     input_size = input_file.stat().st_size
     output_size = output_file.stat().st_size
     if output_size == 0:
-        return None, None
-    ratio = input_size / output_size
-    savings = 1 - output_size / input_size
-    return ratio, savings
+        return None
+    return FileSizeRatio(
+        ratio=input_size / output_size, savings=1 - output_size / input_size
+    )
 
 
 def optimize_pdf(
@@ -1490,7 +1545,7 @@ def optimize_pdf(
     context: PdfContext,
     executor: Executor,
     output_filename: str = 'optimize.pdf',
-) -> tuple[Path, Sequence[str]]:
+) -> FinishedPdf:
     """Optimize the given PDF file."""
     output_file = context.get_path(output_filename)
     output_pdf, messages = context.plugin_manager.optimize_pdf(
@@ -1501,18 +1556,20 @@ def optimize_pdf(
         linearize=should_linearize(input_file, context),
     )
 
-    ratio, savings = _file_size_ratio(input_file, output_file)
-    if ratio:
-        log.info(f"Image optimization ratio: {ratio:.2f} savings: {(savings):.1%}")
-    ratio, savings = _file_size_ratio(context.origin, output_file)
-    if ratio:
-        log.info(f"Total file size ratio: {ratio:.2f} savings: {(savings):.1%}")
-    return output_pdf, messages
+    size = _file_size_ratio(input_file, output_file)
+    if size and size.ratio:
+        log.info(
+            f"Image optimization ratio: {size.ratio:.2f} savings: {size.savings:.1%}"
+        )
+    size = _file_size_ratio(context.origin, output_file)
+    if size and size.ratio:
+        log.info(f"Total file size ratio: {size.ratio:.2f} savings: {size.savings:.1%}")
+    return FinishedPdf(pdf=output_pdf, optimize_messages=messages)
 
 
 def enumerate_compress_ranges(
     iterable: Iterable[T],
-) -> Iterator[tuple[tuple[int, int], T | None]]:
+) -> Iterator[CompressedRange[T]]:
     """Enumerate the ranges of non-empty elements in an iterable.
 
     Compresses consecutive ranges of length 1 into single elements.
@@ -1521,8 +1578,8 @@ def enumerate_compress_ranges(
         iterable: An iterable of elements to enumerate.
 
     Yields:
-        A tuple containing a range of indices and the corresponding element.
-        If the element is None, the range represents a skipped range of indices.
+        A range of indices and the corresponding element. If the element is
+        None, the range represents a skipped range of indices.
     """
     skipped_from: int | None = None
     index: int | None = None
@@ -1530,9 +1587,9 @@ def enumerate_compress_ranges(
         index += 1
         if txt_file:
             if skipped_from is not None:
-                yield (skipped_from, index - 1), None
+                yield CompressedRange(skipped_from, index - 1, None)
                 skipped_from = None
-            yield (index, index), txt_file
+            yield CompressedRange(index, index, txt_file)
         else:
             if skipped_from is None:
                 skipped_from = index
@@ -1540,7 +1597,7 @@ def enumerate_compress_ranges(
         # skipped_from can only be set inside the loop above, so the loop
         # must have run at least once and index is guaranteed to be an int.
         assert index is not None
-        yield (skipped_from, index), None
+        yield CompressedRange(skipped_from, index, None)
 
 
 def merge_sidecars(txt_files: Iterable[Path | None], context: PdfContext) -> Path:
@@ -1552,7 +1609,8 @@ def merge_sidecars(txt_files: Iterable[Path | None], context: PdfContext) -> Pat
     """
     output_file = context.get_path('sidecar.txt')
     with output_file.open('w', encoding="utf-8") as stream:
-        for (from_, to_), txt_file in enumerate_compress_ranges(txt_files):
+        for page_range in enumerate_compress_ranges(txt_files):
+            from_, to_, txt_file = page_range.first, page_range.last, page_range.item
             if from_ != 1:
                 stream.write('\f')  # Form feed between pages for all pages after first
             if txt_file:

@@ -29,6 +29,7 @@ from ocrmypdf.builtin_plugins import ghostscript as gs_plugin
 from ocrmypdf.builtin_plugins.ghostscript import (
     PdfaImageCompression,
     _collect_dctdecode_images,
+    _JpegSignature,
     _repair_gs106_jpeg_corruption,
     _resolve_auto_compression,
 )
@@ -507,8 +508,15 @@ Substituting font Helvetica-BoldOblique for Verdana,BoldItalic.
 """
 
 
+def _style_lost(stderr: str) -> list[tuple[str, str, str]]:
+    return [
+        (sub.requested, sub.substitute, sub.lost_style)
+        for sub in ghostscript.find_style_lost_substitutions(stderr)
+    ]
+
+
 def test_style_lost_substitutions_gs10():
-    assert ghostscript.find_style_lost_substitutions(_GS10_FONT_STDERR) == [
+    assert _style_lost(_GS10_FONT_STDERR) == [
         ('Verdana,Bold', 'NimbusSans-Regular', 'bold'),
         ('Verdana,BoldItalic', 'NimbusSans-Italic', 'bold'),
     ]
@@ -516,7 +524,7 @@ def test_style_lost_substitutions_gs10():
 
 def test_style_lost_substitutions_gs9():
     stderr = _GS9_FONT_STDERR + 'Substituting font Helvetica for Tahoma,Bold.\n'
-    assert ghostscript.find_style_lost_substitutions(stderr) == [
+    assert _style_lost(stderr) == [
         ('Tahoma,Bold', 'Helvetica', 'bold'),
     ]
 
@@ -526,7 +534,7 @@ def test_style_lost_substitutions_both_styles():
         'Loading font Georgia,BoldItalic (or substitute) from '
         '/gs/Resource/Font/NimbusRoman-Regular\n'
     )
-    assert ghostscript.find_style_lost_substitutions(stderr) == [
+    assert _style_lost(stderr) == [
         ('Georgia,BoldItalic', 'NimbusRoman-Regular', 'bold and italic'),
     ]
 
@@ -537,7 +545,7 @@ def test_style_lost_substitutions_trailing_period():
         'Loading font Verdana,Bold (or substitute) from '
         '/usr/share/ghostscript/9.55.0/Resource/Font/NimbusSans-Regular.\n'
     )
-    assert ghostscript.find_style_lost_substitutions(stderr) == [
+    assert _style_lost(stderr) == [
         ('Verdana,Bold', 'NimbusSans-Regular', 'bold'),
     ]
 
@@ -1274,9 +1282,10 @@ class TestCollectDctdecodeImages:
         pdf.pages[0].Resources.XObject.Im0 = make_image_stream(pdf, jpeg)
 
         images = _collect_dctdecode_images(pdf)
-        assert list(images) == [(8, 8, '/DCTDecode', 8, '/DeviceRGB')]
-        ((_stream, raw_bytes),) = images[(8, 8, '/DCTDecode', 8, '/DeviceRGB')]
-        assert raw_bytes == jpeg
+        sig = _JpegSignature(8, 8, '/DCTDecode', 8, '/DeviceRGB')
+        assert list(images) == [sig]
+        (image,) = images[sig]
+        assert image.raw_bytes == jpeg
 
     def test_image_inside_nested_form_xobjects(self):
         pdf = make_pdf()
@@ -1288,7 +1297,7 @@ class TestCollectDctdecodeImages:
         )
         images = _collect_dctdecode_images(pdf)
         assert len(images) == 1
-        assert next(iter(images.values()))[0][1] == image.read_raw_bytes()
+        assert next(iter(images.values()))[0].raw_bytes == image.read_raw_bytes()
 
     def test_form_without_resources_is_skipped(self):
         pdf = make_pdf_with_xobjects(Fm0=None)
@@ -1360,7 +1369,7 @@ class TestCollectDctdecodeImages:
         pdf.pages[0].Resources.XObject.Im0 = stream
 
         images = _collect_dctdecode_images(pdf)
-        assert next(iter(images))[4] == expected_key
+        assert next(iter(images)).colorspace == expected_key
 
     def test_iccbased_colorspace_key_uses_family(self):
         pdf = make_pdf_with_xobjects(Im0=None)
@@ -1369,7 +1378,7 @@ class TestCollectDctdecodeImages:
             pdf, ColorSpace=pikepdf.Array([pikepdf.Name.ICCBased, icc])
         )
         images = _collect_dctdecode_images(pdf)
-        assert next(iter(images))[4] == '/ICCBased'
+        assert next(iter(images)).colorspace == '/ICCBased'
 
     def test_empty_array_colorspace(self):
         pdf = make_pdf_with_xobjects(Im0=None)
@@ -1377,7 +1386,7 @@ class TestCollectDctdecodeImages:
             pdf, ColorSpace=pikepdf.Array([])
         )
         images = _collect_dctdecode_images(pdf)
-        assert next(iter(images))[4] == str(pikepdf.Array([]))
+        assert next(iter(images)).colorspace == str(pikepdf.Array([]))
 
     def test_identical_images_are_grouped_by_signature(self):
         pdf = make_pdf_with_xobjects(Im0=None, Im1=None)

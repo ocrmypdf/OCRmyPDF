@@ -9,6 +9,7 @@ from __future__ import annotations
 import logging
 import logging.handlers
 from collections.abc import Sequence
+from dataclasses import replace
 from functools import partial
 
 import PIL
@@ -44,8 +45,7 @@ def _exec_hocrtransform_sync(page_context: PageContext) -> HOCRResult:
         return HOCRResult(pageno=page_context.pageno)
     hocr_result = HOCRResult.from_json(hocr_json.read_text())
     # hOCR path is passed directly to the grafting phase where fpdf2 renders it
-    hocr_result.textpdf = page_context.get_path('ocr_hocr.hocr')
-    return hocr_result
+    return replace(hocr_result, textpdf=page_context.get_path('ocr_hocr.hocr'))
 
 
 def exec_hocr_to_ocr_pdf(context: PdfContext, executor: Executor) -> Sequence[str]:
@@ -96,10 +96,11 @@ def exec_hocr_to_ocr_pdf(context: PdfContext, executor: Executor) -> Sequence[st
     if options.output_type != 'none':
         # PDF/A and metadata
         log.info("Postprocessing...")
-        pdf, messages = postprocess(pdf, context, executor)
+        finished = postprocess(pdf, context, executor)
+        messages = finished.optimize_messages
 
         # Copy PDF file to destination
-        copy_final(pdf, options.output_file)
+        copy_final(finished.pdf, options.output_file)
     return messages
 
 

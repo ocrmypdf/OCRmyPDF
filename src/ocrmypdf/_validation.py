@@ -11,6 +11,7 @@ import os
 import sys
 from collections.abc import Sequence
 from collections.abc import Set as AbstractSet
+from dataclasses import dataclass
 from pathlib import Path
 from shutil import copyfileobj
 from typing import BinaryIO, cast
@@ -224,14 +225,25 @@ def check_options(options: OcrOptions, plugin_manager: OcrmypdfPluginManager) ->
     _check_plugin_options(options, plugin_manager)
 
 
-def create_input_file(options: OcrOptions, work_folder: Path) -> tuple[Path, str]:
+@dataclass(frozen=True, slots=True)
+class InputFile:
+    """The input, as a file in the work folder."""
+
+    path: Path
+    """Where the input can be read in the work folder."""
+
+    original_name: str
+    """The name the input was given by, for use in messages."""
+
+
+def create_input_file(options: OcrOptions, work_folder: Path) -> InputFile:
     if options.input_file == '-':
         # stdin
         log.info('reading file from standard input')
         target = work_folder / 'stdin'
         with target.open('wb') as stream_buffer:
             copyfileobj(sys.stdin.buffer, stream_buffer)
-        return target, "stdin"
+        return InputFile(target, "stdin")
     elif hasattr(options.input_file, 'readable'):
         input_stream = cast(BinaryIO, options.input_file)
         if not input_stream.readable():
@@ -240,7 +252,7 @@ def create_input_file(options: OcrOptions, work_folder: Path) -> tuple[Path, str
         target = work_folder / 'stream'
         with target.open('wb') as stream_buffer:
             copyfileobj(input_stream, stream_buffer)
-        return target, "stream"
+        return InputFile(target, "stream")
     else:
         # The branches above already ruled out the stdin sentinel and
         # stream-like objects, so this must be a filesystem path.
@@ -248,7 +260,7 @@ def create_input_file(options: OcrOptions, work_folder: Path) -> tuple[Path, str
         try:
             target = work_folder / 'origin'
             safe_symlink(options.input_file, target)
-            return target, os.fsdecode(options.input_file)
+            return InputFile(target, os.fsdecode(options.input_file))
         except FileNotFoundError as e:
             msg = f"File not found - {os.fsdecode(options.input_file)}"
             if running_in_docker():  # pragma: no cover

@@ -44,16 +44,14 @@ def _exec_page_hocr_sync(page_context: PageContext) -> HOCRResult:
     if not is_ocr_required(page_context):
         return HOCRResult(pageno=page_context.pageno)
 
-    ocr_image_out, pdf_page_from_image_out, orientation_correction = process_page(
-        page_context
-    )
-    hocr_out, _ = ocr_engine_hocr(ocr_image_out, page_context)
+    images = process_page(page_context)
+    engine_output = ocr_engine_hocr(images.ocr_image, page_context)
 
     result = HOCRResult(
         pageno=page_context.pageno,
-        pdf_page_from_image=pdf_page_from_image_out,
-        hocr=hocr_out,
-        orientation_correction=orientation_correction,
+        pdf_page_from_image=images.pdf_page_from_image,
+        hocr=engine_output.ocr,
+        orientation_correction=images.orientation_correction,
     )
     page_context.get_path('hocr.json').write_text(result.to_json())
     return result

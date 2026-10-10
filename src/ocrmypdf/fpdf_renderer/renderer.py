@@ -129,7 +129,7 @@ def transform_box(
     )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class WordRenderData:
     """Rendering parameters for a single word on a line."""
 
@@ -154,6 +154,7 @@ class DebugRenderOptions:
     render_word_bbox: bool = False  # Green rectangles around words
 
 
+@dataclass(frozen=True, slots=True)
 class CoordinateTransform:
     """Manages coordinate transformations for fpdf2 rendering.
 
@@ -161,11 +162,9 @@ class CoordinateTransform:
     PDF points. fpdf2 uses top-left origin like hOCR, so no Y-flip needed.
     """
 
-    def __init__(self, dpi: float, page_width_px: float, page_height_px: float):
-        """Initialize coordinate transform."""
-        self.dpi = dpi
-        self.page_width_px = page_width_px
-        self.page_height_px = page_height_px
+    dpi: float
+    page_width_px: float
+    page_height_px: float
 
     @property
     def page_width_pt(self) -> float:

@@ -41,7 +41,7 @@ log = logging.getLogger(__name__)
 _SUBBOXES = ('CropBox', 'TrimBox', 'ArtBox', 'BleedBox')
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class BoxRepair:
     """A single change made to a page box.
 
@@ -58,13 +58,41 @@ class BoxRepair:
     kind: str
 
 
-def _read_box(values: Sequence) -> tuple[list[float], bool, bool] | None:
+@dataclass(frozen=True, slots=True)
+class BoxRepairMessage:
+    """A log message describing a repair made on one or more pages."""
+
+    level: int
+    text: str
+
+
+@dataclass(frozen=True, slots=True)
+class _ParsedBox:
+    """A box array coerced to floats with its corners in standard order.
+
+    Attributes:
+        values: The normalized ``[min_x, min_y, max_x, max_y]``.
+        recoded: True if any element needed string/exponential coercion.
+        reordered: True if the corners were given in non-standard order.
+    """
+
+    values: list[float]
+    recoded: bool
+    reordered: bool
+
+
+@dataclass(frozen=True, slots=True)
+class _KindMessage:
+    """Log severity and message template ({box} is substituted) for a repair."""
+
+    level: int
+    template: str
+
+
+def _read_box(values: Sequence) -> _ParsedBox | None:
     """Coerce a box array to floats and normalize corner order.
 
-    Returns ``(normalized_values, recoded, reordered)`` where ``recoded`` is
-    True if any element needed string/exponential coercion and ``reordered`` is
-    True if the corners were given in non-standard order. Returns None if the
-    array is not four finite numbers.
+    Returns None if the array is not four finite numbers.
     """
     if len(values) != 4:
         return None
@@ -84,8 +112,7 @@ def _read_box(values: Sequence) -> tuple[list[float], bool, bool] | None:
         nums.append(n)
     x0, y0, x1, y1 = nums
     normalized = [min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1)]
-    reordered = normalized != nums
-    return normalized, recoded, reordered
+    return _ParsedBox(normalized, recoded, reordered=normalized != nums)
 
 
 def coerce_box(values: Iterable) -> list[float]:
@@ -99,7 +126,7 @@ def coerce_box(values: Iterable) -> list[float]:
     values = list(values)
     result = _read_box(values)
     if result is not None:
-        return result[0]
+        return result.values
     coerced = []
     for v in values:
         try:
@@ -130,12 +157,12 @@ def repair_page_boxes(page: pikepdf.Page) -> list[BoxRepair]:
     except (AttributeError, KeyError, RuntimeError):
         mb_result = None
     if mb_result is not None:
-        mediabox, recoded, reordered = mb_result
-        if reordered:
+        mediabox = mb_result.values
+        if mb_result.reordered:
             repairs.append(BoxRepair('MediaBox', 'reordered'))
-        if recoded:
+        if mb_result.recoded:
             repairs.append(BoxRepair('MediaBox', 'recoded'))
-        if recoded or reordered:
+        if mb_result.recoded or mb_result.reordered:
             page.obj.MediaBox = pikepdf.Array(mediabox)
         if _is_empty(mediabox):
             repairs.append(BoxRepair('MediaBox', 'degenerate_mediabox'))
@@ -151,12 +178,12 @@ def repair_page_boxes(page: pikepdf.Page) -> list[BoxRepair]:
             continue
         if sub_result is None:
             continue
-        values, recoded, reordered = sub_result
-        if reordered:
+        values = sub_result.values
+        if sub_result.reordered:
             repairs.append(BoxRepair(box, 'reordered'))
-        if recoded:
+        if sub_result.recoded:
             repairs.append(BoxRepair(box, 'recoded'))
-        if recoded or reordered:
+        if sub_result.recoded or sub_result.reordered:
             page.obj[name] = pikepdf.Array(values)
 
         if mediabox is None:
@@ -177,27 +204,26 @@ def repair_page_boxes(page: pikepdf.Page) -> list[BoxRepair]:
     return repairs
 
 
-# Per-kind log severity and message template ({box} is substituted).
-_KIND_MESSAGES: dict[str, tuple[int, str]] = {
-    'discarded': (
+_KIND_MESSAGES: dict[str, _KindMessage] = {
+    'discarded': _KindMessage(
         logging.WARNING,
         '{box} lies outside the MediaBox and was discarded; '
         'the full page will be shown',
     ),
-    'clamped': (
+    'clamped': _KindMessage(
         logging.WARNING,
         '{box} extended beyond the MediaBox and was clamped to it',
     ),
-    'recoded': (
+    'recoded': _KindMessage(
         logging.WARNING,
         '{box} used invalid (e.g. exponential) coordinates, which were reinterpreted',
     ),
-    'degenerate_mediabox': (
+    'degenerate_mediabox': _KindMessage(
         logging.WARNING,
         'MediaBox has zero width or height and could not be repaired; '
         'output may be invalid',
     ),
-    'reordered': (
+    'reordered': _KindMessage(
         logging.DEBUG,
         '{box} corners were reversed and have been normalized',
     ),
@@ -225,8 +251,8 @@ def _format_pages(pagenos: Iterable[int]) -> str:
 
 def summarize_box_repairs(
     repairs_by_page: Mapping[int, Sequence[BoxRepair]],
-) -> list[tuple[int, str]]:
-    """Aggregate per-page repairs into ``(log_level, message)`` pairs.
+) -> list[BoxRepairMessage]:
+    """Aggregate per-page repairs into log messages.
 
     Repairs are grouped by ``(kind, box)`` so a defect shared across many pages
     yields a single message listing the affected pages, rather than one message
@@ -237,17 +263,19 @@ def summarize_box_repairs(
         for repair in repairs:
             groups.setdefault((repair.kind, repair.box), set()).add(pageno)
 
-    messages: list[tuple[int, str]] = []
+    messages: list[BoxRepairMessage] = []
     for (kind, box), pages in sorted(groups.items()):
-        level, template = _KIND_MESSAGES[kind]
-        text = f'Page(s) {_format_pages(pages)}: {template.format(box=box)}.'
+        kind_message = _KIND_MESSAGES[kind]
+        text = (
+            f'Page(s) {_format_pages(pages)}: {kind_message.template.format(box=box)}.'
+        )
         if kind in _INSPECT_KINDS:
             text += _INSPECT
-        messages.append((level, text))
+        messages.append(BoxRepairMessage(kind_message.level, text))
     return messages
 
 
 def log_box_repairs(repairs_by_page: Mapping[int, Sequence[BoxRepair]]) -> None:
     """Emit aggregated log messages for the repairs made across all pages."""
-    for level, message in summarize_box_repairs(repairs_by_page):
-        log.log(level, message)
+    for message in summarize_box_repairs(repairs_by_page):
+        log.log(message.level, message.text)

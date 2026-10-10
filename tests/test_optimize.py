@@ -306,7 +306,8 @@ def test_group3(resources):
 
 def test_find_formx(resources):
     with pikepdf.open(resources / 'formxobject.pdf') as pdf:
-        working, pagenos = opt._find_image_xrefs(pdf)
+        image_xrefs = opt._find_image_xrefs(pdf)
+        working, pagenos = image_xrefs.working_xrefs, image_xrefs.pageno_for_xref
         assert len(working) == 1
         xref = next(iter(working))
         assert pagenos[xref] == 0
@@ -330,9 +331,9 @@ def test_find_images_in_deeply_nested_form_xobjects(resources, tmp_path):
         pdf.save(out)
 
     with pikepdf.open(out) as pdf:
-        xrefs, pagenos = opt._find_image_xrefs(pdf)
-    assert len(xrefs) == 1
-    assert set(pagenos.values()) == {0}
+        image_xrefs = opt._find_image_xrefs(pdf)
+    assert len(image_xrefs.working_xrefs) == 1
+    assert set(image_xrefs.pageno_for_xref.values()) == {0}
 
 
 def test_find_formx_circular_reference(resources, tmp_path, caplog):
