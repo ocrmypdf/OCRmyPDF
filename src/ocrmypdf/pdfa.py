@@ -1,4 +1,5 @@
 # SPDX-FileCopyrightText: 2022 James R. Barlow
+# SPDX-FileCopyrightText: 2026 teachershuang
 # SPDX-License-Identifier: MPL-2.0
 
 """Utilities for PDF/A production, with pikepdf or Ghostscript."""
@@ -189,10 +190,18 @@ def find_nonembedded_cid_fonts(pdf: Pdf) -> set[str]:
 
 def _iter_fonts(pdf: Pdf) -> Iterator[Object]:
     """Yield the font dictionaries used by pages, forms and annotations."""
+    visited_depth: dict[tuple[int, int], int] = {}
 
     def fonts_in(container: Object, depth: int = 0) -> Iterator[Object]:
         if depth > 10:
             return
+        # Pages and streams are indirect objects. Revisit a shared form only
+        # at a smaller depth, so descendants beyond an earlier cutoff are not
+        # lost when another page or appearance reaches it by a shorter path.
+        previous_depth = visited_depth.get(container.objgen)
+        if previous_depth is not None and previous_depth <= depth:
+            return
+        visited_depth[container.objgen] = depth
         # A well-formed PDF stores dictionaries under /Resources, /Font and
         # /XObject, but a malformed one (common in OCR workloads) may store an
         # array, a name, or another non-dictionary object. get_dict reduces

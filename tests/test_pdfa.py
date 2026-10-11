@@ -1,4 +1,5 @@
 # SPDX-FileCopyrightText: 2022 James R. Barlow
+# SPDX-FileCopyrightText: 2026 teachershuang
 # SPDX-License-Identifier: MPL-2.0
 
 from __future__ import annotations
@@ -7,6 +8,7 @@ import logging
 import os
 import re
 from io import BytesIO
+from itertools import islice
 
 import pikepdf
 import pytest
@@ -15,6 +17,7 @@ from pikepdf.pdfa import validate_written
 
 from ocrmypdf.exceptions import ExitCode, MissingDependencyError
 from ocrmypdf.pdfa import (
+    _iter_fonts,
     add_simple_font_tounicode,
     file_claims_pdfa,
     find_nonembedded_cid_fonts,
@@ -67,6 +70,92 @@ def _write_cid_font_pdf(path, *, embedded: bool, basefont='/ABCDEF+TestCID'):
         font = _make_cid_font(pdf, embedded=embedded, basefont=basefont)
         page.Resources = pikepdf.Dictionary(Font=pikepdf.Dictionary(F0=font))
         pdf.save(path)
+
+
+def _make_form(pdf, resources):
+    return pdf.make_stream(
+        b'0 0 10 10 re f',
+        Type=Name.XObject,
+        Subtype=Name.Form,
+        BBox=pikepdf.Array([0, 0, 10, 10]),
+        Resources=resources,
+    )
+
+
+class TestSharedFormFontTraversal:
+    def test_shared_cyclic_resources_do_not_repeat_each_path(self, tmp_path):
+        path = tmp_path / 'shared.pdf'
+        with pikepdf.new() as pdf:
+            page = pdf.add_blank_page()
+            shared = pdf.make_indirect(
+                pikepdf.Dictionary(
+                    Font=pikepdf.Dictionary(
+                        F0=_make_cid_font(pdf, embedded=False, basefont='/SharedCID'),
+                        F1=_make_cid_font(pdf, embedded=True, basefont='/EmbeddedCID'),
+                    ),
+                    XObject=pikepdf.Dictionary(),
+                )
+            )
+            for i in range(3):
+                shared.XObject[f'/Fm{i}'] = _make_form(pdf, shared)
+            page.Resources = shared
+            page.Contents = pdf.make_stream(b'/Fm0 Do')
+            pdf.save(path)
+        with pikepdf.open(path) as pdf:
+            # A bounded prefix fails quickly on the exponential baseline, rather
+            # than relying on a machine-dependent timeout. Each of the three
+            # forms may be revisited at a smaller depth, but not on every path.
+            assert len(list(islice(_iter_fonts(pdf), 15))) <= 14
+            assert find_nonembedded_cid_fonts(pdf) == {'SharedCID'}
+            assert find_nonembedded_fonts(pdf) == {'SharedCID'}
+            assert has_embedded_fonts(pdf)
+            assert find_nonembedded_cid_fonts(pdf) == {'SharedCID'}  # New scan.
+
+    @pytest.mark.parametrize('short_root', ['page', 'next_page', 'appearance'])
+    def test_shorter_path_keeps_fonts_beyond_first_path_depth(self, short_root):
+        with pikepdf.new() as pdf:
+            page = pdf.add_blank_page()
+            leaf = _make_form(
+                pdf,
+                pikepdf.Dictionary(
+                    Font=pikepdf.Dictionary(
+                        F0=_make_cid_font(pdf, embedded=False, basefont='/DeepCID')
+                    )
+                ),
+            )
+            shared = _make_form(
+                pdf, pikepdf.Dictionary(XObject=pikepdf.Dictionary(Leaf=leaf))
+            )
+            deep = shared
+            for _ in range(9):
+                deep = _make_form(
+                    pdf, pikepdf.Dictionary(XObject=pikepdf.Dictionary(Child=deep))
+                )
+            page.Resources = pikepdf.Dictionary(XObject=pikepdf.Dictionary(A=deep))
+            # The shared form is at depth10; its leaf is beyond the cutoff.
+            assert find_nonembedded_cid_fonts(pdf) == set()
+            if short_root == 'page':
+                page.Resources.XObject.Z = shared
+            elif short_root == 'next_page':
+                pdf.add_blank_page().Resources = pikepdf.Dictionary(
+                    XObject=pikepdf.Dictionary(Shared=shared)
+                )
+            else:
+                page.Annots = pikepdf.Array(
+                    [pikepdf.Dictionary(AP=pikepdf.Dictionary(N=shared))]
+                )
+            assert find_nonembedded_cid_fonts(pdf) == {'DeepCID'}
+
+    def test_no_font_cycle_reports_nothing(self):
+        with pikepdf.new() as pdf:
+            page = pdf.add_blank_page()
+            resources = pdf.make_indirect(
+                pikepdf.Dictionary(XObject=pikepdf.Dictionary())
+            )
+            resources.XObject.Self = _make_form(pdf, resources)
+            page.Resources = resources
+            assert find_nonembedded_fonts(pdf) == set()
+            assert not has_embedded_fonts(pdf)
 
 
 class TestFindNonembeddedCidFonts:
