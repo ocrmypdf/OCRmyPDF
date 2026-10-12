@@ -193,6 +193,10 @@ might remove desirable content, especially from poor quality scans.
 -   `--clean-final` uses unpaper to clean up pages before OCR and
     inserts the page into the final output. You will want to review each
     page to ensure that unpaper did not remove something important.
+-   `--force-grayscale` converts color pages in the final PDF to grayscale.
+    It uses contrast-preserving decolorization so that text, highlights, and
+    stamps with similar luminance remain distinguishable. The image sent to
+    the OCR engine remains in color.
 
 :::{note}
 In many cases image processing will rasterize PDF pages as images,
@@ -200,9 +204,9 @@ potentially losing quality.
 :::
 
 :::{warning}
-`--clean-final` and `--remove-background` may leave undesirable visual
-artifacts in some images where their algorithms have shortcomings. Files
-should be visually reviewed after using these options.
+`--clean-final`, `--force-grayscale`, and `--remove-background` may leave
+undesirable visual artifacts in some images where their algorithms have
+shortcomings. Files should be visually reviewed after using these options.
 :::
 
 ### Example: OCR and correct document skew (crooked scan)
@@ -216,7 +220,7 @@ ocrmypdf --deskew input.pdf output.pdf
 Image processing commands can be combined. The order in which options
 are given does not matter. OCRmyPDF always applies the steps of the
 image processing pipeline in the same order (rotate, remove background,
-deskew, clean).
+deskew, clean, force grayscale).
 
 ```bash
 ocrmypdf --deskew --clean --rotate-pages input.pdf output.pdf

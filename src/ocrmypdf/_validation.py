@@ -338,6 +338,7 @@ def report_output_file_size(
     image_preproc = {
         'deskew',
         'clean_final',
+        'force_grayscale',
         'remove_background',
         'oversample',
     }
