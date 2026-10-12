@@ -62,7 +62,6 @@ from ocrmypdf._progressbar import ProgressBar
 from ocrmypdf.exceptions import OutputFileAccessError
 from ocrmypdf.helpers import (
     IMG2PDF_KWARGS,
-    RESOURCES_XOBJECT,
     safe_symlink,
 )
 
@@ -418,70 +417,41 @@ def extract_image_generic(
     return None
 
 
-def _find_image_xrefs_container(
-    pdf: Pdf,
-    container: Object,
-    pageno: int,
-    include_xrefs: MutableSet[Xref],
-    exclude_xrefs: MutableSet[Xref],
-    pageno_for_xref: dict[Xref, int],
-    depth: int = 0,
-    visited_forms: MutableSet[Xref] | None = None,
-):
-    """Find all image XRefs or Form XObject and add to the include/exclude sets."""
-    # Form XObjects are not added to include/exclude_xrefs, so the dedup
-    # check below doesn't catch Form-XObject cycles or DAGs. Track them in
-    # a shared set so each Form is only descended into once per document
-    # (issue #1321).
-    if visited_forms is None:
-        visited_forms = set()
-    if depth > 10:
-        # With visited_forms memoization, this is a soft DAG-height guard
-        # rather than a cycle defense, so a debug log is sufficient.
-        log.debug("Recursion depth exceeded in _find_image_xrefs_page")
-        return
-    for _imname, image in (container.get_dict(RESOURCES_XOBJECT) or {}).items():
-        if image.objgen[1] != 0:
-            continue  # Ignore images in an incremental PDF
-        xref = Xref(image.objgen[0])
-        if xref in include_xrefs or xref in exclude_xrefs:
-            continue  # Already processed
-        if Name.Subtype in image and image.Subtype == Name.Form:
-            if xref in visited_forms:
-                continue
-            visited_forms.add(xref)
-            log.debug(f"Recursing into Form XObject {_imname} in page {pageno}")
-            _find_image_xrefs_container(
-                pdf,
-                image,
-                pageno,
-                include_xrefs,
-                exclude_xrefs,
-                pageno_for_xref,
-                depth + 1,
-                visited_forms,
-            )
-            continue
-        if Name.SMask in image:
-            # Ignore soft masks
-            smask_xref = Xref(image.SMask.objgen[0])
-            exclude_xrefs.add(smask_xref)
-            log.debug(f"xref {smask_xref}: skipping image because it is an SMask")
-        include_xrefs.add(xref)
-        log.debug(f"xref {xref}: treating as an optimization candidate")
-        if xref not in pageno_for_xref:
-            pageno_for_xref[xref] = pageno
-
-
 def _find_image_xrefs(pdf: Pdf):
+    """Find the xrefs of the images that pages and their Form XObjects use.
+
+    Returns the xrefs of the images to consider for optimization, and the
+    number of the first page each is used on.
+    """
     include_xrefs: MutableSet[Xref] = set()
     exclude_xrefs: MutableSet[Xref] = set()
     pageno_for_xref: dict[Xref, int] = {}
+    pagenos = {page.obj.objgen: pageno for pageno, page in enumerate(pdf.pages)}
 
-    for pageno, page in enumerate(pdf.pages):
-        _find_image_xrefs_container(
-            pdf, page.obj, pageno, include_xrefs, exclude_xrefs, pageno_for_xref
-        )
+    # Form XObjects may refer to themselves or to each other in a cycle, and
+    # commonly share one /Resources. content_scopes reports each page and each
+    # Form XObject once for the document, however it is reached (issue #1321).
+    for scope in pdf.content_scopes(kinds=('page', 'form')):
+        if scope.resources is None or scope.page is None:
+            continue
+        pageno = pagenos[scope.page.obj.objgen]
+        for image in (scope.resources.get_dict(Name.XObject) or {}).values():
+            if image.objgen[1] != 0:
+                continue  # Ignore images in an incremental PDF
+            xref = Xref(image.objgen[0])
+            if xref in include_xrefs or xref in exclude_xrefs:
+                continue  # Already processed
+            if Name.Subtype in image and image.Subtype == Name.Form:
+                continue  # Reported as a scope of its own
+            if Name.SMask in image:
+                # Ignore soft masks
+                smask_xref = Xref(image.SMask.objgen[0])
+                exclude_xrefs.add(smask_xref)
+                log.debug(f"xref {smask_xref}: skipping image because it is an SMask")
+            include_xrefs.add(xref)
+            log.debug(f"xref {xref}: treating as an optimization candidate")
+            if xref not in pageno_for_xref:
+                pageno_for_xref[xref] = pageno
 
     working_xrefs = include_xrefs - exclude_xrefs
     return working_xrefs, pageno_for_xref
@@ -500,8 +470,9 @@ def extract_images(
     Record the page number on which an image is first used, since images may be
     used on multiple pages (or multiple times on the same page).
 
-    Current we do not check Form XObjects or other objects that may contain
-    images, and we don't evaluate alternate images or thumbnails.
+    Images in Form XObjects are included. We do not check other objects that
+    may contain images, such as tiling patterns, and we don't evaluate
+    alternate images or thumbnails (elsewhere discarded).
 
     extract_fn must decide if wants to extract the image in this context. If
     it does a tuple should be returned: (xref, ext) where .ext is the file

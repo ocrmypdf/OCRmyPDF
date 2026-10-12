@@ -530,6 +530,53 @@ def test_imageinfo_ink_inherited_in_form_xobject(outdir):
     assert image.ink is Ink.gray
 
 
+def _form_xobject(pdf, content: bytes, resources):
+    return pdf.make_stream(
+        content,
+        Type=pikepdf.Name.XObject,
+        Subtype=pikepdf.Name.Form,
+        BBox=[0, 0, 10, 10],
+        Resources=resources,
+    )
+
+
+def test_form_xobject_that_draws_itself(outdir):
+    """A Form XObject that draws itself is interpreted once, not forever."""
+    path = outdir / 'selfdraw.pdf'
+    with pikepdf.new() as pdf:
+        page = pdf.add_blank_page()
+        shared = pdf.make_indirect(pikepdf.Dictionary(XObject=pikepdf.Dictionary()))
+        shared.XObject.Fm0 = _form_xobject(pdf, b'0 0 1 1 re f /Fm1 Do', shared)
+        shared.XObject.Fm1 = _form_xobject(pdf, b'/Fm0 Do', shared)
+        page.Resources = shared
+        page.Contents = pdf.make_stream(b'/Fm0 Do')
+        pdf.save(path)
+
+    info = pdfinfo.PdfInfo(path)
+    assert info[0].has_vector
+
+
+def test_form_xobjects_drawn_exponentially_often(outdir, caplog, monkeypatch):
+    """A chain of forms that each draw the next twice does not hang."""
+    monkeypatch.setattr('ocrmypdf.pdfinfo._image.MAX_FORM_DRAWS', 1000)
+    path = outdir / 'doubling.pdf'
+    with pikepdf.new() as pdf:
+        page = pdf.add_blank_page()
+        shared = pdf.make_indirect(pikepdf.Dictionary(XObject=pikepdf.Dictionary()))
+        depth = 28
+        for n in range(depth):
+            content = f'/Fm{n + 1} Do /Fm{n + 1} Do'.encode()
+            shared.XObject[f'/Fm{n}'] = _form_xobject(pdf, content, shared)
+        shared.XObject[f'/Fm{depth}'] = _form_xobject(pdf, b'0 0 1 1 re f', shared)
+        page.Resources = shared
+        page.Contents = pdf.make_stream(b'/Fm0 Do')
+        pdf.save(path)
+
+    info = pdfinfo.PdfInfo(path)
+    assert len(info) == 1
+    assert 'Form XObjects' in caplog.text
+
+
 def test_malformed_number_token_issue1054():
     """A malformed number in a content stream must not abort the scan.
 
@@ -574,12 +621,14 @@ def test_do_without_operand():
 
 
 def _text_stream(body: bytes, basefont=None, conversion_mode='implicit'):
-    """Build a content stream whose /F1 font has the given BaseFont.
+    """Build a Form XObject whose /F1 font has the given BaseFont.
 
     Returns the owning Pdf too, which must be kept alive while the stream is used.
     """
     p = pikepdf.Pdf.new(conversion_mode=conversion_mode)
-    stream = pikepdf.Stream(p, body)
+    stream = pikepdf.Stream(
+        p, body, Type=pikepdf.Name.XObject, Subtype=pikepdf.Name.Form
+    )
     if basefont is not None:
         if isinstance(basefont, str):
             basefont = pikepdf.Name(basefont)

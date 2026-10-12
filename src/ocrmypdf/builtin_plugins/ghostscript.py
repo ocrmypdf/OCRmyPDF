@@ -10,14 +10,13 @@ from pathlib import Path
 from typing import Annotated
 
 from packaging.version import Version
-from pikepdf import Name, Pdf, PdfError, Stream
+from pikepdf import Name, ObjectSet, Pdf, PdfError, Stream
 from pydantic import BaseModel, Field
 
 from ocrmypdf import hookimpl
 from ocrmypdf._exec import ghostscript
 from ocrmypdf._options import ProcessingMode
 from ocrmypdf.exceptions import MissingDependencyError
-from ocrmypdf.helpers import RESOURCES_XOBJECT
 from ocrmypdf.pdfa import (
     find_nonembedded_fonts,
     has_embedded_fonts,
@@ -323,38 +322,27 @@ def _collect_dctdecode_images(pdf: Pdf) -> dict[tuple, list[tuple[Stream, bytes]
         except (TypeError, KeyError):
             return str(cs)
 
-    def process_xobject_dict(xobjects, depth=0):
-        """Process an XObject dictionary for DCTDecode images."""
-        if depth > 10:
-            log.warning("Recursion depth exceeded in _collect_dctdecode_images")
-            return
-        for key in xobjects.keys():
-            obj = xobjects[key]
-            if obj is None:
+    # Any content stream may draw a JPEG, and resources are often shared or
+    # refer back to a stream that uses them. content_scopes reports each
+    # content stream once, and seen keeps a shared image from being read twice.
+    seen = ObjectSet()
+    for scope in pdf.content_scopes():
+        if scope.resources is None:
+            continue
+        for obj in (scope.resources.get_dict(Name.XObject) or {}).values():
+            if not isinstance(obj, Stream) or obj.get(Name.Subtype) != Name.Image:
                 continue
-            # Check if it's an image with DCTDecode
-            if obj.get(Name.Subtype) == Name.Image:
-                filt = obj.get(Name.Filter)
-                if filt == Name.DCTDecode:
-                    sig = (
-                        obj.get_int(Name.Width, 0, coerce=True),
-                        obj.get_int(Name.Height, 0, coerce=True),
-                        str(filt),
-                        obj.get_int(Name.BitsPerComponent, 0, coerce=True),
-                        get_colorspace_key(obj),
-                    )
-                    raw_bytes = obj.read_raw_bytes()
-                    if sig not in images:
-                        images[sig] = []
-                    images[sig].append((obj, raw_bytes))
-            # Recurse into Form XObjects
-            elif obj.get(Name.Subtype) == Name.Form:
-                process_xobject_dict(
-                    obj.get_dict(RESOURCES_XOBJECT) or {}, depth=depth + 1
-                )
-
-    for page in pdf.pages:
-        process_xobject_dict(page.obj.get_dict(RESOURCES_XOBJECT) or {})
+            filt = obj.get(Name.Filter)
+            if filt != Name.DCTDecode or not seen.add(obj):
+                continue
+            sig = (
+                obj.get_int(Name.Width, 0, coerce=True),
+                obj.get_int(Name.Height, 0, coerce=True),
+                str(filt),
+                obj.get_int(Name.BitsPerComponent, 0, coerce=True),
+                get_colorspace_key(obj),
+            )
+            images.setdefault(sig, []).append((obj, obj.read_raw_bytes()))
 
     return images
 

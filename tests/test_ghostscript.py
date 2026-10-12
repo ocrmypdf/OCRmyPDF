@@ -1387,9 +1387,8 @@ class TestCollectDctdecodeImages:
         assert len(images) == 1
         assert len(next(iter(images.values()))) == 2
 
-    def test_recursion_depth_guard(self, caplog):
-        """A Form XObject cycle must terminate instead of recursing forever."""
-        caplog.set_level(logging.WARNING)
+    def test_form_xobject_cycle_visited_once(self):
+        """A Form XObject that lists itself is examined once."""
         pdf = make_pdf()
         form = make_form_xobject(pdf, {'Im0': make_image_stream(pdf)})
         form.Resources.XObject.Fm0 = form  # self-reference
@@ -1398,9 +1397,41 @@ class TestCollectDctdecodeImages:
         )
 
         images = _collect_dctdecode_images(pdf)
-        assert 'Recursion depth exceeded' in caplog.text
-        # The image is found once per level of recursion, until the guard fires
-        assert len(next(iter(images.values()))) == 10
+        assert len(next(iter(images.values()))) == 1
+
+    def test_shared_resources_visited_once(self):
+        """Forms sharing one /Resources that lists them all are each seen once.
+
+        A depth-limited walk takes exponential time on this layout (#1763).
+        """
+        pdf = make_pdf()
+        shared = pdf.make_indirect(
+            pikepdf.Dictionary(XObject=pikepdf.Dictionary(Im0=make_image_stream(pdf)))
+        )
+        for n in range(12):
+            shared.XObject[f'/Fm{n}'] = pdf.make_stream(
+                b'',
+                Type=pikepdf.Name.XObject,
+                Subtype=pikepdf.Name.Form,
+                Resources=shared,
+            )
+        pdf.pages[0].Resources = shared
+
+        images = _collect_dctdecode_images(pdf)
+        assert len(next(iter(images.values()))) == 1
+
+    def test_deeply_nested_form_xobjects(self):
+        """An image is found however deeply its form is nested."""
+        pdf = make_pdf()
+        form = make_form_xobject(pdf, {'Im0': make_image_stream(pdf)})
+        for _ in range(20):
+            form = make_form_xobject(pdf, {'Fm0': form})
+        pdf.pages[0].Resources = pikepdf.Dictionary(
+            XObject=pikepdf.Dictionary(Fm0=form)
+        )
+
+        images = _collect_dctdecode_images(pdf)
+        assert len(next(iter(images.values()))) == 1
 
 
 class TestRepairGs106JpegCorruptionSynthetic:

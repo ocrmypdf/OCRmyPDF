@@ -312,15 +312,38 @@ def test_find_formx(resources):
         assert pagenos[xref] == 0
 
 
+def test_find_images_in_deeply_nested_form_xobjects(resources, tmp_path):
+    """An image is found however deeply its Form XObject is nested."""
+    out = tmp_path / 'deep_form.pdf'
+    with pikepdf.open(resources / 'formxobject.pdf') as pdf:
+        page = pdf.pages[0].obj
+        form = page.Resources.XObject.Form1
+        for _ in range(20):
+            form = pdf.make_stream(
+                b'/Fm0 Do',
+                Type=Name.XObject,
+                Subtype=Name.Form,
+                BBox=[0, 0, 612, 792],
+                Resources=Dictionary(XObject=Dictionary(Fm0=form)),
+            )
+        page.Resources.XObject = Dictionary(Fm0=form)
+        pdf.save(out)
+
+    with pikepdf.open(out) as pdf:
+        xrefs, pagenos = opt._find_image_xrefs(pdf)
+    assert len(xrefs) == 1
+    assert set(pagenos.values()) == {0}
+
+
 def test_find_formx_circular_reference(resources, tmp_path, caplog):
     """Regression for issue #1321.
 
     Some PDFs (notably PowerPoint exports) contain Form XObjects that
-    reference themselves or each other in a cycle. The recursion guard in
-    _find_image_xrefs_container only deduplicates *image* xrefs, so a Form
-    XObject cycle would re-enter every branch until the depth limit fired,
-    producing thousands of "Recursion depth exceeded" warnings (and minutes
-    of wall-clock time on real-world inputs).
+    reference themselves or each other in a cycle. A recursive search that
+    only deduplicates *image* xrefs re-enters every branch of a Form XObject
+    cycle until its depth limit fires, producing thousands of "Recursion
+    depth exceeded" warnings (and minutes of wall-clock time on real-world
+    inputs).
     """
     import logging
 

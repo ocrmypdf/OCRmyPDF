@@ -214,25 +214,6 @@ _PAINTING_OPERATORS = frozenset(
 )
 
 
-def _page_resources(page: Page) -> Object:
-    """Return the page's /Resources, resolving inheritance from /Pages nodes."""
-    node = page.obj
-    seen: set[tuple[int, int]] = set()
-    while isinstance(node, Dictionary):
-        resources = node.get(Name.Resources)
-        if isinstance(resources, Dictionary):
-            return resources
-        parent = node.get(Name.Parent)
-        if not isinstance(parent, Dictionary):
-            break
-        key = (parent.objgen[0], parent.objgen[1])
-        if key in seen:
-            break  # cycle, or a chain of direct objects we cannot tell apart
-        seen.add(key)
-        node = parent
-    return Dictionary()
-
-
 def _strip_invisible_text_from_form_xobjects(
     pdf: Pdf,
     resources: Object,
@@ -355,8 +336,10 @@ def _strip_invisible_text_from_content(
 
 
 def strip_invisible_text(pdf: Pdf, page: Page):
+    # get_resources resolves resources inherited from the page tree
+    resources = page.get_resources()
     content_stream, _vestigial = _strip_invisible_text_from_content(
-        pdf, page, _page_resources(page), {}
+        pdf, page, Dictionary() if resources is None else resources, {}
     )
     page.Contents = Stream(pdf, content_stream)
 

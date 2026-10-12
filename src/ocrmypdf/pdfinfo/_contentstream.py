@@ -16,6 +16,7 @@ from pikepdf import (
     Matrix,
     Name,
     Object,
+    Page,
     PdfInlineImage,
     parse_content_stream,
 )
@@ -169,22 +170,14 @@ def _font_resources(container: Object) -> Dictionary | None:
 
     A page may inherit its resources from its ancestors in the page tree.
     """
-    node = container
-    for _ in range(64):  # Guard against cycles in the page tree
-        try:
-            resources = node.get(Name.Resources)
-        except (AttributeError, TypeError, ValueError):
-            return None
-        if isinstance(resources, Dictionary):
-            fonts = resources.get(Name.Font)
-            return fonts if isinstance(fonts, Dictionary) else None
-        if node.get(Name.Type) != Name.Page and node.get(Name.Type) != Name.Pages:
-            return None
-        parent = node.get(Name.Parent)
-        if not isinstance(parent, Dictionary):
-            return None
-        node = parent
-    return None
+    try:
+        resources = Page(container).get_resources()
+    except (AttributeError, TypeError, ValueError):
+        return None
+    if resources is None:
+        return None
+    fonts = resources.get(Name.Font)
+    return fonts if isinstance(fonts, Dictionary) else None
 
 
 def _text_render_mode(operands) -> int | None:

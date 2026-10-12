@@ -3,6 +3,27 @@
 
 # v17
 
+## v17.13.1
+
+**Changes**
+
+- OCRmyPDF now requires `pikepdf[pdfa]` 10.17 or later, and uses its new
+  `content_scopes()` to find the fonts and images a PDF uses.
+
+**Fixes**
+
+- Fixed PDF/A conversion appearing to hang on a file whose form XObjects
+  share one `/Resources` dictionary that lists all of them, a common layout.
+  The search for fonts that are not embedded followed every path through the
+  forms, which takes exponential time. The repair for JPEGs damaged by
+  Ghostscript 10.6 had the same defect. {issue}`1763`
+- Fixed a `RecursionError` when examining a page with a form XObject that
+  draws itself. A page that draws form XObjects an exponential number of times
+  no longer hangs.
+- Fonts and images in form XObjects nested more than ten levels deep are no
+  longer missed, and fonts used only by tiling patterns, Type 3 glyphs or soft
+  masks are now checked for embedding.
+
 ## v17.13.0
 
 **Changes**

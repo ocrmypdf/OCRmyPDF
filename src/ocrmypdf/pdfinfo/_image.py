@@ -13,6 +13,7 @@ from pikepdf import (
     Matrix,
     Name,
     Object,
+    ObjectSet,
     Pdf,
     PdfImage,
     PdfInlineImage,
@@ -322,12 +323,58 @@ def _find_regular_images(
             )
 
 
-def _find_form_xobject_images(pdf: Pdf, container: Object, contentsinfo: ContentsInfo):
+#: How deeply Form XObjects may be nested before the rest are ignored.
+MAX_FORM_NESTING = 64
+
+#: How many times one page may draw Form XObjects before the rest are ignored.
+MAX_FORM_DRAWS = 100_000
+
+
+class _FormDraws:
+    """Bounds the Form XObjects interpreted while examining one page.
+
+    A Form XObject is interpreted every time it is drawn, because each drawing
+    has its own transformation matrix. Left unchecked, a form that draws itself
+    would never finish, and a chain of forms that each draw the next twice
+    takes exponential time.
+    """
+
+    def __init__(self) -> None:
+        self._active = ObjectSet()
+        self._remaining = MAX_FORM_DRAWS
+
+    def enter(self, form: Object) -> bool:
+        """Return True if the form may be interpreted; pair with leave()."""
+        if self._remaining <= 0:
+            return False
+        if len(self._active) >= MAX_FORM_NESTING or not self._active.add(form):
+            return False  # nested too deeply, or the form is drawing itself
+        self._remaining -= 1
+        if self._remaining == 0:
+            logger.warning(
+                "A page draws Form XObjects more than %d times; the rest are "
+                "ignored when examining the page.",
+                MAX_FORM_DRAWS,
+            )
+        return True
+
+    def leave(self, form: Object) -> None:
+        self._active.discard(form)
+
+
+def _find_form_xobject_images(
+    pdf: Pdf,
+    container: Object,
+    contentsinfo: ContentsInfo,
+    form_draws: _FormDraws | None = None,
+):
     """Find any images that are in Form XObjects in the container.
 
     The container may be a page, or a parent Form XObject.
 
     """
+    if form_draws is None:
+        form_draws = _FormDraws()
     for xobj, candidate in (container.get_dict(RESOURCES_XOBJECT) or {}).items():
         if candidate is None or candidate.get(Name.Subtype) != Name.Form:
             continue
@@ -345,14 +392,20 @@ def _find_form_xobject_images(pdf: Pdf, container: Object, contentsinfo: Content
             # A Form XObject inherits the graphics state (including fill color)
             # in effect at the Do that draws it, so a mask painted with an
             # inherited gray/color fill must carry that classification inward.
-            yield from _process_content_streams(
-                pdf=pdf,
-                container=form_xobject,
-                shorthand=ctm_shorthand,
-                initial_fill_ink=settings.fill_ink,
-                initial_text_render_mode=settings.text_render_mode,
-                initial_glyphless_font=settings.glyphless_font,
-            )
+            if not form_draws.enter(form_xobject):
+                continue
+            try:
+                yield from _process_content_streams(
+                    pdf=pdf,
+                    container=form_xobject,
+                    shorthand=ctm_shorthand,
+                    initial_fill_ink=settings.fill_ink,
+                    initial_text_render_mode=settings.text_render_mode,
+                    initial_glyphless_font=settings.glyphless_font,
+                    form_draws=form_draws,
+                )
+            finally:
+                form_draws.leave(form_xobject)
 
 
 def _process_content_streams(
@@ -363,6 +416,7 @@ def _process_content_streams(
     initial_fill_ink=Ink.mono,
     initial_text_render_mode: int = 0,
     initial_glyphless_font: bool = False,
+    form_draws: _FormDraws | None = None,
 ) -> Iterator[VectorMarker | TextMarker | ImageInfo]:
     """Find all individual instances of images drawn in the container.
 
@@ -419,4 +473,4 @@ def _process_content_streams(
         yield TextMarker()
     yield from _find_inline_images(contentsinfo)
     yield from _find_regular_images(container, contentsinfo)
-    yield from _find_form_xobject_images(pdf, container, contentsinfo)
+    yield from _find_form_xobject_images(pdf, container, contentsinfo, form_draws)
