@@ -32,6 +32,7 @@ class SystemFontProvider:
     # System font directories by platform
     SYSTEM_FONT_DIRS: dict[str, list[Path]] = {
         'linux': [
+            Path('/system/fonts'),
             Path('/usr/share/fonts'),
             Path('/usr/local/share/fonts'),
             Path.home() / '.fonts',
@@ -255,6 +256,11 @@ class SystemFontProvider:
                 )
         else:
             self._font_dirs = list(self.SYSTEM_FONT_DIRS.get(platform, []))
+            prefix = os.environ.get('PREFIX') if platform == 'linux' else None
+            if prefix:
+                termux_fonts = Path(prefix) / 'share/fonts'
+                if termux_fonts not in self._font_dirs:
+                    self._font_dirs.append(termux_fonts)
 
         return self._font_dirs
 

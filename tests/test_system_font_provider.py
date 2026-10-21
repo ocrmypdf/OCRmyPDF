@@ -51,6 +51,15 @@ class TestSystemFontProviderPlatform:
 class TestSystemFontProviderDirectories:
     """Test font directory resolution."""
 
+    def test_android_and_termux_font_dirs(self):
+        with (
+            patch.object(sys, 'platform', 'linux'),
+            patch.dict('os.environ', {'PREFIX': '/data/data/com.termux/files/usr'}),
+        ):
+            dirs = SystemFontProvider()._get_font_dirs()
+        assert Path('/system/fonts') in dirs
+        assert Path('/data/data/com.termux/files/usr/share/fonts') in dirs
+
     def test_linux_font_dirs(self):
         """Test Linux font directories."""
         provider = SystemFontProvider()
