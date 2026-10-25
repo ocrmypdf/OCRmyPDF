@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import io
 import logging
 import time
 from pathlib import Path
@@ -133,7 +134,10 @@ def test_validation_performance(one_page_ocr, tmp_path):
     OCR text take about 13 ms each.
     """
     merged = tmp_path / 'merged.pdf'
-    sources = [pikepdf.open(one_page_ocr) for _ in range(300)]
+    # Open sources from memory: they must all stay open until save, and
+    # holding 300 file descriptors exceeds the default limit on macOS.
+    data = one_page_ocr.read_bytes()
+    sources = [pikepdf.open(io.BytesIO(data)) for _ in range(300)]
     try:
         with pikepdf.new() as pdf:
             for source in sources:
