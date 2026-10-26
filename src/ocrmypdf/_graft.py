@@ -1,4 +1,5 @@
 # SPDX-FileCopyrightText: 2022 James R. Barlow
+# SPDX-FileCopyrightText: 2026 Danny Ward
 # SPDX-License-Identifier: MPL-2.0
 
 """For grafting text-only PDF pages onto freeform PDF pages."""
@@ -213,6 +214,10 @@ _PAINTING_OPERATORS = frozenset(
     )
 )
 
+# Operators that paint text. A single BT/ET block can change Tr between text
+# runs, so visibility must be checked for each text-showing operator.
+_TEXT_SHOWING_OPERATORS = frozenset(Operator(op) for op in ('Tj', 'TJ', "'", '"'))
+
 
 def _strip_invisible_text_from_form_xobjects(
     pdf: Pdf,
@@ -268,7 +273,7 @@ def _strip_invisible_text_from_content(
     in_text_obj = False
     render_mode = initial_render_mode
     render_mode_stack = []
-    text_objects = []
+    text_objects: list[tuple[Collection[Object], Operator, int]] = []
     vestigial_names: list[Name] = []
 
     for instruction in parse_content_stream(obj, ''):
@@ -306,15 +311,55 @@ def _strip_invisible_text_from_content(
         if not in_text_obj:
             if operator == Operator('BT'):
                 in_text_obj = True
-                text_objects.append((operands, operator))
+                text_objects.append((operands, operator, render_mode))
             else:
                 stream.append((operands, operator))
         else:
-            text_objects.append((operands, operator))
+            text_objects.append((operands, operator, render_mode))
             if operator == Operator('ET'):
                 in_text_obj = False
-                if render_mode != 3:
-                    stream.extend(text_objects)
+                last_visible_text = max(
+                    (
+                        index
+                        for index, (_, text_operator, mode) in enumerate(text_objects)
+                        if text_operator in _TEXT_SHOWING_OPERATORS and mode != 3
+                    ),
+                    default=-1,
+                )
+                for index, (text_operands, text_operator, mode) in enumerate(
+                    text_objects
+                ):
+                    if (
+                        text_operator in _TEXT_SHOWING_OPERATORS
+                        and mode == 3
+                        and index > last_visible_text
+                    ):
+                        # Removing a hidden run before a later visible run would
+                        # change that run's text-matrix position. Only strip
+                        # trailing hidden runs that cannot shift visible text.
+                        if text_operator == Operator("'"):
+                            if len(text_operands) == 1:
+                                stream.append(((), Operator('T*')))
+                            else:
+                                stream.append((text_operands, text_operator))
+                        elif text_operator == Operator('"'):
+                            if len(text_operands) == 3:
+                                # The quote operator also sets persistent word
+                                # and character spacing. Preserve those state
+                                # changes without retaining its hidden string.
+                                stream.extend(
+                                    (
+                                        ((text_operands[0],), Operator('Tw')),
+                                        ((text_operands[1],), Operator('Tc')),
+                                        ((), Operator('T*')),
+                                    )
+                                )
+                            else:
+                                stream.append((text_operands, text_operator))
+                        elif text_operator not in (Operator('Tj'), Operator('TJ')):
+                            stream.append((text_operands, text_operator))
+                    else:
+                        stream.append((text_operands, text_operator))
                 text_objects.clear()
 
     for name in vestigial_names:
