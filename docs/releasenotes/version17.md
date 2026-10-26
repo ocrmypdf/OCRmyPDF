@@ -9,6 +9,9 @@
 
 - OCRmyPDF now requires `pikepdf[pdfa]` 10.17 or later, and uses its new
   `content_scopes()` to find the fonts and images a PDF uses.
+- Added `--force-grayscale` (API: `force_grayscale=True`) to convert color
+  pages to contrast-preserving grayscale without changing the image sent to
+  the OCR engine. {issue}`1699`
 
 **Fixes**
 
@@ -852,4 +855,3 @@
 - Attribute access remains unchanged: `options.languages`, `options.output_type`, etc.
 - Remove any in-place option modifications - compute values at point of use instead
 - Most existing plugins will continue working without changes due to duck-typing
-

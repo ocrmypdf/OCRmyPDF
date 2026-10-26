@@ -27,6 +27,7 @@ from pikepdf import Pdf
 
 from ocrmypdf._annots import remove_broken_goto_annotations
 from ocrmypdf._concurrent import Executor, setup_executor
+from ocrmypdf._grayscale import convert_to_grayscale
 from ocrmypdf._jobcontext import PageContext, PdfContext
 from ocrmypdf._logging import PageNumberFilter
 from ocrmypdf._metadata import PikepdfProgress
@@ -458,6 +459,10 @@ def process_page(page_context: PageContext) -> tuple[Path, Path | None, int]:
     if not options.lossless_reconstruction:
         assert preprocess_out
         visible_image_out = preprocess_out
+        if options.force_grayscale:
+            visible_image_out = convert_to_grayscale(
+                visible_image_out, page_context.get_path('grayscale.png')
+            )
         if should_visible_page_image_use_jpg(page_context.pageinfo):
             visible_image_out = create_visible_page_jpg(visible_image_out, page_context)
         filtered_image = page_context.plugin_manager.filter_page_image(
