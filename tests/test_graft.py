@@ -1,4 +1,5 @@
 # SPDX-FileCopyrightText: 2022 James R. Barlow
+# SPDX-FileCopyrightText: 2026 Danny Ward
 # SPDX-License-Identifier: MPL-2.0
 
 from __future__ import annotations
@@ -227,6 +228,47 @@ def test_strip_invisble_text():
         'Number of visible text elements did not change'
     )
     assert count('invisible', page) == 0, 'No invisible elems left'
+
+
+def test_strip_visible_text_when_render_mode_changes_within_text_object():
+    """Keep visible text when a hidden run ends the same BT/ET block (#1769)."""
+    pdf = pikepdf.Pdf.new()
+    page = pdf.add_blank_page()
+    page.Contents = pikepdf.Stream(
+        pdf,
+        b'BT\n/F0 12 Tf\n72 720 Td\n(visible) Tj\n3 Tr\n(invisible) Tj\nET\n',
+    )
+
+    def strings():
+        return [
+            bytes(operands[0])
+            for operands, operator in pikepdf.parse_content_stream(page)
+            if operator == pikepdf.Operator('Tj')
+        ]
+
+    assert strings() == [b'visible', b'invisible']
+
+    ocrmypdf._graft.strip_invisible_text(pdf, page)
+
+    assert strings() == [b'visible']
+
+
+def test_strip_invisible_text_before_later_visible_run_preserves_position():
+    """Do not remove hidden text if doing so could shift visible text."""
+    pdf = pikepdf.Pdf.new()
+    page = pdf.add_blank_page()
+    page.Contents = pikepdf.Stream(
+        pdf,
+        b'BT\n/F0 12 Tf\n72 720 Td\n3 Tr\n(hidden) Tj\n0 Tr\n(visible) Tj\nET\n',
+    )
+
+    ocrmypdf._graft.strip_invisible_text(pdf, page)
+
+    assert [
+        bytes(operands[0])
+        for operands, operator in pikepdf.parse_content_stream(page)
+        if operator == pikepdf.Operator('Tj')
+    ] == [b'hidden', b'visible']
 
 
 def test_strip_invisible_text_in_form_xobject():
