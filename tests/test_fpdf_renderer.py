@@ -885,3 +885,67 @@ class TestRotatedLines:
         output_path = self._render(page, builtin_fonts, tmp_path)
         text = pdfium.PdfDocument(output_path)[0].get_textpage().get_text_range()
         assert text.strip() == "か\u3099ら男"
+
+
+class TestLineFontSize:
+    """A line's font size must not be stretched by one tall word (#1778)."""
+
+    @staticmethod
+    def _page(second_line_metrics: str) -> str:
+        # Two lines with the same text size. The second line's box is raised by
+        # one tall word ("If"), like a capital touching a descender above it.
+        return f"""<?xml version="1.0" encoding="UTF-8"?>
+        <html xmlns="http://www.w3.org/1999/xhtml"><body>
+         <div class='ocr_page' title='bbox 0 0 2550 3300; ppageno 0; scan_res 300 300'>
+          <p class='ocr_par'>
+          <span class='ocr_line' title="bbox 300 1000 2200 1060; baseline 0 -14; x_size 60; x_descenders 14; x_ascenders 14">
+           <span class='ocrx_word' title='bbox 300 1000 700 1060'>principles</span>
+          </span>
+          <span class='ocr_line' title="bbox 300 1040 2200 1160; baseline 0 -14{second_line_metrics}">
+           <span class='ocrx_word' title='bbox 420 1040 470 1146'>If</span>
+           <span class='ocrx_word' title='bbox 540 1100 680 1146'>state</span>
+          </span>
+          </p>
+         </div></body></html>"""
+
+    @staticmethod
+    def _font_sizes(hocr, multi_font_manager, tmp_path) -> list[float]:
+        import pikepdf
+
+        hocr_file = tmp_path / "font_size.hocr"
+        hocr_file.write_text(hocr, encoding='utf-8')
+        output_path = tmp_path / "font_size.pdf"
+        Fpdf2PdfRenderer(
+            page=HocrParser(hocr_file).parse(),
+            dpi=300,
+            multi_font_manager=multi_font_manager,
+        ).render(output_path)
+        with pikepdf.open(output_path) as pdf:
+            return [
+                float(operands[1])
+                for operands, operator in pikepdf.parse_content_stream(pdf.pages[0])
+                if str(operator) == 'Tf'
+            ]
+
+    def test_tall_word_does_not_stretch_line_font_size(
+        self, multi_font_manager, tmp_path
+    ):
+        hocr = self._page("; x_size 60; x_descenders 14; x_ascenders 14")
+        sizes = self._font_sizes(hocr, multi_font_manager, tmp_path)
+        assert len(sizes) == 2
+        assert sizes[1] == pytest.approx(sizes[0])
+
+    def test_without_line_metrics_font_size_follows_box(
+        self, multi_font_manager, tmp_path
+    ):
+        """No x_size, no cap: engines that do not report it behave as before."""
+        sizes = self._font_sizes(self._page(""), multi_font_manager, tmp_path)
+        assert len(sizes) == 2
+        assert sizes[1] > 2 * sizes[0]
+
+    def test_metrics_do_not_enlarge_a_small_box(self, multi_font_manager, tmp_path):
+        """The metrics only cap the size: a box smaller than them wins."""
+        hocr = self._page("; x_size 400; x_descenders 14; x_ascenders 14")
+        sizes = self._font_sizes(hocr, multi_font_manager, tmp_path)
+        without = self._font_sizes(self._page(""), multi_font_manager, tmp_path)
+        assert sizes[1] == pytest.approx(without[1])

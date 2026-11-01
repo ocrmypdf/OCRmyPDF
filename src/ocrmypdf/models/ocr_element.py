@@ -134,6 +134,10 @@ class OcrElement:
         language: Language code (e.g., "eng", "deu", "chi_sim")
         baseline: Text baseline information (slope and intercept)
         textangle: Text rotation angle in degrees (counter-clockwise from horizontal)
+        x_size: Line text size in source pixels, as reported by the OCR engine
+            (hOCR ``x_size``): x-height plus ascenders plus descenders
+        x_descenders: Descender depth of the line in source pixels (hOCR
+            ``x_descenders``), a positive distance below the baseline
         font: Font information (name, size, style)
         dpi: Image resolution in dots per inch (typically for page-level)
         page_number: Physical page number (0-indexed)
@@ -164,6 +168,11 @@ class OcrElement:
 
     # Rotation angle in degrees (counter-clockwise)
     textangle: float | None = None
+
+    # Line text metrics in source pixels (for lines). Unlike bbox, these are not
+    # stretched by a single tall word, so they bound the text size of the line.
+    x_size: float | None = None
+    x_descenders: float | None = None
 
     # Font information
     font: FontInfo | None = None

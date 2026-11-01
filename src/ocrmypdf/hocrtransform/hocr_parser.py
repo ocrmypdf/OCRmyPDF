@@ -80,6 +80,22 @@ class HocrParser:
         re.VERBOSE,
     )
 
+    _x_size_pattern = re.compile(
+        r'''
+        x_size \s+
+        (\d*\.?\d+)  # line text size: positive float
+        ''',
+        re.VERBOSE,
+    )
+
+    _x_descenders_pattern = re.compile(
+        r'''
+        x_descenders \s+
+        ([\-\+]?\d*\.?\d+)  # descender depth: float, sign varies by engine
+        ''',
+        re.VERBOSE,
+    )
+
     _x_wconf_pattern = re.compile(
         r'''
         x_wconf \s+
@@ -288,6 +304,7 @@ class HocrParser:
 
         baseline = self._parse_baseline(title)
         textangle = self._parse_textangle(title)
+        x_size, x_descenders = self._parse_line_metrics(title)
 
         # Inherit direction and language from parent if not specified
         dir_attr = line_elem.attrib.get('dir')
@@ -303,6 +320,8 @@ class HocrParser:
             bbox=bbox,
             baseline=baseline,
             textangle=textangle,
+            x_size=x_size,
+            x_descenders=x_descenders,
             direction=direction,
             language=language,
         )
@@ -426,6 +445,30 @@ class HocrParser:
             )
         except ValueError:
             return None
+
+    def _parse_line_metrics(self, title: str) -> tuple[float | None, float | None]:
+        """Parse the x_size and x_descenders line metrics from a title attribute.
+
+        Args:
+            title: The title attribute value
+
+        Returns:
+            (x_size, x_descenders) in pixels. Either is None if absent; both are
+            None unless x_size is positive and x_descenders is present, since one
+            without the other cannot bound the text size of the line.
+        """
+        size_match = self._x_size_pattern.search(title)
+        desc_match = self._x_descenders_pattern.search(title)
+        if not size_match or not desc_match:
+            return None, None
+        try:
+            x_size = float(size_match.group(1))
+            x_descenders = abs(float(desc_match.group(1)))
+        except ValueError:
+            return None, None
+        if x_size <= 0:
+            return None, None
+        return x_size, x_descenders
 
     def _parse_textangle(self, title: str) -> float | None:
         """Parse textangle from an hOCR title attribute.

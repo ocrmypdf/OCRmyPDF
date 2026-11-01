@@ -484,6 +484,19 @@ class Fpdf2PdfRenderer:
         if font_size < 1.0:
             font_size = line_size_height * 0.8
 
+        # The line box is the union of its words' boxes, so one word that reaches
+        # into the neighbouring line (a capital touching a descender above)
+        # stretches it, and the height above the baseline overstates the text
+        # size. The engine's own metrics for the line are not affected: x_size
+        # less the descenders is the distance from the baseline to the top of
+        # the line's ascenders. Never exceed it.
+        if line.x_size is not None and line.x_descenders is not None:
+            metrics_size = self.coord_transform.px_to_pt(
+                line.x_size - line.x_descenders
+            )
+            if metrics_size >= 1.0:
+                font_size = min(font_size, metrics_size)
+
         # Total rotation for rendering (textangle + slope)
         total_rotation_deg = -textangle + slope_angle_deg
 
