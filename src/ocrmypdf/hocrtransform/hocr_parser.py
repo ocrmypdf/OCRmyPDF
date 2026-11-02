@@ -461,11 +461,8 @@ class HocrParser:
         desc_match = self._x_descenders_pattern.search(title)
         if not size_match or not desc_match:
             return None, None
-        try:
-            x_size = float(size_match.group(1))
-            x_descenders = abs(float(desc_match.group(1)))
-        except ValueError:
-            return None, None
+        x_size = float(size_match.group(1))
+        x_descenders = abs(float(desc_match.group(1)))
         if x_size <= 0:
             return None, None
         return x_size, x_descenders

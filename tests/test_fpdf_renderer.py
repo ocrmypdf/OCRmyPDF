@@ -949,3 +949,10 @@ class TestLineFontSize:
         sizes = self._font_sizes(hocr, multi_font_manager, tmp_path)
         without = self._font_sizes(self._page(""), multi_font_manager, tmp_path)
         assert sizes[1] == pytest.approx(without[1])
+
+    def test_degenerate_metrics_are_ignored(self, multi_font_manager, tmp_path):
+        """Metrics that leave less than a point above the baseline are no cap."""
+        hocr = self._page("; x_size 10; x_descenders 9; x_ascenders 1")
+        sizes = self._font_sizes(hocr, multi_font_manager, tmp_path)
+        without = self._font_sizes(self._page(""), multi_font_manager, tmp_path)
+        assert sizes[1] == pytest.approx(without[1])
