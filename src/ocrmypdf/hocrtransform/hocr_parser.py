@@ -82,16 +82,16 @@ class HocrParser:
 
     _x_size_pattern = re.compile(
         r'''
-        x_size \s+
-        (\d*\.?\d+)  # line text size: positive float
+        \bx_size \s+
+        (\d*\.?\d+(?:[eE][\-\+]?\d+)?)  # line text size: positive float
         ''',
         re.VERBOSE,
     )
 
     _x_descenders_pattern = re.compile(
         r'''
-        x_descenders \s+
-        ([\-\+]?\d*\.?\d+)  # descender depth: float, sign varies by engine
+        \bx_descenders \s+
+        ([\-\+]?\d*\.?\d+(?:[eE][\-\+]?\d+)?)  # depth: float, sign varies
         ''',
         re.VERBOSE,
     )

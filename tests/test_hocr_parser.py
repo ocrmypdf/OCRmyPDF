@@ -351,7 +351,7 @@ class TestHocrParserLineMetrics:
           </span>
          </p>
         </div></body></html>"""
-        hocr_file = tmp_path / "line_metrics.hocr"
+        hocr_file = tmp_path / 'line_metrics.hocr'
         hocr_file.write_text(hocr, encoding='utf-8')
         return HocrParser(hocr_file).parse().lines[0]
 
@@ -371,11 +371,20 @@ class TestHocrParserLineMetrics:
         )
         assert line.x_descenders == 9
 
+    def test_exponent_notation(self, tmp_path):
+        line = self._parse_line(
+            'bbox 100 100 200 150; x_size 4.0e+01; x_descenders 1.5258789e-05',
+            tmp_path,
+        )
+        assert line.x_size == pytest.approx(40.0)
+        assert line.x_descenders == pytest.approx(1.5258789e-05)
+
     @pytest.mark.parametrize(
         'title',
         [
             'bbox 100 100 200 150',
             'bbox 100 100 200 150; x_size 40',
+            'bbox 100 100 200 150; max_size 40; x_descenders 9',
             'bbox 100 100 200 150; x_descenders 9',
             'bbox 100 100 200 150; x_size 0; x_descenders 0',
         ],

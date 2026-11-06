@@ -3,6 +3,16 @@
 
 # v17
 
+## v17.13.2
+
+**Fixes**
+
+- Fixed the fpdf2 renderer writing a line of text at about twice its real size
+  when one tall word stretched the line's box into the line above, such as a
+  capital touching a descender in tightly set type. When a line's box is far
+  taller than the line size Tesseract reports (`x_size` less `x_descenders`),
+  the renderer now uses Tesseract's size instead. {issue}`1778`
+
 ## v17.13.1
 
 **Changes**
@@ -20,11 +30,6 @@
 - Fixed a `RecursionError` when examining a page with a form XObject that
   draws itself. A page that draws form XObjects an exponential number of times
   no longer hangs.
-- Fixed the fpdf2 renderer writing a line of text at about twice its real size
-  when one tall word stretched the line's box into the line above, such as a
-  capital touching a descender in tightly set type. The renderer now never
-  exceeds the line size Tesseract reports (`x_size` less `x_descenders`).
-  {issue}`1778`
 - Fonts and images in form XObjects nested more than ten levels deep are no
   longer missed, and fonts used only by tiling patterns, Type 3 glyphs or soft
   masks are now checked for embedding.

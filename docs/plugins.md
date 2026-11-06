@@ -414,3 +414,12 @@ class MyOcrEngine(OcrEngine):
 
 This approach is simpler than generating hOCR and allows modern OCR
 engines to integrate more naturally with OCRmyPDF.
+
+The renderer sizes each line's text from the line's bounding box and baseline.
+If one word's box reaches into a neighbouring line, the line's box is
+stretched and its text rendered too large. An engine that knows its line
+metrics can prevent this by setting `x_size` (the line's text height:
+x-height plus ascenders plus descenders) and `x_descenders` (the depth below
+the baseline), both in source pixels, on line elements, as Tesseract's hOCR
+does. A line whose box is far taller than these metrics is then sized from
+them instead.

@@ -912,9 +912,9 @@ class TestLineFontSize:
     def _font_sizes(hocr, multi_font_manager, tmp_path) -> list[float]:
         import pikepdf
 
-        hocr_file = tmp_path / "font_size.hocr"
+        hocr_file = tmp_path / 'font_size.hocr'
         hocr_file.write_text(hocr, encoding='utf-8')
-        output_path = tmp_path / "font_size.pdf"
+        output_path = tmp_path / 'font_size.pdf'
         Fpdf2PdfRenderer(
             page=HocrParser(hocr_file).parse(),
             dpi=300,
@@ -956,3 +956,42 @@ class TestLineFontSize:
         sizes = self._font_sizes(hocr, multi_font_manager, tmp_path)
         without = self._font_sizes(self._page(""), multi_font_manager, tmp_path)
         assert sizes[1] == pytest.approx(without[1])
+
+    def test_slightly_tall_box_is_not_capped(self, multi_font_manager, tmp_path):
+        """A box a little taller than the metrics is trusted, not capped.
+
+        On short lines Tesseract's ascender estimate is a guess and often falls
+        short of the real glyphs; only a box far taller than the metrics is
+        evidence of a word reaching into another line.
+        """
+        hocr = self._page("; x_size 99; x_descenders 14; x_ascenders 14")
+        sizes = self._font_sizes(hocr, multi_font_manager, tmp_path)
+        without = self._font_sizes(self._page(""), multi_font_manager, tmp_path)
+        assert sizes[1] == pytest.approx(without[1])
+
+    def test_steep_slope_rotated_line_is_not_capped(self, multi_font_manager, tmp_path):
+        """A line whose rotation is inferred from its slope keeps its box size.
+
+        Its baseline is placed from the box on the assumption that the text
+        fills it, so a smaller font would sit off the visible text.
+        """
+        import pikepdf
+
+        def font_size(page) -> float:
+            output_path = tmp_path / 'rotated.pdf'
+            Fpdf2PdfRenderer(
+                page=page, dpi=72, multi_font_manager=multi_font_manager
+            ).render(output_path)
+            with pikepdf.open(output_path) as pdf:
+                return next(
+                    float(operands[1])
+                    for operands, operator in pikepdf.parse_content_stream(pdf.pages[0])
+                    if str(operator) == 'Tf'
+                )
+
+        without = font_size(_rotated_line_page(VERTICAL_CJK_WORDS, 912.0))
+        page = _rotated_line_page(VERTICAL_CJK_WORDS, 912.0)
+        line = page.children[0]
+        line.x_size = 12.0
+        line.x_descenders = 2.0
+        assert font_size(page) == pytest.approx(without)
