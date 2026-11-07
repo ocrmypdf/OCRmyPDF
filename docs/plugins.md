@@ -379,18 +379,19 @@ from ocrmypdf import OcrElement, OcrClass, BoundingBox
 
 
 class MyOcrEngine(OcrEngine):
+    @staticmethod
     def generate_ocr(
-        self,
         input_file: Path,
         options,
-        context,
-    ) -> OcrElement:
-        # Perform OCR and return OcrElement tree directly
-        # No need to generate hOCR XML
-        return OcrElement(
+        page_number: int = 0,
+    ) -> tuple[OcrElement, str]:
+        # Perform OCR and return the OcrElement tree directly, together with
+        # the page's plain text for the sidecar. No need to generate hOCR XML.
+        page = OcrElement(
             ocr_class=OcrClass.PAGE,
             bbox=BoundingBox(0, 0, width, height),
             dpi=300,
+            page_number=page_number,
             children=[
                 OcrElement(
                     ocr_class=OcrClass.LINE,
@@ -407,8 +408,10 @@ class MyOcrEngine(OcrEngine):
                 # ... more lines
             ],
         )
+        return page, "Hello ...\n"
 
-    def supports_generate_ocr(self) -> bool:
+    @staticmethod
+    def supports_generate_ocr() -> bool:
         return True  # Indicate this engine uses generate_ocr()
 ```
 
