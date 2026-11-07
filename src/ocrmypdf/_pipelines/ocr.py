@@ -20,6 +20,7 @@ from ocrmypdf._graft import OcrGrafter
 from ocrmypdf._jobcontext import PageContext, PdfContext
 from ocrmypdf._options import OcrOptions
 from ocrmypdf._pipeline import (
+    OcrEngineOutput,
     copy_final,
     is_ocr_required,
     merge_sidecars,
@@ -50,14 +51,13 @@ from ocrmypdf._validation import (
 )
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.helpers import available_cpu_count
-from ocrmypdf.models.ocr_element import OcrElement
 
 log = logging.getLogger(__name__)
 
 
 def _image_to_ocr_text(
     page_context: PageContext, ocr_image_out: Path
-) -> tuple[Path | None, Path, OcrElement | None]:
+) -> OcrEngineOutput:
     """Run OCR engine on image to create OCR PDF and text file."""
     options = page_context.options
     pdf_renderer = options.pdf_renderer
@@ -67,14 +67,11 @@ def _image_to_ocr_text(
         # Use generate_ocr() if the engine supports it, otherwise use hOCR path
         ocr_engine = page_context.plugin_manager.get_ocr_engine(options=options)
         if ocr_engine and ocr_engine.supports_generate_ocr():
-            ocr_tree, text_out = ocr_engine_direct(ocr_image_out, page_context)
-            return None, text_out, ocr_tree
-        ocr_out, text_out = ocr_engine_hocr(ocr_image_out, page_context)
+            return ocr_engine_direct(ocr_image_out, page_context)
+        return ocr_engine_hocr(ocr_image_out, page_context)
     elif pdf_renderer == 'sandwich':
-        ocr_out, text_out = ocr_engine_textonly_pdf(ocr_image_out, page_context)
-    else:
-        raise NotImplementedError(f"pdf_renderer {pdf_renderer}")
-    return ocr_out, text_out, None
+        return ocr_engine_textonly_pdf(ocr_image_out, page_context)
+    raise NotImplementedError(f"pdf_renderer {pdf_renderer}")
 
 
 def _exec_page_sync(page_context: PageContext) -> PageResult:
@@ -84,17 +81,15 @@ def _exec_page_sync(page_context: PageContext) -> PageResult:
     if not is_ocr_required(page_context):
         return PageResult(pageno=page_context.pageno)
 
-    ocr_image_out, pdf_page_from_image_out, orientation_correction = process_page(
-        page_context
-    )
-    ocr_out, text_out, ocr_tree = _image_to_ocr_text(page_context, ocr_image_out)
+    images = process_page(page_context)
+    engine_output = _image_to_ocr_text(page_context, images.ocr_image)
     return PageResult(
         pageno=page_context.pageno,
-        pdf_page_from_image=pdf_page_from_image_out,
-        ocr=ocr_out,
-        text=text_out,
-        orientation_correction=orientation_correction,
-        ocr_tree=ocr_tree,
+        pdf_page_from_image=images.pdf_page_from_image,
+        ocr=engine_output.ocr,
+        text=engine_output.text,
+        orientation_correction=images.orientation_correction,
+        ocr_tree=engine_output.ocr_tree,
     )
 
 
@@ -154,10 +149,11 @@ def exec_concurrent(context: PdfContext, executor: Executor) -> Sequence[str]:
     if options.output_type != 'none':
         # PDF/A and metadata
         log.info("Postprocessing...")
-        pdf, messages = postprocess(pdf, context, executor)
+        finished = postprocess(pdf, context, executor)
+        messages = finished.optimize_messages
 
         # Copy PDF file to destination
-        copy_final(pdf, options.output_file)
+        copy_final(finished.pdf, options.output_file)
     return messages
 
 
@@ -180,11 +176,15 @@ def _run_pipeline(
     ):
         executor = setup_pipeline(options, plugin_manager)
         check_requested_output_file(options)
-        start_input_file, original_filename = create_input_file(options, work_folder)
+        input_file = create_input_file(options, work_folder)
+        start_input_file = input_file.path
 
         # Triage image or pdf
         origin_pdf = triage(
-            original_filename, start_input_file, work_folder / 'origin.pdf', options
+            input_file.original_name,
+            start_input_file,
+            work_folder / 'origin.pdf',
+            options,
         )
 
         # Gather pdfinfo and create context

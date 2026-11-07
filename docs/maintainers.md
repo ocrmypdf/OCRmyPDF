@@ -113,7 +113,7 @@ The following table summarizes the dependency options introduced in v17.0.0:
 | PDF rasterization | pypdfium2 (Python) | ghostscript (binary) | pypdfium2 preferred when available |
 | PDF/A conversion | pikepdf (`pikepdf.pdfa`) | ghostscript | pikepdf validates speculative conversion |
 | Text rendering | fpdf2 (Python) | - | Required, replaces legacy hOCR renderer |
-| OCR | tesseract-ocr | `--ocr-engine none` | Can be skipped entirely |
+| OCR | tesseract-ocr | RapidOCR (`ocrmypdf[rapidocr]`, `--ocr-engine rapidocr`) | Can be skipped entirely with `--ocr-engine none` |
 
 **Minimum viable installation:**
 

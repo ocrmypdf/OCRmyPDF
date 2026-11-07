@@ -379,18 +379,19 @@ from ocrmypdf import OcrElement, OcrClass, BoundingBox
 
 
 class MyOcrEngine(OcrEngine):
+    @staticmethod
     def generate_ocr(
-        self,
         input_file: Path,
         options,
-        context,
-    ) -> OcrElement:
-        # Perform OCR and return OcrElement tree directly
-        # No need to generate hOCR XML
-        return OcrElement(
+        page_number: int = 0,
+    ) -> tuple[OcrElement, str]:
+        # Perform OCR and return the OcrElement tree directly, together with
+        # the page's plain text for the sidecar. No need to generate hOCR XML.
+        page = OcrElement(
             ocr_class=OcrClass.PAGE,
             bbox=BoundingBox(0, 0, width, height),
             dpi=300,
+            page_number=page_number,
             children=[
                 OcrElement(
                     ocr_class=OcrClass.LINE,
@@ -407,10 +408,21 @@ class MyOcrEngine(OcrEngine):
                 # ... more lines
             ],
         )
+        return page, "Hello ...\n"
 
-    def supports_generate_ocr(self) -> bool:
+    @staticmethod
+    def supports_generate_ocr() -> bool:
         return True  # Indicate this engine uses generate_ocr()
 ```
 
 This approach is simpler than generating hOCR and allows modern OCR
 engines to integrate more naturally with OCRmyPDF.
+
+The renderer sizes each line's text from the line's bounding box and baseline.
+If one word's box reaches into a neighbouring line, the line's box is
+stretched and its text rendered too large. An engine that knows its line
+metrics can prevent this by setting `x_size` (the line's text height:
+x-height plus ascenders plus descenders) and `x_descenders` (the depth below
+the baseline), both in source pixels, on line elements, as Tesseract's hOCR
+does. A line whose box is far taller than these metrics is then sized from
+them instead.

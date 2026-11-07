@@ -132,8 +132,8 @@ def test_image_dpi_full_page_high_res_layer(outdir, caplog):
     )
     assert _pipeline.calculate_image_dpi(ctx) == Resolution(300, 300)
     with caplog.at_level(logging.WARNING):
-        canvas_dpi, _ = _pipeline.calculate_raster_dpi(ctx)
-    assert canvas_dpi == Resolution(300, 300)
+        raster_dpi = _pipeline.calculate_raster_dpi(ctx)
+    assert raster_dpi.canvas == Resolution(300, 300)
     assert 'Weighted average image DPI' not in caplog.text
 
 
@@ -232,7 +232,9 @@ def test_image_dpi_small_high_res_patch(outdir, caplog):
     ),
 )
 def test_enumerate_compress_ranges(name, input, output):
-    assert output == tuple(_pipeline.enumerate_compress_ranges(input))
+    assert output == tuple(
+        ((r.first, r.last), r.item) for r in _pipeline.enumerate_compress_ranges(input)
+    )
 
 
 @pytest.mark.parametrize(

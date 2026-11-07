@@ -225,17 +225,17 @@ def test_summarize_box_repairs_aggregates_and_sets_severity():
     }
     messages = summarize_box_repairs(repairs_by_page)
 
-    discard = [(lvl, m) for lvl, m in messages if 'discarded' in m]
+    discard = [m for m in messages if 'discarded' in m.text]
     assert len(discard) == 1
-    level, text = discard[0]
+    level, text = discard[0].level, discard[0].text
     assert level == logging.WARNING
     assert 'Page(s) 1, 3-4' in text  # 0-based keys shown 1-based, ranges compacted
     assert 'visually inspect' in text
 
-    reordered = [(lvl, m) for lvl, m in messages if 'reversed' in m]
+    reordered = [m for m in messages if 'reversed' in m.text]
     assert len(reordered) == 1
-    assert reordered[0][0] == logging.DEBUG
-    assert 'visually inspect' not in reordered[0][1]
+    assert reordered[0].level == logging.DEBUG
+    assert 'visually inspect' not in reordered[0].text
 
 
 def test_cropbox_outside_mediabox_yields_valid_output(resources, outdir):

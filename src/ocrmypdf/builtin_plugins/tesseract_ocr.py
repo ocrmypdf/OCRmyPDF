@@ -303,9 +303,16 @@ def add_options(parser):
     TesseractOptions.add_arguments_to_parser(parser)
 
 
+def _uses_tesseract(options) -> bool:
+    """Return True if Tesseract is the selected OCR engine."""
+    return getattr(options, 'ocr_engine', 'auto') in ('auto', 'tesseract')
+
+
 @hookimpl
 def check_options(options):
     """Check external dependencies and version compatibility for Tesseract."""
+    if not _uses_tesseract(options):
+        return
     check_external_program(
         program='tesseract',
         package={'linux': 'tesseract-ocr'},
@@ -370,7 +377,7 @@ def filter_ocr_image(page: PageContext, image: Image.Image) -> Image.Image:
     those limits.
     """
     options = page.options
-    if getattr(options, 'tesseract', None) is None:
+    if getattr(options, 'tesseract', None) is None or not _uses_tesseract(options):
         return image
     threshold = min(options.tesseract.downsample_above, 32767)
 

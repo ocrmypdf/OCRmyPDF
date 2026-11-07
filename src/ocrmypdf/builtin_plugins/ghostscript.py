@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 from typing import Annotated
@@ -301,13 +302,28 @@ def rasterize_pdf_page(
     return output_file
 
 
-def _collect_dctdecode_images(pdf: Pdf) -> dict[tuple, list[tuple[Stream, bytes]]]:
-    """Collect all DCTDecode (JPEG) images from a PDF.
+@dataclass(frozen=True, slots=True)
+class _JpegSignature:
+    """The properties by which a JPEG image is matched across two PDFs."""
 
-    Returns a dict mapping image signatures to a list of (stream, raw_bytes) tuples.
-    The signature is (Width, Height, Filter, BitsPerComponent, ColorSpace).
-    """
-    images: dict[tuple, list[tuple[Stream, bytes]]] = {}
+    width: int
+    height: int
+    filter: str
+    bits_per_component: int
+    colorspace: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class _JpegStream:
+    """A DCTDecode image stream and its undecoded data."""
+
+    stream: Stream
+    raw_bytes: bytes
+
+
+def _collect_dctdecode_images(pdf: Pdf) -> dict[_JpegSignature, list[_JpegStream]]:
+    """Collect all DCTDecode (JPEG) images from a PDF, grouped by signature."""
+    images: dict[_JpegSignature, list[_JpegStream]] = {}
 
     def get_colorspace_key(obj):
         """Get a hashable key for the colorspace."""
@@ -335,14 +351,14 @@ def _collect_dctdecode_images(pdf: Pdf) -> dict[tuple, list[tuple[Stream, bytes]
             filt = obj.get(Name.Filter)
             if filt != Name.DCTDecode or not seen.add(obj):
                 continue
-            sig = (
-                obj.get_int(Name.Width, 0, coerce=True),
-                obj.get_int(Name.Height, 0, coerce=True),
-                str(filt),
-                obj.get_int(Name.BitsPerComponent, 0, coerce=True),
-                get_colorspace_key(obj),
+            sig = _JpegSignature(
+                width=obj.get_int(Name.Width, 0, coerce=True),
+                height=obj.get_int(Name.Height, 0, coerce=True),
+                filter=str(filt),
+                bits_per_component=obj.get_int(Name.BitsPerComponent, 0, coerce=True),
+                colorspace=get_colorspace_key(obj),
             )
-            images.setdefault(sig, []).append((obj, obj.read_raw_bytes()))
+            images.setdefault(sig, []).append(_JpegStream(obj, obj.read_raw_bytes()))
 
     return images
 
@@ -378,9 +394,12 @@ def _repair_gs106_jpeg_corruption(
                 continue
             input_list = input_images[sig]
 
-            for output_stream, output_bytes in output_list:
+            for output_image in output_list:
+                output_stream = output_image.stream
+                output_bytes = output_image.raw_bytes
                 # Try to find a matching input image
-                for _input_stream, input_bytes in input_list:
+                for input_image in input_list:
+                    input_bytes = input_image.raw_bytes
                     input_len = len(input_bytes)
                     output_len = len(output_bytes)
 
@@ -402,7 +421,7 @@ def _repair_gs106_jpeg_corruption(
                         first_error_logged = True
                     log.warning(
                         f"Replacing corrupt JPEG image "
-                        f"({sig[0]}x{sig[1]}, {diff} bytes truncated)"
+                        f"({sig.width}x{sig.height}, {diff} bytes truncated)"
                     )
 
                     # Write the original bytes back to the output stream

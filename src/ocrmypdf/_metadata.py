@@ -8,6 +8,7 @@ from __future__ import annotations
 import datetime as dt
 import logging
 import warnings
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -43,7 +44,15 @@ def _utc_offset_label(when: dt.datetime) -> str:
     return f'UTC{offset[:3]}:{offset[3:5]}'
 
 
-def assume_local_time_zone(pdf_date: str) -> tuple[str, bool]:
+@dataclass(frozen=True, slots=True)
+class ZonedPdfDate:
+    """A PDF date string, and whether the local time zone was attached to it."""
+
+    value: str
+    zone_assumed: bool
+
+
+def assume_local_time_zone(pdf_date: str) -> ZonedPdfDate:
     """Attach the local time zone to a PDF date string that has none.
 
     PDF dates may omit the time zone, in which case their relation to UTC is
@@ -54,20 +63,21 @@ def assume_local_time_zone(pdf_date: str) -> tuple[str, bool]:
         pdf_date: A PDF date string, such as ``D:20160119123847``.
 
     Returns:
-        The date string, with the local time zone attached if it had none,
-        and True if it was changed. Strings that are not PDF dates, or already
-        have a time zone, are returned unchanged.
+        The date string, with the local time zone attached if it had none.
+        Strings that are not PDF dates, or already have a time zone, are
+        returned unchanged.
     """
+    unchanged = ZonedPdfDate(pdf_date, zone_assumed=False)
     try:
         parsed = decode_pdf_date(pdf_date)
     except (ValueError, TypeError):
-        return pdf_date, False
+        return unchanged
     if parsed.tzinfo is not None:
-        return pdf_date, False
+        return unchanged
     zoned = _attach_local_time_zone(parsed)
     if zoned is None:
-        return pdf_date, False
-    return encode_pdf_date(zoned), True
+        return unchanged
+    return ZonedPdfDate(encode_pdf_date(zoned), zone_assumed=True)
 
 
 def get_docinfo(base_pdf: Pdf, context: PdfContext) -> dict[str, str]:
@@ -85,10 +95,9 @@ def get_docinfo(base_pdf: Pdf, context: PdfContext) -> dict[str, str]:
         k: from_document_info(k)
         for k in ('/Title', '/Author', '/Keywords', '/Subject', '/CreationDate')
     }
-    pdfmark['/CreationDate'], zone_assumed = assume_local_time_zone(
-        pdfmark['/CreationDate']
-    )
-    if zone_assumed:
+    creation_date = assume_local_time_zone(pdfmark['/CreationDate'])
+    pdfmark['/CreationDate'] = creation_date.value
+    if creation_date.zone_assumed:
         created = decode_pdf_date(pdfmark['/CreationDate'])
         log.warning(
             "The input's creation date has no time zone; assumed the local "

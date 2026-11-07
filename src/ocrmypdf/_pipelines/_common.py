@@ -10,11 +10,11 @@ import os
 import shutil
 import sys
 import threading
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from concurrent.futures.process import BrokenProcessPool
 from concurrent.futures.thread import BrokenThreadPool
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple, cast
 
@@ -32,6 +32,7 @@ from ocrmypdf._logging import PageNumberFilter
 from ocrmypdf._metadata import PikepdfProgress
 from ocrmypdf._options import OcrOptions
 from ocrmypdf._pipeline import (
+    FinishedPdf,
     create_ocr_image,
     create_pdf_page_from_image,
     create_visible_page_jpg,
@@ -127,7 +128,7 @@ class HOCRResultDecoder(json.JSONDecoder):
         return d
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class HOCRResult:
     """Result when hOCR is finished processing."""
 
@@ -156,7 +157,35 @@ class HOCRResult:
 
     def to_json(self) -> str:
         """Serialize to a JSON string."""
-        return json.dumps(self.__dict__, cls=HOCRResultEncoder)
+        return json.dumps(
+            {field.name: getattr(self, field.name) for field in fields(self)},
+            cls=HOCRResultEncoder,
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class IntermediateImages:
+    """The rasterized, preprocessed images of a page."""
+
+    ocr_image: Path
+    """Image to run OCR on."""
+
+    visible_image: Path | None
+    """Image to present in the output; None for lossless reconstruction."""
+
+
+@dataclass(frozen=True, slots=True)
+class PageImages:
+    """The images of a page that are ready for OCR and grafting."""
+
+    ocr_image: Path
+    """Image to run OCR on."""
+
+    pdf_page_from_image: Path | None
+    """Single page PDF from image; None for lossless reconstruction."""
+
+    orientation_correction: int
+    """Orientation correction in degrees."""
 
 
 def configure_debug_logging(
@@ -380,7 +409,7 @@ def preprocess(
 
 def make_intermediate_images(
     page_context: PageContext, orientation_correction: int
-) -> tuple[Path, Path | None]:
+) -> IntermediateImages:
     """Create intermediate and preprocessed images for OCR."""
     options = page_context.options
 
@@ -435,10 +464,10 @@ def make_intermediate_images(
                 options.deskew,
                 clean=options.clean,
             )
-    return ocr_image, preprocess_out
+    return IntermediateImages(ocr_image=ocr_image, visible_image=preprocess_out)
 
 
-def process_page(page_context: PageContext) -> tuple[Path, Path | None, int]:
+def process_page(page_context: PageContext) -> PageImages:
     """Process page to create OCR image, visible page image and orientation."""
     options = page_context.options
     orientation_correction = 0
@@ -449,10 +478,9 @@ def process_page(page_context: PageContext) -> tuple[Path, Path | None, int]:
             rasterize_preview_out, page_context
         )
 
-    ocr_image, preprocess_out = make_intermediate_images(
-        page_context, orientation_correction
-    )
-    ocr_image_out = create_ocr_image(ocr_image, page_context)
+    images = make_intermediate_images(page_context, orientation_correction)
+    preprocess_out = images.visible_image
+    ocr_image_out = create_ocr_image(images.ocr_image, page_context)
 
     pdf_page_from_image_out = None
     if not options.lossless_reconstruction:
@@ -473,12 +501,14 @@ def process_page(page_context: PageContext) -> tuple[Path, Path | None, int]:
     # caller starts the OCR engine, whose own peak would otherwise stack on top
     # of buffers we have finished with.
     release_free_memory()
-    return ocr_image_out, pdf_page_from_image_out, orientation_correction
+    return PageImages(
+        ocr_image=ocr_image_out,
+        pdf_page_from_image=pdf_page_from_image_out,
+        orientation_correction=orientation_correction,
+    )
 
 
-def postprocess(
-    pdf_file: Path, context: PdfContext, executor: Executor
-) -> tuple[Path, Sequence[str]]:
+def postprocess(pdf_file: Path, context: PdfContext, executor: Executor) -> FinishedPdf:
     """Postprocess the PDF file.
 
     Repairs broken annotations, then produces the output file of the

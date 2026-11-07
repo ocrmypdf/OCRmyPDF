@@ -13,11 +13,20 @@ import glob
 import logging
 import os
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 from ocrmypdf.font.font_manager import FontManager
 
 log = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True, slots=True)
+class _NotoCandidate:
+    """An installed Noto font file and the logical name it is known by."""
+
+    font_name: str
+    path: Path
 
 
 class SystemFontProvider:
@@ -32,6 +41,7 @@ class SystemFontProvider:
     # System font directories by platform
     SYSTEM_FONT_DIRS: dict[str, list[Path]] = {
         'linux': [
+            Path('/system/fonts'),
             Path('/usr/share/fonts'),
             Path('/usr/local/share/fonts'),
             Path.home() / '.fonts',
@@ -211,7 +221,7 @@ class SystemFontProvider:
         self._font_dirs: list[Path] | None = None
         # Cached (logical name, path) of every Noto face on the system, in the
         # order the coverage search should try them (computed lazily)
-        self._noto_candidates: list[tuple[str, Path]] | None = None
+        self._noto_candidates: list[_NotoCandidate] | None = None
         # Memoized results of find_font_with_glyphs(), keyed by codepoint set
         self._coverage_cache: dict[frozenset[int], str | None] = {}
         # Font files that failed to load, so we only complain about them once
@@ -255,6 +265,11 @@ class SystemFontProvider:
                 )
         else:
             self._font_dirs = list(self.SYSTEM_FONT_DIRS.get(platform, []))
+            prefix = os.environ.get('PREFIX') if platform == 'linux' else None
+            if prefix:
+                termux_fonts = Path(prefix) / 'share/fonts'
+                if termux_fonts not in self._font_dirs:
+                    self._font_dirs.append(termux_fonts)
 
         return self._font_dirs
 
@@ -396,7 +411,7 @@ class SystemFontProvider:
         narrow_use = base.endswith('UI') or base.startswith('NotoSansMono')
         return (family_rank, int(narrow_use), base)
 
-    def _get_noto_candidates(self) -> list[tuple[str, Path]]:
+    def _get_noto_candidates(self) -> list[_NotoCandidate]:
         """Enumerate every Noto family installed on the system.
 
         Scans each font directory once and keeps the best-ranked file per
@@ -404,7 +419,7 @@ class SystemFontProvider:
         variants contributes a single candidate.
 
         Returns:
-            List of (logical font name, path) in the order to try them.
+            The candidates in the order to try them.
         """
         if self._noto_candidates is not None:
             return self._noto_candidates
@@ -432,7 +447,7 @@ class SystemFontProvider:
                     best[base] = (rank, path)
 
         self._noto_candidates = [
-            (f'{base}-Regular', path)
+            _NotoCandidate(f'{base}-Regular', path)
             for base, (_rank, path) in sorted(
                 best.items(), key=lambda item: self._candidate_sort_key(item[0])
             )
@@ -471,7 +486,8 @@ class SystemFontProvider:
             if cached := self._font_cache.get(cached_name):
                 return cached_name, cached
 
-        for font_name, path in self._get_noto_candidates():
+        for candidate in self._get_noto_candidates():
+            font_name, path = candidate.font_name, candidate.path
             font = self._font_cache.get(font_name)
             if font is None:
                 if path in self._unloadable:

@@ -16,7 +16,6 @@ from ocrmypdf.builtin_plugins import pypdfium
 from ocrmypdf.builtin_plugins.pypdfium import (
     _bitmap_to_pil,
     _fit_to_size,
-    _process_image_for_output,
     _white,
     check_options,
     rasterize_pdf_page,
@@ -24,6 +23,12 @@ from ocrmypdf.builtin_plugins.pypdfium import (
 from ocrmypdf.cli import get_options_and_plugins
 from ocrmypdf.exceptions import MissingDependencyError
 from ocrmypdf.helpers import Resolution
+
+
+def _process_image_for_output(*args, **kwargs):
+    output = pypdfium._process_image_for_output(*args, **kwargs)
+    return output.image, output.format_name
+
 
 # Ghostscript's raster devices, and the PIL image mode each one must produce.
 # Keys are the input image mode; values are the mode after conversion.

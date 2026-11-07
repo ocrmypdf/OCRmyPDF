@@ -471,7 +471,8 @@ def test_missing_docinfo(resources, outpdf):
     ],
 )
 def test_assume_local_time_zone(los_angeles_tz, pdf_date, expected, changed):
-    assert assume_local_time_zone(pdf_date) == (expected, changed)
+    result = assume_local_time_zone(pdf_date)
+    assert (result.value, result.zone_assumed) == (expected, changed)
 
 
 @pytest.mark.parametrize('output_type', ['pdf', 'pdfa-1', 'pdfa-2'])

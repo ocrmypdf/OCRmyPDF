@@ -25,8 +25,8 @@ class TestOcrEngineDirect:
 
         assert hasattr(_pipeline, 'ocr_engine_direct')
 
-    def test_ocr_engine_direct_returns_tuple(self, tmp_path):
-        """ocr_engine_direct should return (OcrElement, Path) tuple."""
+    def test_ocr_engine_direct_returns_tree_and_text(self, tmp_path):
+        """ocr_engine_direct should return the OcrElement tree and text path."""
         from ocrmypdf._pipeline import ocr_engine_direct
 
         # Mock page context with an engine that supports generate_ocr
@@ -44,8 +44,9 @@ class TestOcrEngineDirect:
         with patch('builtins.open', MagicMock()):
             result = ocr_engine_direct(Path("test.png"), mock_context)
 
-        assert isinstance(result, tuple)
-        assert len(result) == 2
+        assert result.ocr_tree.ocr_class == 'ocr_page'
+        assert result.text == tmp_path / "test.txt"
+        assert result.ocr is None
 
 
 class TestPageResultExtension:

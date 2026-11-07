@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+import dataclasses
+
 import pytest
 
 from ocrmypdf.hocrtransform import (
@@ -224,6 +226,29 @@ class TestOcrElement:
         assert elem.dpi == 300.0
         assert elem.page_number == 0
         assert elem.logical_page_number == 1
+
+
+class TestOcrElementFieldOrder:
+    """OcrElement is public API: plugins may build it with positional arguments."""
+
+    def test_fields_added_after_17_0_keep_positions(self):
+        names = [f.name for f in dataclasses.fields(OcrElement)]
+        assert names[:14] == [
+            'ocr_class',
+            'bbox',
+            'poly',
+            'text',
+            'confidence',
+            'children',
+            'direction',
+            'language',
+            'baseline',
+            'textangle',
+            'font',
+            'dpi',
+            'page_number',
+            'logical_page_number',
+        ]
 
 
 class TestOcrClass:

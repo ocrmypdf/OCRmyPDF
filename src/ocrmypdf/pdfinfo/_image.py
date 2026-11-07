@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Iterator
+from dataclasses import dataclass
 from decimal import Decimal
 
 from pikepdf import (
@@ -273,24 +274,29 @@ def _find_inline_images(contentsinfo: ContentsInfo) -> Iterator[ImageInfo]:
         )
 
 
-def _image_xobjects(container) -> Iterator[tuple[Object, str]]:
+@dataclass(frozen=True, slots=True)
+class _NamedImage:
+    """An image XObject and the name its container knows it by."""
+
+    image: Object
+    name: str
+
+
+def _image_xobjects(container) -> Iterator[_NamedImage]:
     """Search for all XObject-based images in the container.
 
     Usually the container is a page, but it could also be a Form XObject
     that contains images. Filter out the Form XObjects which are dealt with
     elsewhere.
 
-    Generate a sequence of tuples (image, xobj container), where container,
-    where xobj is the name of the object and image is the object itself,
-    since the object does not know its own name.
-
+    Generates each image with its name in the container, since the object
+    does not know its own name.
     """
     for key, candidate in (container.get_dict(RESOURCES_XOBJECT) or {}).items():
         if candidate is None or Name.Subtype not in candidate:
             continue
         if candidate[Name.Subtype] == Name.Image:
-            pdfimage = candidate
-            yield (pdfimage, key)
+            yield _NamedImage(candidate, key)
 
 
 def _find_regular_images(
@@ -303,7 +309,8 @@ def _find_regular_images(
 
     Generates images with their DPI at time of drawing.
     """
-    for pdfimage, xobj in _image_xobjects(container):
+    for named in _image_xobjects(container):
+        pdfimage, xobj = named.image, named.name
         if xobj not in contentsinfo.name_index:
             continue
         for draw in contentsinfo.name_index[xobj]:

@@ -138,6 +138,10 @@ class OcrElement:
         dpi: Image resolution in dots per inch (typically for page-level)
         page_number: Physical page number (0-indexed)
         logical_page_number: Logical page number (as printed on the page)
+        x_size: Line text size in source pixels, as reported by the OCR engine
+            (hOCR ``x_size``): x-height plus ascenders plus descenders
+        x_descenders: Descender depth of the line in source pixels (hOCR
+            ``x_descenders``), a positive distance below the baseline
     """
 
     ocr_class: str
@@ -172,6 +176,12 @@ class OcrElement:
     dpi: float | None = None
     page_number: int | None = None
     logical_page_number: int | None = None
+
+    # Line text metrics in source pixels (for lines). Unlike bbox, these are not
+    # stretched by a single tall word, so they bound the text size of the line.
+    # Declared last so positional construction from earlier releases still works.
+    x_size: float | None = None
+    x_descenders: float | None = None
 
     def iter_by_class(self, *ocr_classes: str) -> list[OcrElement]:
         """Iterate over all descendants matching the given class(es).
