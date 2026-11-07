@@ -30,11 +30,11 @@
 
 - Selecting an OCR engine other than Tesseract, including `--ocr-engine
   none`, no longer requires Tesseract to be installed.
-- Fixed `--redo-ocr` removing visible text from a text object that also
-  contains invisible text, such as when the text rendering mode changes to
-  invisible partway through it. Only the invisible text is now removed, and
-  font and spacing settings made where it is removed are kept for the text
-  that follows. {issue}`1769`
+- Fixed `--redo-ocr` and `--mode strip` removing visible text from a text
+  object that also contains invisible text, such as when the text rendering
+  mode changes to invisible partway through it. Only the invisible text is
+  now removed, and font and spacing settings made where it is removed are
+  kept for the text that follows. {issue}`1769`
 - Fixed the fpdf2 renderer writing the text of a line that rises to the right
   too large, by up to the height of its rise, which also made the text of
   neighbouring lines overlap. A sloped line's box spans its rise as well as

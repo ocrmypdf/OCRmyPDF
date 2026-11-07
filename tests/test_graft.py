@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from io import BytesIO
 from unittest.mock import patch
 
 import pikepdf
@@ -230,51 +231,8 @@ def test_strip_invisble_text():
     assert count('invisible', page) == 0, 'No invisible elems left'
 
 
-def test_strip_visible_text_when_render_mode_changes_within_text_object():
-    """Keep visible text when a hidden run ends the same BT/ET block (#1769)."""
-    pdf = pikepdf.Pdf.new()
-    page = pdf.add_blank_page()
-    page.Contents = pikepdf.Stream(
-        pdf,
-        b'BT\n/F0 12 Tf\n72 720 Td\n(visible) Tj\n3 Tr\n(invisible) Tj\nET\n',
-    )
-
-    def strings():
-        return [
-            bytes(operands[0])
-            for operands, operator in pikepdf.parse_content_stream(page)
-            if operator == pikepdf.Operator('Tj')
-        ]
-
-    assert strings() == [b'visible', b'invisible']
-
-    ocrmypdf._graft.strip_invisible_text(pdf, page)
-
-    assert strings() == [b'visible']
-
-
-def test_strip_invisible_text_before_later_visible_run_preserves_position():
-    """Do not remove hidden text if doing so could shift visible text."""
-    pdf = pikepdf.Pdf.new()
-    page = pdf.add_blank_page()
-    page.Contents = pikepdf.Stream(
-        pdf,
-        b'BT\n/F0 12 Tf\n72 720 Td\n3 Tr\n(hidden) Tj\n0 Tr\n(visible) Tj\nET\n',
-    )
-
-    ocrmypdf._graft.strip_invisible_text(pdf, page)
-
-    assert [
-        bytes(operands[0])
-        for operands, operator in pikepdf.parse_content_stream(page)
-        if operator == pikepdf.Operator('Tj')
-    ] == [b'hidden', b'visible']
-
-
 def _stripped(content: bytes, conversion_mode: str = 'implicit') -> bytes:
     """Strip a one-page PDF with the given content stream and return it."""
-    from io import BytesIO
-
     pdf = pikepdf.Pdf.new()
     pdf.add_blank_page().Contents = pikepdf.Stream(pdf, content)
     buffer = BytesIO()
@@ -283,6 +241,21 @@ def _stripped(content: bytes, conversion_mode: str = 'implicit') -> bytes:
         page = pdf.pages[0]
         ocrmypdf._graft.strip_invisible_text(pdf, page)
         return pikepdf.unparse_content_stream(pikepdf.parse_content_stream(page))
+
+
+def test_strip_visible_text_when_render_mode_changes_within_text_object():
+    """Keep visible text when a hidden run ends the same BT/ET block (#1769)."""
+    assert _stripped(b'BT /F0 12 Tf 72 720 Td (visible) Tj 3 Tr (invisible) Tj ET') == (
+        b'BT\n/F0 12 Tf\n72 720 Td\n(visible) Tj\n3 Tr\nET'
+    )
+
+
+def test_strip_invisible_text_before_later_visible_run_preserves_position():
+    """Do not remove hidden text if doing so could shift visible text."""
+    content = b'BT /F0 12 Tf 72 720 Td 3 Tr (hidden) Tj 0 Tr (visible) Tj ET'
+    assert _stripped(content) == (
+        b'BT\n/F0 12 Tf\n72 720 Td\n3 Tr\n(hidden) Tj\n0 Tr\n(visible) Tj\nET'
+    )
 
 
 def test_strip_hidden_text_before_a_new_line():
@@ -368,7 +341,7 @@ def test_strip_hidden_text_objects_leave_one_state_around_colour():
     words = b''.join(
         b'BT 0 g /F1 %d Tf 3 Tr (w) Tj ET 0 Tr ' % (10 + i) for i in range(50)
     )
-    # Only what the hidden objects leave is merged; the page's own 0 Tr stays.
+    # The page's own 0 Tr after the last word is not part of a merged run.
     assert _stripped(words) == b'0 g\n/F1 59 Tf\n3 Tr\n0 Tr'
 
 
@@ -376,6 +349,23 @@ def test_strip_hidden_text_objects_keep_cumulative_state():
     """State that accumulates rather than being replaced is all kept."""
     assert _stripped(b'BT 3 Tr /GS1 gs (h) Tj ET BT 3 Tr /GS2 gs (h) Tj ET') == (
         b'3 Tr\n/GS1 gs\n3 Tr\n/GS2 gs'
+    )
+
+
+def test_strip_hidden_text_objects_keep_colour_space_order():
+    """A colour is never moved before or away from the space it is set in."""
+    assert _stripped(
+        b'BT 3 Tr /CS0 cs 1 0 0 sc (h) Tj ET BT 3 Tr /CS1 cs (h) Tj ET'
+    ) == (b'/CS0 cs\n1 0 0 sc\n3 Tr\n/CS1 cs')
+    assert _stripped(b'BT 3 Tr 0 g (h) Tj ET BT 3 Tr 0.5 g 0 g (h) Tj ET') == (
+        b'0 g\n3 Tr\n0.5 g\n0 g'
+    )
+
+
+def test_strip_unterminated_hidden_text_object():
+    """Invisible text in a text object with no ET is stripped too."""
+    assert _stripped(b'0 0 m 9 9 l S BT /F1 12 Tf 3 Tr (hidden) Tj') == (
+        b'0 0 m\n9 9 l\nS\n/F1 12 Tf\n3 Tr'
     )
 
 

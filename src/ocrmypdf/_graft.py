@@ -242,19 +242,35 @@ _NEW_LINE_OPERATORS = frozenset(
 # Operators that only position text, whose effect ends with the text object.
 _TEXT_OBJECT_ONLY_OPERATORS = frozenset((_OP_BT, _OP_ET, _OP_TD, _OP_TM, _OP_T_STAR))
 
-# Operators that each set graphics or text state outright, replacing what the
-# last use of the same operator set: the text state operators, which outlive
-# the text object since text state is part of the graphics state (ISO 32000-2,
-# 9.3.1), and the colour and device-independent graphics state operators. Of
-# a run of these, only the last use of each operator matters. gs is not one:
-# each use sets only the parameters its dictionary lists.
+# Operators that each set one graphics state parameter outright, replacing
+# what the last use of the same operator set: the text state operators, which
+# outlive the text object since text state is part of the graphics state
+# (ISO 32000-2, 9.3.1), and the device-independent graphics state operators.
+# Of a run of state operators, only the last use of each of these matters. gs
+# is not one: each use sets only the parameters its dictionary lists.
 _REPLACING_STATE_OPERATORS = frozenset(
     Operator(op)
     for op in (
         *('Tc', 'Tw', 'Tz', 'TL', 'Tf', 'Tr', 'Ts'),
-        *('CS', 'cs', 'SC', 'SCN', 'sc', 'scn', 'G', 'g', 'RG', 'rg', 'K', 'k'),
         *('w', 'J', 'j', 'M', 'd', 'ri', 'i'),
     )
+)
+
+# Colour operators, for stroking and nonstroking colour. These are not
+# independent: SC, SCN, sc and scn set a colour in the colour space that the
+# others set, so one cannot be moved past another of the same kind.
+_STROKING_COLOUR_OPERATORS = frozenset(
+    Operator(op) for op in ('CS', 'SC', 'SCN', 'G', 'RG', 'K')
+)
+_NONSTROKING_COLOUR_OPERATORS = frozenset(
+    Operator(op) for op in ('cs', 'sc', 'scn', 'g', 'rg', 'k')
+)
+
+# State operators that nothing in a run of them reads.
+_STATE_RUN_OPERATORS = (
+    _REPLACING_STATE_OPERATORS
+    | _STROKING_COLOUR_OPERATORS
+    | _NONSTROKING_COLOUR_OPERATORS
 )
 
 _ContentOperation = tuple[Collection[Object], Operator]
@@ -396,17 +412,45 @@ def _append_state(stream: list[_ContentOperation], op: _ContentOperation):
 
     The state that consecutive invisible text objects leave behind would
     otherwise accumulate, one set of operators per object. Nothing reads the
-    state set by a run of state operators until the run ends, so an earlier
-    use of an operator in the run that sets its state outright is redundant.
+    state set within a run of state operators until the run ends, so an
+    earlier use in the run of an operator that sets its parameter outright is
+    redundant, and so is a colour operator that repeats the last one of its
+    kind.
     """
-    operator = op[1]
-    if operator in _REPLACING_STATE_OPERATORS:
+    operands, operator = op
+    if operator in _STATE_RUN_OPERATORS:
+        if operator in _STROKING_COLOUR_OPERATORS:
+            same_kind = _STROKING_COLOUR_OPERATORS
+        elif operator in _NONSTROKING_COLOUR_OPERATORS:
+            same_kind = _NONSTROKING_COLOUR_OPERATORS
+        else:
+            same_kind = frozenset((operator,))
         index = len(stream) - 1
-        while index >= 0 and stream[index][1] in _REPLACING_STATE_OPERATORS:
-            if stream[index][1] == operator:
-                del stream[index]
+        while index >= 0 and stream[index][1] in _STATE_RUN_OPERATORS:
+            earlier_operands, earlier_operator = stream[index]
+            if earlier_operator in same_kind:
+                if operator in _REPLACING_STATE_OPERATORS:
+                    del stream[index]
+                elif earlier_operator == operator and list(earlier_operands) == list(
+                    operands
+                ):
+                    return
+                else:
+                    break
             index -= 1
     stream.append(op)
+
+
+def _extend_with_text_object(
+    stream: list[_ContentOperation], text_object: list[_TextObjectOperation]
+):
+    """Append a text object to ``stream`` without its invisible text."""
+    kept, is_text_object = _strip_text_object(text_object)
+    if is_text_object:
+        stream.extend(kept)
+    else:
+        for op in kept:
+            _append_state(stream, op)
 
 
 def _strip_invisible_text_from_content(
@@ -466,16 +510,13 @@ def _strip_invisible_text_from_content(
             text_objects.append((operands, operator, render_mode))
             if operator == _OP_ET:
                 in_text_obj = False
-                kept, is_text_object = _strip_text_object(text_objects)
-                if is_text_object:
-                    stream.extend(kept)
-                else:
-                    for op in kept:
-                        _append_state(stream, op)
+                _extend_with_text_object(stream, text_objects)
                 text_objects.clear()
 
-    # A text object left open at the end of the stream is kept as it is.
-    stream.extend((operands, operator) for operands, operator, _ in text_objects)
+    # A text object left open at the end of the stream is stripped the same way,
+    # and left open if any text remains in it.
+    if text_objects:
+        _extend_with_text_object(stream, text_objects)
 
     for name in vestigial_names:
         # The form is no longer drawn, so unlink it; it drops out at save time.
