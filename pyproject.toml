@@ -57,6 +57,7 @@ Changelog = "https://github.com/ocrmypdf/OCRmyPDF/tree/main/docs/releasenotes"
 heic = ["pillow-heif>=1.7.0"]  # HEIF/HEIC image support - wheels bundle GPLv2 x265, opt-in only
 watcher = ["watchfiles>=1.0", "cyclopts>=3", "python-dotenv"]
 webservice = ["streamlit>=1.41.0"]
+rapidocr = ["rapidocr>=3.10", "onnxruntime>=1.21"]  # Alternative CPU OCR engine (PP-OCR models)
 
 [project.scripts]
 ocrmypdf = "ocrmypdf.__main__:run"
