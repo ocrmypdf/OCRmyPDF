@@ -42,6 +42,7 @@ BUILTIN_PLUGINS = (
     'null_ocr',
     'optimize',
     'pypdfium',
+    'rapidocr_ocr',
     'tesseract_ocr',
 )
 
@@ -60,6 +61,7 @@ def _builtin_plugin_modules() -> tuple[ModuleType, ...]:
         null_ocr,
         optimize,
         pypdfium,
+        rapidocr_ocr,
         tesseract_ocr,
     )
 
@@ -70,6 +72,7 @@ def _builtin_plugin_modules() -> tuple[ModuleType, ...]:
         null_ocr,
         optimize,
         pypdfium,
+        rapidocr_ocr,
         tesseract_ocr,
     )
     return modules

@@ -138,6 +138,28 @@ class TestOcrEnginePluginSelection:
         engine = null_ocr.get_ocr_engine(options=options)
         assert engine is None
 
+    def test_rapidocr_returns_none_when_auto(self):
+        """rapidocr_ocr.get_ocr_engine() only claims ocr_engine='rapidocr'."""
+        from unittest.mock import MagicMock
+
+        from ocrmypdf.builtin_plugins import rapidocr_ocr
+
+        for name in ('auto', 'tesseract', 'none'):
+            options = MagicMock()
+            options.ocr_engine = name
+            assert rapidocr_ocr.get_ocr_engine(options=options) is None
+
+    def test_rapidocr_selected_when_rapidocr(self):
+        """RapidOcrEngine should be returned when ocr_engine='rapidocr'."""
+        from unittest.mock import MagicMock
+
+        from ocrmypdf.builtin_plugins import rapidocr_ocr
+
+        options = MagicMock()
+        options.ocr_engine = 'rapidocr'
+        engine = rapidocr_ocr.get_ocr_engine(options=options)
+        assert isinstance(engine, rapidocr_ocr.RapidOcrEngine)
+
 
 class TestNonTesseractEngineWithoutTesseract:
     """Selecting an engine other than Tesseract must not require Tesseract."""
@@ -172,6 +194,14 @@ class TestNonTesseractEngineWithoutTesseract:
         api.check_options(options, plugin_manager)
         return options, plugin_manager
 
+    def test_cli_accepts_rapidocr(self):
+        from ocrmypdf.cli import get_parser
+
+        args = get_parser().parse_args(
+            ['--ocr-engine', 'rapidocr', 'in.pdf', 'out.pdf']
+        )
+        assert args.ocr_engine == 'rapidocr'
+
     def test_tesseract_required_by_default(self, no_tesseract, resources, outpdf):
         from ocrmypdf.exceptions import MissingDependencyError
 
@@ -201,3 +231,10 @@ class TestNonTesseractEngineWithoutTesseract:
             '--tesseract-thresholding',
             'sauvola',
         )
+
+    def test_rapidocr_engine(self, no_tesseract, resources, outpdf):
+        pytest.importorskip('rapidocr')
+        options, plugin_manager = self._check(
+            resources, outpdf, '--ocr-engine', 'rapidocr'
+        )
+        assert 'RapidOCR' in str(plugin_manager.get_ocr_engine(options=options))
