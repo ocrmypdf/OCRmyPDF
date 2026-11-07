@@ -444,10 +444,8 @@ def _process_content_streams(
     """
     if container.get(Name.Type) == Name.Page and Name.Contents in container:
         initial_shorthand = shorthand or UNIT_SQUARE
-    elif (
-        container.get(Name.Type) == Name.XObject
-        and container[Name.Subtype] == Name.Form
-    ):
+    elif container.get(Name.Subtype) == Name.Form:
+        # /Type is optional for XObjects, so recognize forms by /Subtype
         # Set the CTM to the state it was when the "Do" operator was
         # encountered that is drawing this instance of the Form XObject
         ctm = Matrix(shorthand) if shorthand else Matrix()
