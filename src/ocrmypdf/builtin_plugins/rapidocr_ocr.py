@@ -32,12 +32,11 @@ otherwise upright page is recognized poorly.
 
 from __future__ import annotations
 
-import functools
 import html
 import logging
 import threading
 from collections.abc import Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from math import atan2, degrees, hypot
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any
@@ -829,17 +828,24 @@ class _EngineConfig:
     rec: RecModel
 
 
-@dataclass(slots=True)
-class _EngineHandle:
-    """A RapidOCR instance, and a lock: RapidOCR keeps state between calls."""
+#: RapidOCR instances of the current thread, by configuration. A RapidOCR
+#: instance keeps state between calls, so threads cannot share one; and
+#: OCRmyPDF's worker threads must not take turns on one engine either. The
+#: engines are released when their thread ends.
+_thread_engines = threading.local()
 
-    ocr: Any
-    lock: threading.Lock = field(default_factory=threading.Lock)
+
+def _get_engine(config: _EngineConfig) -> Any:
+    """Return the current thread's RapidOCR instance for a configuration."""
+    engines: dict[_EngineConfig, Any] | None = getattr(_thread_engines, 'engines', None)
+    if engines is None:
+        engines = _thread_engines.engines = {}
+    if config not in engines:
+        engines[config] = _create_engine(config)
+    return engines[config]
 
 
-@functools.lru_cache(maxsize=4)
-def _get_engine(config: _EngineConfig) -> _EngineHandle:
-    """Create a RapidOCR instance, once per process for each configuration."""
+def _create_engine(config: _EngineConfig) -> Any:
     rapidocr = _import_rapidocr()
     params = {
         'Global.log_level': 'error',
@@ -853,10 +859,10 @@ def _get_engine(config: _EngineConfig) -> _EngineHandle:
         'Rec.model_type': rapidocr.ModelType(config.rec.model_type),
         'Rec.lang_type': rapidocr.LangRec(config.rec.lang_type),
     }
-    return _EngineHandle(ocr=rapidocr.RapidOCR(params=params))
+    return rapidocr.RapidOCR(params=params)
 
 
-def _engine_for(options: OcrOptions) -> _EngineHandle:
+def _engine_for(options: OcrOptions) -> Any:
     return _get_engine(
         _EngineConfig(
             max_side_len=options.rapidocr.max_side_len,
@@ -876,17 +882,16 @@ def _load_image(input_file: Path) -> tuple[Image.Image, float]:
     return loaded, dpi
 
 
-def _run(handle: _EngineHandle, image: Image.Image, *, rec: bool) -> Any:
+def _run(engine: Any, image: Image.Image, *, rec: bool) -> Any:
     """Detect, and optionally recognize, text; return RapidOCR's result."""
-    with handle.lock:
-        # RapidOCR keeps these flags between calls, so always pass all of them
-        return handle.ocr(
-            image,
-            use_det=True,
-            use_cls=False,
-            use_rec=rec,
-            return_word_box=rec,
-        )
+    # RapidOCR keeps these flags between calls, so always pass all of them
+    return engine(
+        image,
+        use_det=True,
+        use_cls=False,
+        use_rec=rec,
+        return_word_box=rec,
+    )
 
 
 def _boxes(result: Any) -> Any:
@@ -894,14 +899,13 @@ def _boxes(result: Any) -> Any:
     return None if boxes is None or len(boxes) == 0 else boxes
 
 
-def _mean_rec_score(handle: _EngineHandle, crops: list[Any]) -> float:
+def _mean_rec_score(engine: Any, crops: list[Any]) -> float:
     """Mean recognition score of line crops (BGR image arrays)."""
     import numpy as np
     from rapidocr.ch_ppocr_rec.typings import TextRecInput
 
-    with handle.lock:
-        recognizer = handle.ocr._load_rec_model()
-        result = recognizer(TextRecInput(img=[np.ascontiguousarray(c) for c in crops]))
+    recognizer = engine._load_rec_model()
+    result = recognizer(TextRecInput(img=[np.ascontiguousarray(c) for c in crops]))
     scores = result.scores or ()
     return float(np.mean(scores)) if len(scores) else 0.0
 
@@ -934,8 +938,8 @@ class RapidOcrEngine(OcrEngine):
         import numpy as np
 
         image, _dpi = _load_image(input_file)
-        handle = _engine_for(options)
-        quads = _boxes(_run(handle, image, rec=False))
+        engine = _engine_for(options)
+        quads = _boxes(_run(engine, image, rec=False))
         selected = select_orientation_lines(quads)
         if selected is None:
             return OrientationConfidence(angle=0, confidence=0.0)
@@ -945,8 +949,8 @@ class RapidOcrEngine(OcrEngine):
         pairs = [(a, b) for a, b in pairs if a.size]
         if len(pairs) < ORIENTATION_MIN_LINES:
             return OrientationConfidence(angle=0, confidence=0.0)
-        upright = _mean_rec_score(handle, [a for a, _ in pairs])
-        turned = _mean_rec_score(handle, [b for _, b in pairs])
+        upright = _mean_rec_score(engine, [a for a, _ in pairs])
+        turned = _mean_rec_score(engine, [b for _, b in pairs])
         return orientation_from_scores(vertical, upright, turned, axis_share)
 
     @staticmethod

@@ -13,6 +13,7 @@ import importlib.util
 import re
 import shutil
 import subprocess
+import threading
 from math import atan2, cos, degrees, radians, sin
 from pathlib import Path
 
@@ -694,6 +695,91 @@ class _RecordingOcr:
         return type('Empty', (), {'boxes': None})()
 
 
+_ENGINE_CONFIG = rapidocr_ocr._EngineConfig(2000, rec_model_for_languages(['rus']))
+
+
+class _FakeRapidOCR:
+    """Stands in for rapidocr.RapidOCR."""
+
+    created: list[dict] = []
+    barrier: threading.Barrier | None = None
+
+    def __init__(self, params):
+        self.created.append(params)
+
+    def __call__(self, image, **kwargs):
+        if self.barrier is not None:
+            # Two engines working at once both reach the barrier; engines
+            # that take turns time out.
+            self.barrier.wait(timeout=5)
+        return type('Empty', (), {'boxes': None})()
+
+
+@pytest.fixture
+def fake_rapidocr(monkeypatch):
+    """Replace the rapidocr module, and forget engines made so far."""
+    _FakeRapidOCR.created = []
+    _FakeRapidOCR.barrier = None
+    fake_module = type(
+        'rapidocr',
+        (),
+        {
+            'RapidOCR': _FakeRapidOCR,
+            'OCRVersion': str,
+            'ModelType': str,
+            'LangRec': str,
+        },
+    )
+    monkeypatch.setattr(rapidocr_ocr, '_import_rapidocr', lambda: fake_module)
+    monkeypatch.setattr(rapidocr_ocr, '_thread_engines', threading.local())
+    return _FakeRapidOCR
+
+
+class TestEnginePerThread:
+    """OCRmyPDF's worker threads must each have their own engine.
+
+    One engine shared by all threads makes them take turns.
+    """
+
+    def test_reused_within_a_thread(self, fake_rapidocr):
+        first = rapidocr_ocr._get_engine(_ENGINE_CONFIG)
+        assert rapidocr_ocr._get_engine(_ENGINE_CONFIG) is first
+        assert len(fake_rapidocr.created) == 1
+
+    def test_distinct_between_threads(self, fake_rapidocr):
+        from concurrent.futures import ThreadPoolExecutor
+
+        barrier = threading.Barrier(2)
+
+        def engine_id():
+            engine = rapidocr_ocr._get_engine(_ENGINE_CONFIG)
+            barrier.wait(timeout=5)  # keep both threads alive together
+            return id(engine)
+
+        with ThreadPoolExecutor(2) as pool:
+            ids = list(pool.map(lambda _: engine_id(), range(2)))
+        assert ids[0] != ids[1]
+        assert len(fake_rapidocr.created) == 2
+
+    def test_threads_run_at_once(self, fake_rapidocr, tmp_path):
+        from concurrent.futures import ThreadPoolExecutor
+
+        from PIL import Image
+
+        image = tmp_path / 'page.png'
+        Image.new('L', (200, 100), 255).save(image, dpi=(300, 300))
+        fake_rapidocr.barrier = threading.Barrier(2)
+        options = _options()
+        with ThreadPoolExecutor(2) as pool:
+            results = list(
+                pool.map(
+                    lambda _: rapidocr_ocr.RapidOcrEngine.generate_ocr(image, options),
+                    range(2),
+                )
+            )
+        assert len(results) == 2
+
+
 class TestAngleClassifierDisabled:
     """RapidOCR's text line angle classifier must not run.
 
@@ -701,32 +787,9 @@ class TestAngleClassifierDisabled:
     upside down, and recognition then returns junk with confident scores.
     """
 
-    def test_engine_constructed_without_classifier(self, monkeypatch):
-        created = {}
-
-        class FakeRapidOCR:
-            def __init__(self, params):
-                created.update(params)
-
-        fake_module = type(
-            'rapidocr',
-            (),
-            {
-                'RapidOCR': FakeRapidOCR,
-                'OCRVersion': str,
-                'ModelType': str,
-                'LangRec': str,
-            },
-        )
-        monkeypatch.setattr(rapidocr_ocr, '_import_rapidocr', lambda: fake_module)
-        rapidocr_ocr._get_engine.cache_clear()
-        try:
-            rapidocr_ocr._get_engine(
-                rapidocr_ocr._EngineConfig(2000, rec_model_for_languages(['rus']))
-            )
-        finally:
-            rapidocr_ocr._get_engine.cache_clear()
-        assert created['Global.use_cls'] is False
+    def test_engine_constructed_without_classifier(self, fake_rapidocr):
+        rapidocr_ocr._get_engine(_ENGINE_CONFIG)
+        assert fake_rapidocr.created[0]['Global.use_cls'] is False
 
     @pytest.mark.parametrize(
         'method', ['generate_ocr', 'get_deskew', 'get_orientation']
@@ -737,9 +800,7 @@ class TestAngleClassifierDisabled:
         image = tmp_path / 'page.png'
         Image.new('L', (200, 100), 255).save(image, dpi=(300, 300))
         ocr = _RecordingOcr()
-        monkeypatch.setattr(
-            rapidocr_ocr, '_engine_for', lambda options: rapidocr_ocr._EngineHandle(ocr)
-        )
+        monkeypatch.setattr(rapidocr_ocr, '_engine_for', lambda options: ocr)
         getattr(rapidocr_ocr.RapidOcrEngine, method)(image, _options())
         assert ocr.calls
         assert all(call.get('use_cls') is False for call in ocr.calls)
