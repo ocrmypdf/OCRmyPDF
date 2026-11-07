@@ -55,8 +55,13 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen \
-        --extra webservice --extra watcher --no-dev \
+        --extra webservice --extra watcher --extra rapidocr --no-dev \
         --no-install-package pyarrow
+
+# Fetch RapidOCR's page orientation model now, so containers need not download
+# it on every run. The recognition model bundled with RapidOCR already reads
+# the languages of the Tesseract packs installed below.
+RUN /app/.venv/bin/python -m ocrmypdf.builtin_plugins.rapidocr_ocr download
 
 FROM base
 

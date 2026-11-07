@@ -224,6 +224,38 @@ follows:
 docker cp mycustomtraining.traineddata name_of_container:/usr/share/tesseract-ocr/<tesseract version>/tessdata/
 :::
 
+{#docker-rapidocr}
+### Adding RapidOCR languages to the Docker image
+
+The Ubuntu image (`jbarlow83/ocrmypdf` and `jbarlow83/ocrmypdf-ubuntu`)
+includes the optional {ref}`RapidOCR engine <rapidocr-engine>`,
+selected with `--ocr-engine rapidocr`, and its page orientation model.
+RapidOCR's bundled recognition model reads English, Chinese, Japanese and
+most Latin-script languages, which covers the image's Tesseract languages.
+The Alpine image does not include RapidOCR, because ONNX Runtime does not
+publish packages for Alpine's C library.
+
+Other languages, such as Korean, Russian or Arabic, use recognition models
+that RapidOCR downloads on first use, into its `models` directory inside the
+image's virtual environment. A download made by a running container is lost
+when the container exits, so it would be repeated on every run. Instead,
+fetch the models when building a derived image:
+
+:::{code} dockerfile
+FROM jbarlow83/ocrmypdf:{TAG}
+
+# Example: add RapidOCR's Korean and Russian recognition models. The "app"
+# user owns the image's virtual environment, so root is not needed.
+RUN python -m ocrmypdf.builtin_plugins.rapidocr_ocr download kor rus
+:::
+
+Then run, for example, `ocrmypdf --ocr-engine rapidocr -l rus in.pdf out.pdf`.
+The same `download` command works outside Docker, to fetch models in advance
+on a machine that will later be offline. Alternatively, keep downloads
+between runs by mounting a named volume over the models directory, currently
+`/app/.venv/lib/python3.14/site-packages/rapidocr/models` (the Python version
+may change with the base image).
+
 Extending the Docker image
 --------------------------
 
