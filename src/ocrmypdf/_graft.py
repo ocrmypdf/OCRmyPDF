@@ -1,4 +1,5 @@
 # SPDX-FileCopyrightText: 2022 James R. Barlow
+# SPDX-FileCopyrightText: 2026 Danny Ward
 # SPDX-License-Identifier: MPL-2.0
 
 """For grafting text-only PDF pages onto freeform PDF pages."""
@@ -9,6 +10,7 @@ import logging
 from collections.abc import Collection
 from contextlib import suppress
 from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
@@ -187,16 +189,32 @@ def _ensure_dictionary(obj: Dictionary | Stream, name: Name):
     return obj[name]
 
 
+_OP_BT = Operator('BT')
+_OP_ET = Operator('ET')
+_OP_TJ_STRING = Operator('Tj')
+_OP_TJ_ARRAY = Operator('TJ')
+_OP_QUOTE = Operator("'")
+_OP_DOUBLE_QUOTE = Operator('"')
+_OP_TD = Operator('Td')
+_OP_TD_LEADING = Operator('TD')
+_OP_TM = Operator('Tm')
+_OP_T_STAR = Operator('T*')
+_OP_TL = Operator('TL')
+_OP_TW = Operator('Tw')
+_OP_TC = Operator('Tc')
+
+# Operators that paint text. A single BT/ET block can change Tr between text
+# runs, so visibility must be checked for each text-showing operator.
+_TEXT_SHOWING_OPERATORS = frozenset(
+    (_OP_TJ_STRING, _OP_TJ_ARRAY, _OP_QUOTE, _OP_DOUBLE_QUOTE)
+)
+
 # Operators that actually mark the page. Everything else only manipulates the
 # graphics or text state, so a content stream containing none of these draws
 # nothing. 'INLINE IMAGE' is pikepdf's pseudo-operator for a BI...ID...EI block.
-_PAINTING_OPERATORS = frozenset(
+_PAINTING_OPERATORS = _TEXT_SHOWING_OPERATORS | frozenset(
     Operator(op)
     for op in (
-        'Tj',
-        'TJ',
-        "'",
-        '"',
         'S',
         's',
         'f',
@@ -212,6 +230,51 @@ _PAINTING_OPERATORS = frozenset(
         'INLINE IMAGE',
     )
 )
+
+# Operators that move to a new line of text. They position it from the text line
+# matrix, which text-showing operators do not change (ISO 32000-2, 9.4.2 and
+# 9.4.3), so where later text goes does not depend on any text shown before
+# them. The quote operators move to a new line before showing their string.
+_NEW_LINE_OPERATORS = frozenset(
+    (_OP_TD, _OP_TD_LEADING, _OP_TM, _OP_T_STAR, _OP_QUOTE, _OP_DOUBLE_QUOTE)
+)
+
+# Operators that only position text, whose effect ends with the text object.
+_TEXT_OBJECT_ONLY_OPERATORS = frozenset((_OP_BT, _OP_ET, _OP_TD, _OP_TM, _OP_T_STAR))
+
+# Operators that each set one graphics state parameter outright, replacing
+# what the last use of the same operator set: the text state operators, which
+# outlive the text object since text state is part of the graphics state
+# (ISO 32000-2, 9.3.1), and the device-independent graphics state operators.
+# Of a run of state operators, only the last use of each of these matters. gs
+# is not one: each use sets only the parameters its dictionary lists.
+_REPLACING_STATE_OPERATORS = frozenset(
+    Operator(op)
+    for op in (
+        *('Tc', 'Tw', 'Tz', 'TL', 'Tf', 'Tr', 'Ts'),
+        *('w', 'J', 'j', 'M', 'd', 'ri', 'i'),
+    )
+)
+
+# Colour operators, for stroking and nonstroking colour. These are not
+# independent: SC, SCN, sc and scn set a colour in the colour space that the
+# others set, so one cannot be moved past another of the same kind.
+_STROKING_COLOUR_OPERATORS = frozenset(
+    Operator(op) for op in ('CS', 'SC', 'SCN', 'G', 'RG', 'K')
+)
+_NONSTROKING_COLOUR_OPERATORS = frozenset(
+    Operator(op) for op in ('cs', 'sc', 'scn', 'g', 'rg', 'k')
+)
+
+# State operators that nothing in a run of them reads.
+_STATE_RUN_OPERATORS = (
+    _REPLACING_STATE_OPERATORS
+    | _STROKING_COLOUR_OPERATORS
+    | _NONSTROKING_COLOUR_OPERATORS
+)
+
+_ContentOperation = tuple[Collection[Object], Operator]
+_TextObjectOperation = tuple[Collection[Object], Operator, int]
 
 
 @dataclass(frozen=True, slots=True)
@@ -262,6 +325,134 @@ def _strip_invisible_text_from_form_xobjects(
     return stripped.vestigial
 
 
+def _negated_number(operand: object) -> Decimal | None:
+    """Return the negative of a numeric operand exactly, or None if not a number."""
+    try:
+        float(operand)  # type: ignore[arg-type]
+        return Decimal(0) - Decimal(str(operand))
+    except (TypeError, ValueError, InvalidOperation):
+        return None
+
+
+def _strip_text_object(
+    text_object: list[_TextObjectOperation],
+) -> tuple[list[_ContentOperation], bool]:
+    """Strip the invisible text from one BT ... ET text object.
+
+    Args:
+        text_object: The text object's operations, from BT to ET, each with
+            the text rendering mode in effect for it.
+
+    Returns:
+        The operations to keep, and whether they still form a text object. When
+        no text is left to show, only the operations whose effect outlives the
+        text object are kept, without BT and ET.
+    """
+    if all(mode != 3 for _, _, mode in text_object):
+        return [(operands, operator) for operands, operator, _ in text_object], True
+
+    # Text shown in rendering mode 3 is invisible, but showing it advances the
+    # text position, so removing it would move any visible text that follows
+    # on the same line. Walking backwards, note whether visible text follows
+    # before the next new line.
+    removable = [False] * len(text_object)
+    visible_follows = False
+    for index in range(len(text_object) - 1, -1, -1):
+        operands, operator, mode = text_object[index]
+        if operator in _TEXT_SHOWING_OPERATORS:
+            if mode == 3:
+                well_formed = (
+                    (operator == _OP_QUOTE and len(operands) == 1)
+                    or (operator == _OP_DOUBLE_QUOTE and len(operands) == 3)
+                    or operator in (_OP_TJ_STRING, _OP_TJ_ARRAY)
+                )
+                removable[index] = well_formed and not visible_follows
+            else:
+                visible_follows = True
+        if operator in _NEW_LINE_OPERATORS:
+            visible_follows = False
+
+    kept: list[_ContentOperation] = []
+    for (operands, operator, _mode), remove in zip(text_object, removable, strict=True):
+        if not remove:
+            kept.append((operands, operator))
+        elif operator == _OP_QUOTE:
+            # string ' is T* then string Tj
+            kept.append(([], _OP_T_STAR))
+        elif operator == _OP_DOUBLE_QUOTE:
+            # aw ac string " also sets the word and character spacing
+            aw, ac, _string = operands
+            kept.extend((([aw], _OP_TW), ([ac], _OP_TC), ([], _OP_T_STAR)))
+
+    if any(operator in _TEXT_SHOWING_OPERATORS for _, operator in kept):
+        return kept, True
+
+    # Nothing is left to show. The text matrices end with the text object, but
+    # the rest of the text state and the graphics state outlive it, and later
+    # text may rely on them, so keep those operations. They are all allowed
+    # outside a text object.
+    outlives: list[_ContentOperation] = []
+    for operands, operator in kept:
+        if operator == _OP_TD_LEADING:
+            # tx ty TD is -ty TL then tx ty Td. A TD that is not two numbers
+            # sets no leading we can know.
+            if len(operands) == 2:
+                _tx, ty = operands
+                leading = _negated_number(ty)
+                if leading is not None:
+                    # unparse_content_stream accepts plain numbers as operands
+                    outlives.append(([cast('Object', leading)], _OP_TL))
+        elif operator not in _TEXT_OBJECT_ONLY_OPERATORS:
+            outlives.append((operands, operator))
+    return outlives, False
+
+
+def _append_state(stream: list[_ContentOperation], op: _ContentOperation):
+    """Append an operation left by an invisible text object.
+
+    The state that consecutive invisible text objects leave behind would
+    otherwise accumulate, one set of operators per object. Nothing reads the
+    state set within a run of state operators until the run ends, so an
+    earlier use in the run of an operator that sets its parameter outright is
+    redundant, and so is a colour operator that repeats the last one of its
+    kind.
+    """
+    operands, operator = op
+    if operator in _STATE_RUN_OPERATORS:
+        if operator in _STROKING_COLOUR_OPERATORS:
+            same_kind = _STROKING_COLOUR_OPERATORS
+        elif operator in _NONSTROKING_COLOUR_OPERATORS:
+            same_kind = _NONSTROKING_COLOUR_OPERATORS
+        else:
+            same_kind = frozenset((operator,))
+        index = len(stream) - 1
+        while index >= 0 and stream[index][1] in _STATE_RUN_OPERATORS:
+            earlier_operands, earlier_operator = stream[index]
+            if earlier_operator in same_kind:
+                if operator in _REPLACING_STATE_OPERATORS:
+                    del stream[index]
+                elif earlier_operator == operator and list(earlier_operands) == list(
+                    operands
+                ):
+                    return
+                else:
+                    break
+            index -= 1
+    stream.append(op)
+
+
+def _extend_with_text_object(
+    stream: list[_ContentOperation], text_object: list[_TextObjectOperation]
+):
+    """Append a text object to ``stream`` without its invisible text."""
+    kept, is_text_object = _strip_text_object(text_object)
+    if is_text_object:
+        stream.extend(kept)
+    else:
+        for op in kept:
+            _append_state(stream, op)
+
+
 def _strip_invisible_text_from_content(
     pdf: Pdf,
     obj: Page | Stream,
@@ -269,12 +460,12 @@ def _strip_invisible_text_from_content(
     visited: dict[tuple[int, int], bool],
     initial_render_mode: int = 0,
 ) -> _StrippedContent:
-    """Strip render-mode-3 text objects from ``obj``'s content stream."""
-    stream = []
+    """Strip render-mode-3 text from ``obj``'s content stream."""
+    stream: list[_ContentOperation] = []
     in_text_obj = False
     render_mode = initial_render_mode
     render_mode_stack = []
-    text_objects = []
+    text_objects: list[_TextObjectOperation] = []
     vestigial_names: list[Name] = []
 
     for instruction in parse_content_stream(obj, ''):
@@ -310,18 +501,22 @@ def _strip_invisible_text_from_content(
             continue
 
         if not in_text_obj:
-            if operator == Operator('BT'):
+            if operator == _OP_BT:
                 in_text_obj = True
-                text_objects.append((operands, operator))
+                text_objects.append((operands, operator, render_mode))
             else:
                 stream.append((operands, operator))
         else:
-            text_objects.append((operands, operator))
-            if operator == Operator('ET'):
+            text_objects.append((operands, operator, render_mode))
+            if operator == _OP_ET:
                 in_text_obj = False
-                if render_mode != 3:
-                    stream.extend(text_objects)
+                _extend_with_text_object(stream, text_objects)
                 text_objects.clear()
+
+    # A text object left open at the end of the stream is stripped the same way,
+    # and left open if any text remains in it.
+    if text_objects:
+        _extend_with_text_object(stream, text_objects)
 
     for name in vestigial_names:
         # The form is no longer drawn, so unlink it; it drops out at save time.
@@ -331,12 +526,8 @@ def _strip_invisible_text_from_content(
 
     vestigial = not any(operator in _PAINTING_OPERATORS for _, operator in stream)
 
-    # pikepdf's Collection[...] parameter doesn't structurally match our
-    # _ObjectList-based tuples even though it works fine at runtime.
     return _StrippedContent(
-        content=unparse_content_stream(
-            cast('list[tuple[Collection[Object], Operator]]', stream)
-        ),
+        content=unparse_content_stream(stream),
         vestigial=vestigial,
     )
 

@@ -1,8 +1,10 @@
 # SPDX-FileCopyrightText: 2022 James R. Barlow
+# SPDX-FileCopyrightText: 2026 Danny Ward
 # SPDX-License-Identifier: MPL-2.0
 
 from __future__ import annotations
 
+from io import BytesIO
 from unittest.mock import patch
 
 import pikepdf
@@ -227,6 +229,151 @@ def test_strip_invisble_text():
         'Number of visible text elements did not change'
     )
     assert count('invisible', page) == 0, 'No invisible elems left'
+
+
+def _stripped(content: bytes, conversion_mode: str = 'implicit') -> bytes:
+    """Strip a one-page PDF with the given content stream and return it."""
+    pdf = pikepdf.Pdf.new()
+    pdf.add_blank_page().Contents = pikepdf.Stream(pdf, content)
+    buffer = BytesIO()
+    pdf.save(buffer)
+    with pikepdf.Pdf.open(buffer, conversion_mode=conversion_mode) as pdf:
+        page = pdf.pages[0]
+        ocrmypdf._graft.strip_invisible_text(pdf, page)
+        return pikepdf.unparse_content_stream(pikepdf.parse_content_stream(page))
+
+
+def test_strip_visible_text_when_render_mode_changes_within_text_object():
+    """Keep visible text when a hidden run ends the same BT/ET block (#1769)."""
+    assert _stripped(b'BT /F0 12 Tf 72 720 Td (visible) Tj 3 Tr (invisible) Tj ET') == (
+        b'BT\n/F0 12 Tf\n72 720 Td\n(visible) Tj\n3 Tr\nET'
+    )
+
+
+def test_strip_invisible_text_before_later_visible_run_preserves_position():
+    """Do not remove hidden text if doing so could shift visible text."""
+    content = b'BT /F0 12 Tf 72 720 Td 3 Tr (hidden) Tj 0 Tr (visible) Tj ET'
+    assert _stripped(content) == (
+        b'BT\n/F0 12 Tf\n72 720 Td\n3 Tr\n(hidden) Tj\n0 Tr\n(visible) Tj\nET'
+    )
+
+
+def test_strip_hidden_text_before_a_new_line():
+    """Hidden text is removed when a new line starts before the visible text.
+
+    Td positions from the text line matrix, which showing text does not move,
+    so the visible text stays where it was.
+    """
+    assert _stripped(
+        b'BT /F1 12 Tf 3 Tr 72 700 Td (hidden) Tj 0 Tr 0 -14 Td (visible) Tj ET'
+    ) == (b'BT\n/F1 12 Tf\n3 Tr\n72 700 Td\n0 Tr\n0 -14 Td\n(visible) Tj\nET')
+
+
+def test_strip_hidden_quote_before_visible_text():
+    """A hidden ' still moves to the next line when its string is removed."""
+    assert _stripped(
+        b"BT /F1 12 Tf 14 TL 72 700 Td 3 Tr (hidden) ' 0 Tr 0 -14 Td (visible) Tj ET"
+    ) == (
+        b'BT\n/F1 12 Tf\n14 TL\n72 700 Td\n3 Tr\nT*\n0 Tr\n0 -14 Td\n(visible) Tj\nET'
+    )
+
+
+def test_strip_trailing_hidden_quotes():
+    """The quote operators keep their line moves and spacing, not their text."""
+    assert _stripped(
+        b"BT /F1 12 Tf 14 TL 72 700 Td (vis) Tj 3 Tr (h1) ' 1 2 (h2) \" ET"
+    ) == (b'BT\n/F1 12 Tf\n14 TL\n72 700 Td\n(vis) Tj\n3 Tr\nT*\n1 Tw\n2 Tc\nT*\nET')
+
+
+def test_strip_keeps_visible_text_before_a_trailing_tr():
+    """Visible text survives a text object that ends in invisible mode."""
+    content = b'BT /F1 12 Tf 72 700 Td (visible) Tj 3 Tr ET'
+    assert _stripped(content) == (b'BT\n/F1 12 Tf\n72 700 Td\n(visible) Tj\n3 Tr\nET')
+
+
+def test_strip_hidden_text_object_keeps_text_state():
+    """Text state set in a removed text object still applies to later text.
+
+    Text state is part of the graphics state, so the font selected in the
+    hidden text object is the one the visible text object uses.
+    """
+    assert _stripped(
+        b'BT /F1 12 Tf 3 Tr 72 700 Td (hidden) Tj ET BT 0 Tr 72 680 Td (visible) Tj ET'
+    ) == (b'/F1 12 Tf\n3 Tr\nBT\n0 Tr\n72 680 Td\n(visible) Tj\nET')
+
+
+@pytest.mark.parametrize('conversion_mode', ['implicit', 'explicit'])
+def test_strip_hidden_text_object_keeps_leading_from_td(conversion_mode):
+    """TD sets the leading as well as moving to a new line."""
+    assert _stripped(
+        b'BT 3 Tr 0 -14.5 TD (hidden) Tj ET BT 0 Tr T* (visible) Tj ET',
+        conversion_mode,
+    ) == (b'3 Tr\n14.5 TL\nBT\n0 Tr\nT*\n(visible) Tj\nET')
+
+
+def test_strip_hidden_text_objects_leave_one_text_state():
+    """A layer of hidden words leaves one set of text state, not one per word."""
+    words = b''.join(
+        b'BT /F1 %d Tf 3 Tr 100 Tz 1 0 0 1 %d 700 Tm (w) Tj ET ' % (10 + i, 72 + i)
+        for i in range(50)
+    )
+    assert _stripped(words) == b'/F1 59 Tf\n3 Tr\n100 Tz'
+
+
+def test_strip_hidden_text_object_keeps_exact_leading():
+    """The leading taken from TD keeps its precision, and is never -0."""
+    assert _stripped(b'BT 3 Tr 0 -14.123456789 TD (h) Tj 0 0 TD (h) Tj ET') == (
+        b'3 Tr\n0 TL'
+    )
+    assert _stripped(b'BT 3 Tr 0 -14.123456789 TD (h) Tj ET') == (
+        b'3 Tr\n14.123456789 TL'
+    )
+
+
+@pytest.mark.parametrize('operand', [b'/X', b'(5)', b'true'])
+def test_strip_hidden_text_object_with_malformed_td(operand):
+    """A TD whose operand is not a number is dropped, not an error."""
+    assert _stripped(b'BT 3 Tr 0 %s TD (h) Tj ET' % operand) == b'3 Tr'
+
+
+def test_strip_hidden_text_objects_leave_one_state_around_colour():
+    """Colour and other overwritten state does not pile up once per word."""
+    words = b''.join(
+        b'BT 0 g /F1 %d Tf 3 Tr (w) Tj ET 0 Tr ' % (10 + i) for i in range(50)
+    )
+    # The page's own 0 Tr after the last word is not part of a merged run.
+    assert _stripped(words) == b'0 g\n/F1 59 Tf\n3 Tr\n0 Tr'
+
+
+def test_strip_hidden_text_objects_keep_cumulative_state():
+    """State that accumulates rather than being replaced is all kept."""
+    assert _stripped(b'BT 3 Tr /GS1 gs (h) Tj ET BT 3 Tr /GS2 gs (h) Tj ET') == (
+        b'3 Tr\n/GS1 gs\n3 Tr\n/GS2 gs'
+    )
+
+
+def test_strip_hidden_text_objects_keep_colour_space_order():
+    """A colour is never moved before or away from the space it is set in."""
+    assert _stripped(
+        b'BT 3 Tr /CS0 cs 1 0 0 sc (h) Tj ET BT 3 Tr /CS1 cs (h) Tj ET'
+    ) == (b'/CS0 cs\n1 0 0 sc\n3 Tr\n/CS1 cs')
+    assert _stripped(b'BT 3 Tr 0 g (h) Tj ET BT 3 Tr 0.5 g 0 g (h) Tj ET') == (
+        b'0 g\n3 Tr\n0.5 g\n0 g'
+    )
+
+
+def test_strip_unterminated_hidden_text_object():
+    """Invisible text in a text object with no ET is stripped too."""
+    assert _stripped(b'0 0 m 9 9 l S BT /F1 12 Tf 3 Tr (hidden) Tj') == (
+        b'0 0 m\n9 9 l\nS\n/F1 12 Tf\n3 Tr'
+    )
+
+
+def test_strip_keeps_unterminated_text_object():
+    """A text object with no ET is kept as it is."""
+    assert _stripped(b'0 0 m 9 9 l S BT /F1 12 Tf (open) Tj') == (
+        b'0 0 m\n9 9 l\nS\nBT\n/F1 12 Tf\n(open) Tj'
+    )
 
 
 def test_strip_invisible_text_in_form_xobject():
