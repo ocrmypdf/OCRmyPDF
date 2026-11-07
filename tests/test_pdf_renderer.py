@@ -5,7 +5,10 @@
 
 from __future__ import annotations
 
+import logging
 import re
+import shutil
+import subprocess
 from io import StringIO
 from pathlib import Path
 
@@ -53,6 +56,20 @@ def font_dir():
 def multi_font_manager(font_dir):
     """Create a MultiFontManager for tests."""
     return MultiFontManager(font_dir)
+
+
+@pytest.fixture
+def pdftotext():
+    """Extract text with poppler's pdftotext, skipping if it is unavailable."""
+    if shutil.which('pdftotext') is None:
+        pytest.skip("pdftotext not available")
+
+    def extract_text(pdf_path: Path) -> str:
+        return subprocess.check_output(
+            ['pdftotext', '-enc', 'UTF-8', str(pdf_path), '-'], encoding='utf-8'
+        )
+
+    return extract_text
 
 
 def create_simple_page(
@@ -973,3 +990,162 @@ class TestLatinInvisibleTextUnshaped:
         from ocrmypdf.fpdf_renderer.renderer import _needs_complex_shaping
 
         assert _needs_complex_shaping(text) is complex_script
+
+
+def _render_rtl_line(tmp_path, multi_font_manager, words, language='heb') -> Path:
+    """Render one invisible RTL line at 72 dpi, so pixels equal points."""
+    page = create_rtl_page(words, language=language)
+    output_pdf = tmp_path / "rtl_line.pdf"
+    Fpdf2PdfRenderer(
+        page=page,
+        dpi=72.0,
+        multi_font_manager=multi_font_manager,
+        invisible_text=True,
+    ).render(output_pdf)
+    return output_pdf
+
+
+def _pdfium_text(pdf_path: Path) -> str:
+    pdfium = pytest.importorskip('pypdfium2')
+    pdf = pdfium.PdfDocument(pdf_path)
+    try:
+        return pdf[0].get_textpage().get_text_range()
+    finally:
+        pdf.close()
+
+
+def _pdfium_chars(pdf_path: Path) -> list[tuple[str, tuple[float, ...]]]:
+    """Each character pdfium found, with its box in top-down page coordinates."""
+    pdfium = pytest.importorskip('pypdfium2')
+    pdf = pdfium.PdfDocument(pdf_path)
+    try:
+        page = pdf[0]
+        height = page.get_height()
+        textpage = page.get_textpage()
+        chars = []
+        for i in range(textpage.count_chars()):
+            left, bottom, right, top = textpage.get_charbox(i)
+            chars.append(
+                (
+                    textpage.get_text_range(i, 1),
+                    (left, height - top, right, height - bottom),
+                )
+            )
+        return chars
+    finally:
+        pdf.close()
+
+
+def _font_names(pdf_path: Path) -> set[str]:
+    with pikepdf.open(pdf_path) as pdf:
+        return {
+            str(font.get('/BaseFont'))
+            for _, font in pdf.pages[0].Resources.Font.items()
+        }
+
+
+class TestRtlMixedWords:
+    """Hebrew words mixing in digits, Latin and punctuation.
+
+    The invisible text must extract in logical order, separate words with
+    real spaces, and highlight with real glyphs (issues #1781-#1783).
+    """
+
+    # "The price rose by 3.5 percent", words in logical order from the right
+    PRICE_LINE = [
+        ("המחיר", (790, 100, 900, 150)),
+        ("עלה", (700, 100, 770, 150)),
+        ("ב-3.5", (580, 100, 680, 150)),
+        ("אחוז", (480, 100, 560, 150)),
+    ]
+
+    def test_digits_inside_rtl_word_keep_their_order(
+        self, tmp_path, multi_font_manager, pdftotext
+    ):
+        output_pdf = _render_rtl_line(tmp_path, multi_font_manager, self.PRICE_LINE)
+        for text in (_pdfium_text(output_pdf), pdftotext(output_pdf)):
+            assert '3.5' in text, text
+            assert '5.3' not in text, text
+
+    def test_latin_inside_rtl_word_keeps_its_order(self, tmp_path, multi_font_manager):
+        output_pdf = _render_rtl_line(
+            tmp_path, multi_font_manager, [("ה-CEO", (500, 100, 650, 150))]
+        )
+        assert 'CEO' in _pdfium_text(output_pdf)
+
+    def test_rtl_words_are_separated_by_spaces(
+        self, tmp_path, multi_font_manager, pdftotext
+    ):
+        """Words in an RTL line extract with a space even when set close."""
+        # "in Hebrew only", with barely a gap between the words. Poppler
+        # ignores the space and judges by the gap, as it does for LTR words, so
+        # the gap is just wide enough for it.
+        words = [("בעברית", (700, 100, 900, 150)), ("בלבד", (556, 100, 696, 150))]
+        output_pdf = _render_rtl_line(tmp_path, multi_font_manager, words)
+        for text in (_pdfium_text(output_pdf), pdftotext(output_pdf)):
+            assert 'בעברית בלבד' in text, text
+
+    def test_rtl_glyphs_stay_within_their_word_boxes(
+        self, tmp_path, multi_font_manager
+    ):
+        """The separating space must not push a word's glyphs off its box."""
+        output_pdf = _render_rtl_line(tmp_path, multi_font_manager, self.PRICE_LINE)
+        boxes = {text: bbox for text, bbox in self.PRICE_LINE}
+        chars = [
+            (c, box) for c, box in _pdfium_chars(output_pdf) if c.strip() and box[2]
+        ]
+        assert chars
+        for c, (left, _, right, _) in chars:
+            owners = [b for text, b in boxes.items() if c in text]
+            assert any(b[0] - 1 <= left and right <= b[2] + 1 for b in owners), (
+                f"{c!r} at {left:.1f}..{right:.1f} outside {owners}"
+            )
+
+    def test_mixed_hebrew_word_highlights_with_real_glyphs(
+        self, tmp_path, multi_font_manager
+    ):
+        if not multi_font_manager.has_font('NotoSansHebrew-Regular'):
+            pytest.skip("NotoSansHebrew not installed")
+        output_pdf = _render_rtl_line(
+            tmp_path, multi_font_manager, [("ב-3.5", (500, 100, 650, 150))]
+        )
+        fonts = _font_names(output_pdf)
+        assert not any('Occulta' in name for name in fonts), fonts
+        assert any('NotoSansHebrew' in name for name in fonts), fonts
+        assert '3.5' in _pdfium_text(output_pdf)
+
+    def test_tall_mixed_line_measured_without_glyphless_warning(
+        self, tmp_path, multi_font_manager, caplog
+    ):
+        """The aspect-ratio check measures mixed lines with real fonts too."""
+        if not multi_font_manager.has_font('NotoSansHebrew-Regular'):
+            pytest.skip("NotoSansHebrew not installed")
+        # Narrower than tall, so the check measures the line's text
+        page = create_rtl_page(
+            [("ב-3.5", (500, 100, 540, 200)), ("אחוז", (500, 210, 540, 300))],
+            language='heb',
+        )
+        page.paragraphs[0].children[0].bbox = BoundingBox(
+            left=500, top=100, right=540, bottom=300
+        )
+        renderer = Fpdf2PdfRenderer(
+            page=page, dpi=72.0, multi_font_manager=multi_font_manager
+        )
+        with caplog.at_level(logging.WARNING):
+            renderer.render(tmp_path / "tall.pdf")
+        assert 'mixing scripts' not in caplog.text
+
+    def test_ltr_word_in_rtl_line_is_separated_from_the_next(
+        self, tmp_path, multi_font_manager, pdftotext
+    ):
+        """A number inside a Hebrew line is spaced toward the word after it."""
+        # "in the year 2024 rose"
+        words = [
+            ("בשנת", (700, 100, 900, 150)),
+            ("2024.", (560, 100, 690, 150)),
+            ("עלה", (400, 100, 550, 150)),
+        ]
+        output_pdf = _render_rtl_line(tmp_path, multi_font_manager, words)
+        for text in (_pdfium_text(output_pdf), pdftotext(output_pdf)):
+            assert '2024.עלה' not in text, text
+            assert 'עלה' in text.split('2024.')[1], text

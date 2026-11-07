@@ -540,6 +540,39 @@ def _form_xobject(pdf, content: bytes, resources):
     )
 
 
+def test_form_xobject_without_type_key(outdir):
+    """Images in a Form XObject that omits the optional /Type are found.
+
+    Missing them left the page with no image DPI, which crashed the fpdf2
+    renderer (issue #1771).
+    """
+    path = outdir / 'form_no_type.pdf'
+    with pikepdf.new() as pdf:
+        page = pdf.add_blank_page(page_size=(72, 72))
+        image = pdf.make_stream(
+            bytes(8 * 8),
+            Type=pikepdf.Name.XObject,
+            Subtype=pikepdf.Name.Image,
+            Width=8,
+            Height=8,
+            ColorSpace=pikepdf.Name.DeviceGray,
+            BitsPerComponent=8,
+        )
+        form = pdf.make_stream(
+            b'q 36 0 0 36 0 0 cm /Im0 Do Q',
+            Subtype=pikepdf.Name.Form,
+            BBox=[0, 0, 72, 72],
+            Resources=pikepdf.Dictionary(XObject=pikepdf.Dictionary(Im0=image)),
+        )
+        page.Resources = pikepdf.Dictionary(XObject=pikepdf.Dictionary(Fm0=form))
+        page.Contents = pdf.make_stream(b'/Fm0 Do')
+        pdf.save(path)
+
+    info = pdfinfo.PdfInfo(path)
+    assert len(info[0].images) == 1
+    assert info[0].dpi.to_scalar() == pytest.approx(16.0)
+
+
 def test_form_xobject_that_draws_itself(outdir):
     """A Form XObject that draws itself is interpreted once, not forever."""
     path = outdir / 'selfdraw.pdf'

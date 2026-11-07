@@ -181,6 +181,10 @@ class MultiFontManager:
 
         # Font selection cache: (word_text, language) -> font_name
         self._selection_cache: dict[tuple[str, str | None], str] = {}
+        # Font runs: (word_text, language) -> [(segment, font name or None)]
+        self._runs_cache: dict[
+            tuple[str, str | None], list[tuple[str, str | None]]
+        ] = {}
         # Track whether we've warned about missing fonts (warn once per script)
         self._warned_scripts: set[str] = set()
         # Fonts found by glyph coverage rather than by name, tried before
@@ -270,6 +274,117 @@ class MultiFontManager:
         self._warn_missing_font(word_text, line_language)
         self._selection_cache[cache_key] = 'Occulta'
         return self.font_provider.get_fallback_font()
+
+    def select_fonts_for_word(
+        self, word_text: str, line_language: str | None
+    ) -> list[tuple[str, FontManager]]:
+        """Select fonts for a word, splitting it where no single font covers it.
+
+        Noto splits scripts across fonts, so a word mixing scripts, such as
+        Hebrew with ASCII digits or punctuation (``ב-3.5``), may have no font
+        covering it entirely. Rather than give such a word the glyphless font,
+        which highlights as blank in PDF viewers, divide it into runs that each
+        have a real font. See issue #1783.
+
+        Args:
+            word_text: The text content of the word
+            line_language: Language code from hOCR (e.g., 'heb', 'eng')
+
+        Returns:
+            (segment, FontManager) runs in the order of word_text; the segments
+            concatenate to word_text. A word that one font covers is one run.
+        """
+        cache_key = (word_text, line_language)
+        runs = self._runs_cache.get(cache_key)
+        if runs is None:
+            runs = self._choose_runs(word_text, line_language)
+            self._runs_cache[cache_key] = runs
+
+        result: list[tuple[str, FontManager]] = []
+        for segment, font_name in runs:
+            font = self.font_provider.get_font(font_name) if font_name else None
+            result.append((segment, font or self.font_provider.get_fallback_font()))
+        return result
+
+    def _choose_runs(
+        self, word_text: str, line_language: str | None
+    ) -> list[tuple[str, str | None]]:
+        """Choose (segment, font name) runs for select_fonts_for_word."""
+        known = self._known_font_names(line_language)
+        for font_name in known:
+            if self._covers(font_name, word_text):
+                return [(word_text, font_name)]
+
+        runs = self._split_into_runs(word_text, known)
+        if any(font_name is None for _, font_name in runs):
+            # The known fonts cannot cover this word even piecewise. Prefer one
+            # installed font for the whole word, as select_font_for_word would,
+            # before searching for fonts character by character.
+            if found := self._search_font_by_coverage(word_text):
+                return [(word_text, found[0])]
+            runs = self._split_into_runs(word_text, known, search=True)
+        if any(font_name is None for _, font_name in runs):
+            self._warn_missing_font(word_text, line_language)
+        return runs
+
+    def _known_font_names(self, line_language: str | None) -> list[str]:
+        """Fonts to try for a word, in order of preference, without searching."""
+        names: list[str] = []
+        if line_language and line_language in self.LANGUAGE_FONT_MAP:
+            names.append(self.LANGUAGE_FONT_MAP[line_language])
+        for font_name in [*self.FALLBACK_FONTS, *self._discovered_fonts]:
+            if font_name not in names:
+                names.append(font_name)
+        return names
+
+    def _split_into_runs(
+        self, text: str, font_names: list[str], *, search: bool = False
+    ) -> list[tuple[str, str | None]]:
+        """Divide text into maximal runs that one font covers.
+
+        A run continues in its font for as long as that font covers the next
+        character, so characters several fonts share, like punctuation, stay
+        with the run they follow.
+
+        Args:
+            text: Text to divide
+            font_names: Fonts to choose from, in order of preference
+            search: Whether to ask the provider for a font for characters that
+                font_names do not cover
+
+        Returns:
+            (segment, font name) runs; the font name is None for characters
+            that no font covers
+        """
+        runs: list[tuple[str, str | None]] = []
+        for char in text:
+            if runs:
+                segment, font_name = runs[-1]
+                if self._covers(font_name, char):
+                    runs[-1] = (segment + char, font_name)
+                    continue
+            font_name = next(
+                (name for name in font_names if self._covers(name, char)), None
+            )
+            found = (
+                search
+                and font_name is None
+                and not char.isspace()
+                and self._search_font_by_coverage(char)
+            )
+            if found:
+                font_name = found[0]
+            if runs and runs[-1][1] == font_name:
+                runs[-1] = (runs[-1][0] + char, font_name)
+            else:
+                runs.append((char, font_name))
+        return runs
+
+    def _covers(self, font_name: str | None, char: str) -> bool:
+        if font_name is None:
+            return False
+        font = self.font_provider.get_font(font_name)
+        return font is not None and self._has_all_glyphs(font, char)
 
     def _search_font_by_coverage(self, text: str) -> tuple[str, FontManager] | None:
         """Search the provider for any font covering text, if it supports it.
