@@ -398,8 +398,10 @@ class OrientationConfidence(NamedTuple):
     """Expresses an OCR engine's confidence in page rotation.
 
     Attributes:
-        angle: The clockwise angle (0, 90, 180, 270) that the page should be
-            rotated. 0 means no rotation.
+        angle: How far the page content is turned clockwise from upright
+            (0, 90, 180, 270), as Tesseract OSD reports it in "Orientation in
+            degrees". Text that reads from top to bottom is 90. 0 means the
+            page is upright.
         confidence: How confident the OCR engine is that this the correct
             rotation. 0 is not confident, 15 is very confident. Arbitrary units.
     """

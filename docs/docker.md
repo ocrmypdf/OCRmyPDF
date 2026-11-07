@@ -224,6 +224,48 @@ follows:
 docker cp mycustomtraining.traineddata name_of_container:/usr/share/tesseract-ocr/<tesseract version>/tessdata/
 :::
 
+{#docker-rapidocr}
+### Adding RapidOCR to the Docker image
+
+The published images do not include the optional
+{ref}`RapidOCR engine <rapidocr-engine>`, which would make them about 500 MB
+larger. Instead, build an image with RapidOCR yourself from
+[`.docker/Dockerfile.rapidocr`](https://github.com/ocrmypdf/OCRmyPDF/blob/main/.docker/Dockerfile.rapidocr),
+which extends the Ubuntu image (OCRmyPDF 17.14.0 or later) with the locked
+versions of RapidOCR and ONNX Runtime, and downloads RapidOCR's page
+orientation model. No source checkout is needed besides that file:
+
+:::{code} bash
+docker build -t ocrmypdf-rapidocr \
+  --build-arg OCRMYPDF_IMAGE=jbarlow83/ocrmypdf:{TAG} \
+  - < Dockerfile.rapidocr
+docker run --rm -i ocrmypdf-rapidocr --ocr-engine rapidocr - - <input.pdf >output.pdf
+:::
+
+As with any derived image, pin the version of the base image.
+`OCRMYPDF_IMAGE` may also name an image you built from source with
+`.docker/Dockerfile`. The Alpine image cannot be extended this way, because
+ONNX Runtime does not publish packages for Alpine's C library.
+
+RapidOCR's bundled recognition model reads English, Chinese, Japanese and
+most Latin-script languages. Other languages, such as Korean, Russian or
+Arabic, use recognition models that RapidOCR downloads on first use, into its
+`models` directory inside the image's virtual environment. A download made
+by a running container is lost when the container exits, so it would be
+repeated on every run. Instead, list the languages when building the image:
+
+:::{code} bash
+docker build -t ocrmypdf-rapidocr \
+  --build-arg OCRMYPDF_IMAGE=jbarlow83/ocrmypdf:{TAG} \
+  --build-arg RAPIDOCR_LANGUAGES="kor rus" \
+  - < Dockerfile.rapidocr
+:::
+
+Then run, for example, `ocrmypdf --ocr-engine rapidocr -l rus in.pdf out.pdf`.
+The same `python -m ocrmypdf.builtin_plugins.rapidocr_ocr download` command
+that the Dockerfile runs works outside Docker, to fetch models in advance on a
+machine that will later be offline.
+
 Extending the Docker image
 --------------------------
 

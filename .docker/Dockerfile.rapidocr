@@ -1,0 +1,45 @@
+# SPDX-FileCopyrightText: 2026 James R. Barlow
+# SPDX-License-Identifier: MPL-2.0
+
+# Adds the optional RapidOCR engine to the Ubuntu OCRmyPDF image. This image is
+# not published; build it yourself on top of a published or locally built one:
+#
+#   docker build -t ocrmypdf-rapidocr - < .docker/Dockerfile.rapidocr
+#
+# Build arguments:
+#   OCRMYPDF_IMAGE     image to extend (OCRmyPDF 17.14.0 or later; pin a version)
+#   RAPIDOCR_LANGUAGES extra recognition models to fetch, e.g. "kor rus"
+#
+# The Alpine image cannot be extended this way, because ONNX Runtime does not
+# publish packages for musl.
+
+ARG OCRMYPDF_IMAGE=jbarlow83/ocrmypdf:latest
+FROM ${OCRMYPDF_IMAGE}
+
+ARG RAPIDOCR_LANGUAGES=""
+
+# RapidOCR downloads its models over HTTPS, which needs CA certificates.
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+USER app
+
+COPY --from=ghcr.io/astral-sh/uv:0.11.21 /uv /bin/
+
+ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
+
+# The base image keeps its project files and lock file in /app, and its virtual
+# environment is owned by the "app" user, so the locked versions of RapidOCR's
+# dependencies can be added without root. Keep the other extras, which uv sync
+# would otherwise remove.
+WORKDIR /app
+RUN uv sync --frozen --no-cache \
+        --extra webservice --extra watcher --extra rapidocr --no-dev \
+        --no-install-package pyarrow
+
+# Fetch the page orientation model and any extra language models now, so
+# containers need not download them on every run.
+RUN python -m ocrmypdf.builtin_plugins.rapidocr_ocr download ${RAPIDOCR_LANGUAGES}
+
+WORKDIR /data

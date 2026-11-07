@@ -467,10 +467,12 @@ Online documentation is located at:
     )
     advanced.add_argument(
         '--ocr-engine',
-        choices=['auto', 'tesseract', 'none'],
+        choices=['auto', 'tesseract', 'rapidocr', 'none'],
         default='auto',
         help="OCR engine to use. 'auto' (default) selects the best available engine. "
         "'tesseract' uses Tesseract OCR. "
+        "'rapidocr' uses RapidOCR (PP-OCR models on ONNX Runtime; requires "
+        "installing ocrmypdf[rapidocr]). "
         "'none' skips OCR entirely, useful for PDF/A conversion or image processing "
         "without text recognition.",
     )
