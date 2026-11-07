@@ -122,6 +122,8 @@ module = [
   'pillow_heif',
   'onnxruntime',
   'onnxruntime.*',
+  'rapidocr',
+  'rapidocr.*',
 ]
 ignore_missing_imports = true
 
