@@ -59,14 +59,16 @@ def test_old_tesseract_error():
 
 
 def test_tesseract_not_installed(caplog):
+    caplog.set_level(logging.INFO)
     with patch('ocrmypdf.subprocess.run') as not_found:
         not_found.side_effect = FileNotFoundError('tesseract')
         with pytest.raises(MissingDependencyError, match="Could not find program"):
             vd.check_options(*make_opts_pm())
-            assert "'tesseract' could not be executed" in caplog.text, (
-                "Error message not printed"
-            )
-            assert 'install' in caplog.text, "Install advice not printed"
+
+        assert "'tesseract' could not be executed" in caplog.text, (
+            "Error message not printed"
+        )
+        assert 'install' in caplog.text, "Install advice not printed"
         not_found.assert_called()
 
 
