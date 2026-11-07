@@ -315,6 +315,56 @@ ocrmypdf --rasterizer pypdfium input.pdf output.pdf
 ocrmypdf --rasterizer ghostscript input.pdf output.pdf
 ```
 
+### Use RapidOCR instead of Tesseract
+
+:::{versionadded} 17.14.0
+:::
+
+[RapidOCR](https://github.com/RapidAI/RapidOCR) runs PaddleOCR's PP-OCR
+text detection and recognition models on ONNX Runtime, on the CPU. It is an
+optional engine: install it with `pip install ocrmypdf[rapidocr]`, then
+select it with `--ocr-engine rapidocr`. Tesseract need not be installed.
+
+```bash
+pip install ocrmypdf[rapidocr]
+ocrmypdf --ocr-engine rapidocr input.pdf output.pdf
+ocrmypdf --ocr-engine rapidocr --rotate-pages --deskew -l deu scan.pdf output.pdf
+```
+
+RapidOCR often reads numbers, codes and short table cells more accurately
+than Tesseract, so it is worth trying on tables, forms and lab reports.
+Tables are read row by row in the sidecar text, and prose in columns.
+
+Things to know:
+
+- **Languages.** `-l` takes Tesseract's language codes. The bundled
+  PP-OCRv6 model reads English, Chinese (`chi_sim`, `chi_tra`), Japanese and
+  about 45 Latin-script languages, such as `deu`, `fra`, `spa`, `ita`, `por`,
+  `nld`, `pol`, `ces`, `tur` and `vie`. Korean, Cyrillic (`rus`, `ukr`, `bul`,
+  ...), Arabic-script (`ara`, `fas`, `urd`), Devanagari (`hin`, `mar`, `nep`),
+  Thai, Greek, Tamil, Telugu and Georgian use separate models, which RapidOCR
+  downloads from ModelScope the first time they are needed, into its own
+  package directory. That needs network access and a writable install.
+  RapidOCR uses one recognition model at a time, so `-l` may combine
+  languages read by the same model only; English may be added to any.
+- **Image size.** RapidOCR downscales pages whose longer side exceeds
+  `--rapidocr-max-side-len` pixels (default 2000, about 180 dpi for a Letter
+  page scanned at 300 dpi) before finding text. Raising it may help with very
+  small print, at the cost of speed and memory.
+- **Orientation and deskew.** `--rotate-pages` and `--deskew` work without
+  Tesseract. Skew is measured from the angle of the detected lines, and
+  orientation by reading the longest lines both ways up.
+  `--rotate-pages-threshold` keeps its meaning: confidence is 100 times the
+  difference in recognition score, so the default of 14 requires a clear
+  difference. Lines that are upside down on an otherwise upright page are not
+  read correctly.
+- **Renderer.** Only the default fpdf2 renderer is supported;
+  `--pdf-renderer sandwich` is rejected.
+- **Cost.** RapidOCR uses much more CPU and memory than Tesseract: roughly
+  four times the CPU time per page, and about 1.2 GB of memory per worker
+  at the default `--rapidocr-max-side-len` (about 2 GB at 4000). On a
+  machine with many cores and limited memory, reduce `--jobs`.
+
 ### PDF/A without Ghostscript
 
 :::{versionadded} 17.0.0

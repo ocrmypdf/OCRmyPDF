@@ -3,6 +3,23 @@
 
 # v17
 
+## v17.14.0
+
+**New features**
+
+- New optional OCR engine, RapidOCR, which runs PaddleOCR's PP-OCR models on
+  ONNX Runtime. Install it with `pip install ocrmypdf[rapidocr]` and select it
+  with `--ocr-engine rapidocr`. It often reads numbers and table cells more
+  accurately than Tesseract, at a higher CPU and memory cost. It supports
+  `--rotate-pages` and `--deskew` without Tesseract, and the new option
+  `--rapidocr-max-side-len` (API: `rapidocr_max_side_len=`) controls how far
+  large pages are downscaled. See the cookbook for languages and limitations.
+
+**Fixes**
+
+- Selecting an OCR engine other than Tesseract, including `--ocr-engine
+  none`, no longer requires Tesseract to be installed.
+
 ## v17.13.2
 
 **Fixes**

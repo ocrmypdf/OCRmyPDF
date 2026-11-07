@@ -796,7 +796,7 @@ conversions.
 | PDF rasterization | pypdfium2 (Python) | Ghostscript (binary) | pypdfium2 preferred when available |
 | PDF/A conversion | pikepdf (`pikepdf.pdfa`) | Ghostscript | pikepdf validates speculative conversion |
 | Text rendering | fpdf2 + uharfbuzz | - | Required |
-| OCR | tesseract-ocr | `--ocr-engine none` | Can be skipped entirely |
+| OCR | tesseract-ocr | RapidOCR (`ocrmypdf[rapidocr]`, `--ocr-engine rapidocr`) | Can be skipped entirely with `--ocr-engine none` |
 
 **Minimum viable installation:**
 tesseract-ocr + (pypdfium2 OR Ghostscript) + fpdf2 + uharfbuzz
