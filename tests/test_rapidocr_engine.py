@@ -61,7 +61,7 @@ def rotated_quad(cx, cy, length, height, angle_deg):
     ]
 
 
-def convert(boxes, txts, word_results=None, *, language='eng'):
+def convert(boxes, txts, word_results=None, *, language='eng', image=None):
     scores = tuple(0.9 for _ in txts)
     return rapidocr_to_ocr_tree(
         boxes,
@@ -72,7 +72,28 @@ def convert(boxes, txts, word_results=None, *, language='eng'):
         height=3300,
         dpi=300,
         language=language,
+        image=image,
     )
+
+
+def ink_page(lines, slope=0.0, descenders=True):
+    """A white page with a dark band for each (left, right, top, baseline).
+
+    Each band is inked in two of every three columns from top to baseline,
+    like capitals and x-height letters, with sparse descenders below the
+    baseline.
+    """
+    import numpy as np
+
+    image = np.full((3300, 2550), 255, dtype=np.uint8)
+    for left, right, top, baseline in lines:
+        for x in range(left, right):
+            dy = round(slope * (x - left))
+            if x % 3:
+                image[top + dy : baseline + dy, x] = 0
+            if descenders and x % 10 == 0:
+                image[baseline + dy : baseline + dy + 8, x] = 0
+    return image
 
 
 HORIZONTAL_BOXES = [
@@ -390,6 +411,65 @@ class TestConversion:
         (line,) = page.lines
         assert line.bbox.left == 0 and line.bbox.top == 0
         assert line.bbox.right == 2550
+
+
+class TestInkMetrics:
+    """Line metrics are measured from the ink inside the padded box."""
+
+    def test_flat_line(self):
+        image = ink_page([(110, 1090, 112, 140)])
+        page = convert([rect(100, 100, 1100, 158)], ("ink",), image=image)
+        (line,) = page.lines
+        assert line.bbox.top == pytest.approx(112, abs=1)
+        assert line.bbox.bottom == pytest.approx(148, abs=1)
+        baseline = line.bbox.bottom + line.baseline.intercept
+        assert baseline == pytest.approx(140, abs=1)
+
+    def test_skewed_line(self):
+        slope = 0.02
+        image = ink_page([(110, 1090, 112, 140)], slope=slope)
+        quad = [[100, 100], [1100, 120], [1100, 178], [100, 158]]
+        page = convert([quad], ("ink",), image=image)
+        (line,) = page.lines
+        assert line.baseline.slope == pytest.approx(slope, abs=1e-3)
+        left_baseline = line.bbox.bottom + line.baseline.intercept
+        assert left_baseline == pytest.approx(140 - 10 * slope, abs=1.5)
+        # The ink is 36 pixels high, and rises 20 pixels along the line
+        assert line.bbox.height == pytest.approx(36 + 1000 * slope, abs=1.5)
+
+    def test_ignores_neighbouring_lines(self):
+        # The padded box reaches into the descenders of the line above and
+        # the ascenders of the line below.
+        image = ink_page([(110, 1090, 112, 140)])
+        image[100:104, 200:1000:10] = 0
+        image[154:158, 300:900:12] = 0
+        page = convert([rect(100, 98, 1100, 160)], ("ink",), image=image)
+        (line,) = page.lines
+        assert line.bbox.top == pytest.approx(112, abs=1)
+        assert line.bbox.bottom == pytest.approx(148, abs=1)
+
+    def test_blank_box_keeps_estimate(self):
+        import numpy as np
+
+        image = np.full((3300, 2550), 255, dtype=np.uint8)
+        page = convert([rect(100, 100, 1100, 158)], ("ink",), image=image)
+        assert page.lines[0].bbox.top == 100
+
+    def test_table_rows_survive_pdftotext(self, tmp_path, pdftotext):
+        # With padded detection boxes, each cell's text was sized so large
+        # that pdftotext merged the cells of each column into a block, and
+        # read the table column by column.
+        boxes, txts, ink = [], [], []
+        for r in range(5):
+            for c in range(6):
+                left, y = 100 + 300 * c, 100 + 37 * r
+                boxes.append(rect(left, y, left + 120, y + 42))
+                txts.append(f'r{r}c{c}')
+                ink.append((left + 5, left + 115, y + 9, y + 31))
+        page = convert(boxes, tuple(txts), image=ink_page(ink, descenders=False))
+        text = pdftotext(TestRendering.render(page, tmp_path))
+        words = text.split()
+        assert words.index('r0c5') < words.index('r1c0')
 
 
 class TestHocr:

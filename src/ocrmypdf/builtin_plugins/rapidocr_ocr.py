@@ -73,6 +73,11 @@ WORD_GAP_FRACTION = 0.25
 #: prose, which is stacked into paragraphs; shorter ones may be table cells.
 WIDE_LINE_ASPECT = 8.0
 
+#: Ink measurement: least contrast between paper and ink in a line's box,
+#: and the width of the column strips its profile is gathered in.
+INK_MIN_CONTRAST = 40
+INK_STRIP_WIDTH = 50
+
 #: RapidOCR turns a crop to read it when it is this much taller than wide.
 VERTICAL_ASPECT = 1.5
 
@@ -381,6 +386,93 @@ def _line_textangle(quad: list[Point]) -> float | None:
     return 270 if _is_vertical(quad) else None
 
 
+def _ink_metrics(
+    image: Any, quad: list[Point], left: float, slope: float
+) -> tuple[float, float, float] | None:
+    """Measure where a line's ink lies inside its padded detection box.
+
+    Dark pixels are counted along the line's slope, one strip of columns at
+    a time, to give a profile across the line. The run of inked rows around
+    its densely inked core spans the tallest glyphs and the descenders; the
+    last densely inked row is the baseline, since descenders are sparse.
+
+    Returns:
+        (top, baseline, bottom) where the line crosses x = left, or None if
+        the box holds no clear line of ink.
+    """
+    import numpy as np
+
+    img_h, img_w = image.shape[:2]
+    offsets = [p[1] - slope * (p[0] - left) for p in quad]
+    p_min, p_max = int(min(offsets)), int(max(offsets)) + 1
+    x_start = max(0, int(min(p[0] for p in quad)))
+    x_end = min(img_w, int(max(p[0] for p in quad)) + 1)
+    rows = p_max - p_min
+    if rows < 4 or x_end - x_start < 4:
+        return None
+    y_low = max(0, int(min(p[1] for p in quad)))
+    y_high = min(img_h, int(max(p[1] for p in quad)) + 1)
+    region = image[y_low:y_high, x_start:x_end]
+    lo, hi = np.percentile(region, (5, 95))
+    if hi - lo < INK_MIN_CONTRAST:
+        return None
+    threshold = (lo + hi) / 2
+
+    profile = np.zeros(rows, dtype=np.int64)
+    for x0 in range(x_start, x_end, INK_STRIP_WIDTH):
+        x1 = min(x_end, x0 + INK_STRIP_WIDTH)
+        shift = round(p_min + slope * ((x0 + x1) / 2 - left))
+        top, bottom = max(0, shift), min(img_h, shift + rows)
+        if bottom <= top:
+            continue
+        strip = image[top:bottom, x0:x1] < threshold
+        profile[top - shift : bottom - shift] += strip.sum(axis=1)
+
+    peak = int(profile.max())
+    if peak == 0 or peak > 0.9 * (x_end - x_start):
+        return None  # blank, or a ruled line
+    # The ink of this line is the run of inked rows around its densely inked
+    # core. Padded boxes reach into the neighbouring lines, whose descenders
+    # or ascenders are separated from this line's ink by blank rows.
+    dense = np.nonzero(profile >= 0.3 * peak)[0]
+    inked = profile > 0.02 * peak
+    first, last = int(dense[0]), int(dense[-1])
+    while first > 0 and inked[first - 1]:
+        first -= 1
+    while last < rows - 1 and inked[last + 1]:
+        last += 1
+    ink_top, ink_bottom = p_min + first, p_min + last + 1
+    baseline = p_min + dense[-1] + 1
+    if ink_bottom - ink_top < 0.25 * rows:
+        return None
+    return float(ink_top), float(baseline), float(ink_bottom)
+
+
+def _fit_to_ink(line: OcrElement, image: Any, height: float) -> None:
+    """Fit a horizontal line's box and baseline to its ink.
+
+    The renderer sizes text from the line box. Padded detection boxes size it
+    so large that text extractors merge the lines of neighbouring table rows
+    into one block, and read tables column by column.
+    """
+    if line.textangle is not None or line.baseline is None or not line.poly:
+        return
+    assert line.bbox is not None
+    bbox, slope = line.bbox, line.baseline.slope
+    ink = _ink_metrics(image, line.poly, bbox.left, slope)
+    if ink is None:
+        return
+    ink_top, ink_baseline, ink_bottom = ink
+    rise = slope * bbox.width
+    line.bbox = BoundingBox(
+        left=bbox.left,
+        top=max(0.0, ink_top + min(0.0, rise)),
+        right=bbox.right,
+        bottom=min(height, ink_bottom + max(0.0, rise)),
+    )
+    line.baseline = Baseline(slope=slope, intercept=ink_baseline - line.bbox.bottom)
+
+
 def _make_line(
     quad: list[Point],
     text: str,
@@ -670,6 +762,7 @@ def rapidocr_to_ocr_tree(
     language: str | None,
     *,
     page_number: int = 0,
+    image: Any = None,
 ) -> OcrElement:
     """Convert RapidOCR output for one page into an OcrElement tree.
 
@@ -686,6 +779,10 @@ def rapidocr_to_ocr_tree(
         dpi: Image resolution.
         language: Tesseract language code to tag text with, for font choice.
         page_number: Page number to record.
+        image: The page image as a greyscale array, if available. The ink of
+            each horizontal line is then measured to fit its box and
+            baseline to the glyphs; otherwise they are estimated from the
+            padded detection box.
 
     Returns:
         A page containing paragraphs of lines of words.
@@ -718,7 +815,12 @@ def rapidocr_to_ocr_tree(
         )
         if str(text).strip()
     ]
-    for group in _layout_blocks(lines):
+    blocks = _layout_blocks(lines)
+    if image is not None:
+        # After layout, which relies on the detection boxes' consistent size
+        for line in lines:
+            _fit_to_ink(line, image, height)
+    for group in blocks:
         corners = [
             corner
             for ln in group
@@ -1151,6 +1253,8 @@ class RapidOcrEngine(OcrEngine):
         options: OcrOptions,
         page_number: int = 0,
     ) -> tuple[OcrElement, str]:
+        import numpy as np
+
         image, dpi = _load_image(input_file)
         result = _run(_engine_for(options), image, rec=True)
         boxes = _boxes(result)
@@ -1164,6 +1268,7 @@ class RapidOcrEngine(OcrEngine):
             dpi=dpi,
             language=options.languages[0] if options.languages else None,
             page_number=page_number,
+            image=np.asarray(image.convert('L')) if boxes is not None else None,
         )
         return page, ocr_tree_to_text(page)
 
