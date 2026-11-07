@@ -546,16 +546,16 @@ class TestOrientation:
 
     def test_selects_longest_lines_of_dominant_axis(self):
         quads = self.page(False, 15) + [rect(300, 2000, 600, 2045)] + self.page(True, 2)
-        vertical, indices, axis_share = select_orientation_lines(quads, n=10)
-        assert not vertical
-        assert len(indices) == 10
-        assert 15 not in indices  # short line
-        assert axis_share > 0.75
+        selected = select_orientation_lines(quads, n=10)
+        assert not selected.vertical
+        assert len(selected.indices) == 10
+        assert 15 not in selected.indices  # short line
+        assert selected.axis_share > 0.75
 
     def test_selects_vertical(self):
-        vertical, indices, _ = select_orientation_lines(self.page(True), n=10)
-        assert vertical
-        assert len(indices) == 10
+        selected = select_orientation_lines(self.page(True), n=10)
+        assert selected.vertical
+        assert len(selected.indices) == 10
 
     def test_too_few_lines(self):
         assert select_orientation_lines(self.page(False, 2)) is None
@@ -568,7 +568,8 @@ class TestOrientation:
         image = np.zeros((100, 200, 3), dtype=np.uint8)
         image[10:20, 20:120] = 255
         image[10:20, 20, 0] = 7  # mark the left end of the line
-        upright, turned = orientation_crops(image, rect(20, 10, 120, 20), False)
+        crops = orientation_crops(image, rect(20, 10, 120, 20), False)
+        upright, turned = crops.upright, crops.turned
         assert upright.shape[:2] == turned.shape[:2]
         assert upright.shape[1] > upright.shape[0]
         assert (turned == upright[::-1, ::-1]).all()
@@ -578,7 +579,8 @@ class TestOrientation:
 
         image = np.zeros((300, 100, 3), dtype=np.uint8)
         image[50, 40, 0] = 7  # top of a line reading downward
-        downward, upward = orientation_crops(image, rect(40, 50, 50, 250), True)
+        crops = orientation_crops(image, rect(40, 50, 50, 250), True)
+        downward, upward = crops.upright, crops.turned
         assert downward.shape[1] > downward.shape[0]
         assert upward.shape[1] > upward.shape[0]
         # Turned a quarter turn counterclockwise, a line that reads downward

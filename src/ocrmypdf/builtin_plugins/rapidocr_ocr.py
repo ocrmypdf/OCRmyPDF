@@ -262,18 +262,31 @@ def _lerp(a: Point, b: Point, t: float) -> Point:
     return (a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t)
 
 
-def _reading_edges(
-    quad: list[Point], textangle: float | None
-) -> tuple[Point, Point, Point, Point]:
-    """Corners of a line quad in reading order.
+@dataclass(frozen=True, slots=True)
+class _ReadingEdges:
+    """Corners of a line quad as seen by a reader of the line."""
 
-    Returns (start_top, start_bottom, end_top, end_bottom) as seen by a
-    reader of the line, whatever the line's orientation on the page.
-    """
+    start_top: Point
+    start_bottom: Point
+    end_top: Point
+    end_bottom: Point
+
+
+def _reading_edges(quad: list[Point], textangle: float | None) -> _ReadingEdges:
+    """Corners of a line quad in reading order, whatever the line's orientation."""
     tl, tr, br, bl = quad
     if textangle == 270:  # reads downward
-        return tr, tl, br, bl
-    return tl, bl, tr, br
+        return _ReadingEdges(tr, tl, br, bl)
+    return _ReadingEdges(tl, bl, tr, br)
+
+
+@dataclass(frozen=True, slots=True)
+class _WordQuad:
+    """A word, its recognition score, and its quad in image pixels."""
+
+    text: str
+    score: float
+    quad: list[Point]
 
 
 # --------------------------------------------------------------------------
@@ -281,26 +294,30 @@ def _reading_edges(
 
 
 def _words_from_text(
-    text: str, quad: list[Point], textangle: float | None
-) -> list[tuple[str, list[Point]]]:
-    """Estimate word quads by dividing a line in proportion to character counts."""
+    text: str, score: float, quad: list[Point], textangle: float | None
+) -> list[_WordQuad]:
+    """Estimate word quads by dividing a line in proportion to character counts.
+
+    Each word is given the line's score.
+    """
     tokens = text.split()
     if not tokens:
         return []
-    start_top, start_bottom, end_top, end_bottom = _reading_edges(quad, textangle)
+    edges = _reading_edges(quad, textangle)
     total = sum(len(t) for t in tokens) + len(tokens) - 1
     words = []
     pos = 0
     for token in tokens:
         t0, t1 = pos / total, (pos + len(token)) / total
         words.append(
-            (
+            _WordQuad(
                 token,
+                score,
                 [
-                    _lerp(start_top, end_top, t0),
-                    _lerp(start_top, end_top, t1),
-                    _lerp(start_bottom, end_bottom, t1),
-                    _lerp(start_bottom, end_bottom, t0),
+                    _lerp(edges.start_top, edges.end_top, t0),
+                    _lerp(edges.start_top, edges.end_top, t1),
+                    _lerp(edges.start_bottom, edges.end_bottom, t1),
+                    _lerp(edges.start_bottom, edges.end_bottom, t0),
                 ],
             )
         )
@@ -313,9 +330,7 @@ def _is_cjk_char(char: str) -> bool:
     return ord(char) >= 0x2E80
 
 
-def _separate_words(
-    word_quads: list[tuple[str, float, list[Point]]], min_gap: float
-) -> list[tuple[str, float, list[Point]]]:
+def _separate_words(word_quads: list[_WordQuad], min_gap: float) -> list[_WordQuad]:
     """Pull back the right edge of words that touch the next word.
 
     RapidOCR estimates word boxes by dividing the line between its
@@ -327,12 +342,12 @@ def _separate_words(
     """
     result = list(word_quads)
     for i in range(len(result) - 1):
-        text, score, quad = result[i]
-        next_text, _, next_quad = result[i + 1]
-        if not text or not next_text:
+        word, following = result[i], result[i + 1]
+        if not word.text or not following.text:
             continue
-        if _is_cjk_char(text[-1]) or _is_cjk_char(next_text[0]):
+        if _is_cjk_char(word.text[-1]) or _is_cjk_char(following.text[0]):
             continue
+        quad, next_quad = word.quad, following.quad
         right = max(quad[1][0], quad[2][0])
         left = min(quad[0][0], quad[3][0])
         next_left = min(next_quad[0][0], next_quad[3][0])
@@ -340,9 +355,9 @@ def _separate_words(
         if shift <= 0 or right - shift < left + 0.5 * (right - left):
             continue
         tl, tr, br, bl = quad
-        result[i] = (
-            text,
-            score,
+        result[i] = _WordQuad(
+            word.text,
+            word.score,
             [tl, (tr[0] - shift, tr[1]), (br[0] - shift, br[1]), bl],
         )
     return result
@@ -386,9 +401,18 @@ def _line_textangle(quad: list[Point]) -> float | None:
     return 270 if _is_vertical(quad) else None
 
 
+@dataclass(frozen=True, slots=True)
+class _InkMetrics:
+    """Where a line's ink lies, as y coordinates in image pixels."""
+
+    top: float
+    baseline: float
+    bottom: float
+
+
 def _ink_metrics(
     image: Any, quad: list[Point], left: float, slope: float
-) -> tuple[float, float, float] | None:
+) -> _InkMetrics | None:
     """Measure where a line's ink lies inside its padded detection box.
 
     Dark pixels are counted along the line's slope, one strip of columns at
@@ -397,8 +421,8 @@ def _ink_metrics(
     last densely inked row is the baseline, since descenders are sparse.
 
     Returns:
-        (top, baseline, bottom) where the line crosses x = left, or None if
-        the box holds no clear line of ink.
+        The ink's top, baseline and bottom where the line crosses x = left,
+        or None if the box holds no clear line of ink.
     """
     import numpy as np
 
@@ -445,7 +469,7 @@ def _ink_metrics(
     baseline = p_min + dense[-1] + 1
     if ink_bottom - ink_top < 0.25 * rows:
         return None
-    return float(ink_top), float(baseline), float(ink_bottom)
+    return _InkMetrics(float(ink_top), float(baseline), float(ink_bottom))
 
 
 def _fit_to_ink(line: OcrElement, image: Any, height: float) -> None:
@@ -462,15 +486,14 @@ def _fit_to_ink(line: OcrElement, image: Any, height: float) -> None:
     ink = _ink_metrics(image, line.poly, bbox.left, slope)
     if ink is None:
         return
-    ink_top, ink_baseline, ink_bottom = ink
     rise = slope * bbox.width
     line.bbox = BoundingBox(
         left=bbox.left,
-        top=max(0.0, ink_top + min(0.0, rise)),
+        top=max(0.0, ink.top + min(0.0, rise)),
         right=bbox.right,
-        bottom=min(height, ink_bottom + max(0.0, rise)),
+        bottom=min(height, ink.bottom + max(0.0, rise)),
     )
-    line.baseline = Baseline(slope=slope, intercept=ink_baseline - line.bbox.bottom)
+    line.baseline = Baseline(slope=slope, intercept=ink.baseline - line.bbox.bottom)
 
 
 def _make_line(
@@ -498,14 +521,11 @@ def _make_line(
 
     if words:
         word_quads = [
-            (str(word_text), float(word_score), _as_quad(word_quad))
+            _WordQuad(str(word_text), float(word_score), _as_quad(word_quad))
             for word_text, word_score, word_quad in words
         ]
     else:
-        word_quads = [
-            (word_text, score, points)
-            for word_text, points in _words_from_text(text, quad, textangle)
-        ]
+        word_quads = _words_from_text(text, score, quad, textangle)
 
     if textangle is None:
         word_quads = _separate_words(word_quads, WORD_GAP_FRACTION * thickness)
@@ -513,14 +533,14 @@ def _make_line(
     children = [
         OcrElement(
             ocr_class=OcrClass.WORD,
-            bbox=_hull(points, width, height),
-            poly=points,
-            text=word_text,
-            confidence=word_score,
+            bbox=_hull(word.quad, width, height),
+            poly=word.quad,
+            text=word.text,
+            confidence=word.score,
             language=language,
         )
-        for word_text, word_score, points in word_quads
-        if word_text.strip()
+        for word in word_quads
+        if word.text.strip()
     ]
     return OcrElement(
         ocr_class=OcrClass.LINE,
@@ -658,7 +678,21 @@ def _split_rows(units: list[list[OcrElement]]) -> list[list[OcrElement]]:
     return [sorted(row, key=lambda ln: ln.bbox.left if ln.bbox else 0) for row in rows]
 
 
-Column = tuple[float, float, list[list[OcrElement]]]
+@dataclass(frozen=True, slots=True)
+class _Column:
+    """Units whose horizontal extents overlap, and the extent they span."""
+
+    left: float
+    right: float
+    units: list[list[OcrElement]]
+
+
+@dataclass(frozen=True, slots=True)
+class _Band:
+    """Units side by side across the page, and the lowest bottom among them."""
+
+    bottom: float
+    units: list[list[OcrElement]]
 
 
 def _unit_extent(unit: list[OcrElement]) -> tuple[float, float]:
@@ -666,24 +700,25 @@ def _unit_extent(unit: list[OcrElement]) -> tuple[float, float]:
     return min(b.left for b in boxes), max(b.right for b in boxes)
 
 
-def _columns(units: list[list[OcrElement]]) -> list[Column]:
+def _columns(units: list[list[OcrElement]]) -> list[_Column]:
     """Group units whose horizontal extents overlap into columns."""
-    columns: list[Column] = []
+    columns: list[_Column] = []
     for unit in sorted(units, key=lambda u: _unit_extent(u)[0]):
         left, right = _unit_extent(unit)
-        if columns and left < columns[-1][1]:
-            column_left, column_right, members = columns[-1]
-            members.append(unit)
-            columns[-1] = (column_left, max(column_right, right), members)
+        if columns and left < columns[-1].right:
+            last = columns[-1]
+            last.units.append(unit)
+            columns[-1] = _Column(last.left, max(last.right, right), last.units)
         else:
-            columns.append((left, right, [unit]))
+            columns.append(_Column(left, right, [unit]))
     return columns
 
 
-def _columns_match(a: list[Column], b: list[Column]) -> bool:
+def _columns_match(a: list[_Column], b: list[_Column]) -> bool:
     """Whether two bands have the same columns of prose."""
     return len(a) == len(b) > 1 and all(
-        min(ra, rb) > max(la, lb) for (la, ra, _), (lb, rb, _) in zip(a, b, strict=True)
+        min(ca.right, cb.right) > max(ca.left, cb.left)
+        for ca, cb in zip(a, b, strict=True)
     )
 
 
@@ -711,20 +746,21 @@ def _layout_blocks(lines: list[OcrElement]) -> list[list[OcrElement]]:
         else:
             units.append(paragraph)
     units.sort(key=lambda u: u[0].bbox.top if u[0].bbox else 0)
-    bands: list[tuple[float, list[list[OcrElement]]]] = []
+    bands: list[_Band] = []
     for unit in units:
         bottom = max(ln.bbox.bottom for ln in unit if ln.bbox is not None)
-        if bands and _centre_y(unit[0]) < bands[-1][0]:
-            band_bottom, members = bands[-1]
-            members.append(unit)
-            bands[-1] = (max(band_bottom, bottom), members)
+        if bands and _centre_y(unit[0]) < bands[-1].bottom:
+            last = bands[-1]
+            last.units.append(unit)
+            bands[-1] = _Band(max(last.bottom, bottom), last.units)
         else:
-            bands.append((bottom, [unit]))
+            bands.append(_Band(bottom, [unit]))
     # Bands of prose columns that line up, with paragraph breaks between
     # them, are one stretch of columns.
     merged: list[list[list[OcrElement]]] = []
-    previous: list[Column] | None = None
-    for _bottom, members in bands:
+    previous: list[_Column] | None = None
+    for band in bands:
+        members = band.units
         columns = _columns(members) if any(len(unit) > 1 for unit in members) else None
         if columns and previous and _columns_match(previous, columns):
             merged[-1].extend(members)
@@ -740,13 +776,13 @@ def _layout_blocks(lines: list[OcrElement]) -> list[list[OcrElement]]:
         # Read column by column, except that neighbouring columns of single
         # lines, such as labels and their values, are read by rows.
         singles: list[list[OcrElement]] = []
-        for _left, _right, column in _columns(members):
-            if all(len(unit) == 1 for unit in column):
-                singles.extend(column)
+        for column in _columns(members):
+            if all(len(unit) == 1 for unit in column.units):
+                singles.extend(column.units)
                 continue
             blocks.extend(_split_rows(singles))
             singles = []
-            blocks.extend(sorted(column, key=lambda u: _centre_y(u[0])))
+            blocks.extend(sorted(column.units, key=lambda u: _centre_y(u[0])))
         blocks.extend(_split_rows(singles))
     return blocks
 
@@ -942,14 +978,23 @@ def ocr_tree_to_hocr(page: OcrElement) -> str:
 # Skew and orientation
 
 
-def _line_shape(raw: Quad) -> tuple[list[Point], float, bool] | None:
-    """Return (quad, length, vertical) if a box is long enough to be a line."""
+@dataclass(frozen=True, slots=True)
+class _LineShape:
+    """A detection box that is long enough to be a line of text."""
+
+    quad: list[Point]
+    length: float
+    vertical: bool
+
+
+def _line_shape(raw: Quad) -> _LineShape | None:
+    """Describe a box, if it is long enough to be a line."""
     quad = _as_quad(raw)
     width, height = _quad_dims(quad)
     long, short = max(width, height), min(width, height)
     if short <= 0 or long < LINE_ASPECT * short:
         return None
-    return quad, long, height > width
+    return _LineShape(quad, long, height > width)
 
 
 def _weighted_median(values: list[tuple[float, float]]) -> float:
@@ -976,31 +1021,44 @@ def estimate_skew_angle(quads: Sequence[Quad] | None) -> float:
     angles = []
     for raw in quads if quads is not None else ():
         shape = _line_shape(raw)
-        if shape is None or shape[2]:
+        if shape is None or shape.vertical:
             continue
-        quad, length, _vertical = shape
-        tl, tr, br, bl = quad
+        tl, tr, br, bl = shape.quad
         dx = (tr[0] - tl[0]) + (br[0] - bl[0])
         dy = (tr[1] - tl[1]) + (br[1] - bl[1])
         angle = degrees(atan2(dy, dx))
         if abs(angle) < 30:
-            angles.append((angle, length))
+            angles.append((angle, shape.length))
     if not angles:
         return 0.0
     return _weighted_median(angles)
 
 
+@dataclass(frozen=True, slots=True)
+class OrientationLines:
+    """The lines chosen to judge page orientation by.
+
+    Attributes:
+        vertical: Whether the page's lines run vertically.
+        indices: Indices of the chosen quads, longest first.
+        axis_share: The winning axis's share of the line direction vote.
+    """
+
+    vertical: bool
+    indices: list[int]
+    axis_share: float
+
+
 def select_orientation_lines(
     quads: Sequence[Quad] | None, n: int = ORIENTATION_LINES
-) -> tuple[bool, list[int], float] | None:
+) -> OrientationLines | None:
     """Choose the lines to judge page orientation by.
 
     Boxes vote, weighted by area, on whether lines run horizontally or
     vertically. The longest lines along the winning axis are chosen.
 
     Returns:
-        (vertical, indices of the chosen quads, the winning axis's share of
-        the vote), or None if there are too few lines to judge.
+        The chosen lines, or None if there are too few lines to judge.
     """
     if quads is None:
         return None
@@ -1014,8 +1072,7 @@ def select_orientation_lines(
             votes[True] += width * height
         shape = _line_shape(raw)
         if shape is not None:
-            _quad, length, is_vertical = shape
-            candidates[is_vertical].append((length, index))
+            candidates[shape.vertical].append((shape.length, index))
     total = votes[False] + votes[True]
     if total <= 0:
         return None
@@ -1023,10 +1080,25 @@ def select_orientation_lines(
     chosen = sorted(candidates[vertical], reverse=True)[:n]
     if len(chosen) < ORIENTATION_MIN_LINES:
         return None
-    return vertical, [index for _length, index in chosen], votes[vertical] / total
+    return OrientationLines(
+        vertical, [index for _length, index in chosen], votes[vertical] / total
+    )
 
 
-def orientation_crops(image: Any, quad: Quad, vertical: bool) -> tuple[Any, Any]:
+@dataclass(frozen=True, slots=True)
+class OrientationCrops:
+    """A line crop, turned both candidate ways up.
+
+    Attributes:
+        upright: Upright if the page orientation is 0 or 90.
+        turned: Upright if the page orientation is 180 or 270.
+    """
+
+    upright: Any
+    turned: Any
+
+
+def orientation_crops(image: Any, quad: Quad, vertical: bool) -> OrientationCrops:
     """Crop a line from an image array, turned both candidate ways up.
 
     Horizontal lines are returned as they are and turned over. Vertical lines
@@ -1035,8 +1107,7 @@ def orientation_crops(image: Any, quad: Quad, vertical: bool) -> tuple[Any, Any]
     trimmed to their middle.
 
     Returns:
-        (upright if the page orientation is 0 or 90, upright if it is 180 or
-        270), as image arrays.
+        Both crops, as image arrays.
     """
     import numpy as np
 
@@ -1053,11 +1124,11 @@ def orientation_crops(image: Any, quad: Quad, vertical: bool) -> tuple[Any, Any]
         if h > ORIENTATION_MAX_ASPECT * w:
             start = (h - ORIENTATION_MAX_ASPECT * w) // 2
             crop = crop[start : start + ORIENTATION_MAX_ASPECT * w]
-        return np.rot90(crop, 1), np.rot90(crop, -1)
+        return OrientationCrops(np.rot90(crop, 1), np.rot90(crop, -1))
     if w > ORIENTATION_MAX_ASPECT * h:
         start = (w - ORIENTATION_MAX_ASPECT * h) // 2
         crop = crop[:, start : start + ORIENTATION_MAX_ASPECT * h]
-    return crop, np.rot90(crop, 2)
+    return OrientationCrops(crop, np.rot90(crop, 2))
 
 
 def orientation_from_scores(
@@ -1109,8 +1180,25 @@ def _import_rapidocr():
 
 @dataclass(frozen=True, slots=True)
 class _EngineConfig:
+    """What a RapidOCR instance is configured for."""
+
     max_side_len: int
     rec: RecModel
+
+    def rapidocr_params(self, rapidocr: Any) -> dict[str, Any]:
+        """RapidOCR's ``params`` for this configuration."""
+        return {
+            'Global.log_level': 'error',
+            'Global.max_side_len': self.max_side_len,
+            'Global.return_word_box': True,
+            'Global.use_cls': False,
+            # OCRmyPDF runs one worker per core already
+            'EngineConfig.onnxruntime.intra_op_num_threads': 1,
+            'EngineConfig.onnxruntime.inter_op_num_threads': 1,
+            'Rec.ocr_version': rapidocr.OCRVersion(self.rec.ocr_version),
+            'Rec.model_type': rapidocr.ModelType(self.rec.model_type),
+            'Rec.lang_type': rapidocr.LangRec(self.rec.lang_type),
+        }
 
 
 #: RapidOCR instances of the current thread, by configuration. A RapidOCR
@@ -1132,19 +1220,7 @@ def _get_engine(config: _EngineConfig) -> Any:
 
 def _create_engine(config: _EngineConfig) -> Any:
     rapidocr = _import_rapidocr()
-    params = {
-        'Global.log_level': 'error',
-        'Global.max_side_len': config.max_side_len,
-        'Global.return_word_box': True,
-        'Global.use_cls': False,
-        # OCRmyPDF runs one worker per core already
-        'EngineConfig.onnxruntime.intra_op_num_threads': 1,
-        'EngineConfig.onnxruntime.inter_op_num_threads': 1,
-        'Rec.ocr_version': rapidocr.OCRVersion(config.rec.ocr_version),
-        'Rec.model_type': rapidocr.ModelType(config.rec.model_type),
-        'Rec.lang_type': rapidocr.LangRec(config.rec.lang_type),
-    }
-    return rapidocr.RapidOCR(params=params)
+    return rapidocr.RapidOCR(params=config.rapidocr_params(rapidocr))
 
 
 def _engine_for(options: OcrOptions) -> Any:
@@ -1156,7 +1232,15 @@ def _engine_for(options: OcrOptions) -> Any:
     )
 
 
-def _load_image(input_file: Path) -> tuple[Image.Image, float]:
+@dataclass(frozen=True, slots=True)
+class _PageImage:
+    """A page image ready for RapidOCR, and its resolution."""
+
+    image: Image.Image
+    dpi: float
+
+
+def _load_image(input_file: Path) -> _PageImage:
     with Image.open(input_file) as im:
         dpi_info = im.info.get('dpi', (300, 300))
         dpi = float(dpi_info[0] if isinstance(dpi_info, tuple) else dpi_info)
@@ -1164,7 +1248,7 @@ def _load_image(input_file: Path) -> tuple[Image.Image, float]:
             loaded = im.convert('L')
         else:
             loaded = im.convert('RGB')
-    return loaded, dpi
+    return _PageImage(loaded, dpi)
 
 
 def _run(engine: Any, image: Image.Image, *, rec: bool) -> Any:
@@ -1222,25 +1306,29 @@ class RapidOcrEngine(OcrEngine):
     def get_orientation(input_file: Path, options: OcrOptions) -> OrientationConfidence:
         import numpy as np
 
-        image, _dpi = _load_image(input_file)
+        image = _load_image(input_file).image
         engine = _engine_for(options)
         quads = _boxes(_run(engine, image, rec=False))
         selected = select_orientation_lines(quads)
         if selected is None:
             return OrientationConfidence(angle=0, confidence=0.0)
-        vertical, indices, axis_share = selected
         array = np.asarray(image.convert('RGB'))[:, :, ::-1]  # RapidOCR wants BGR
-        pairs = [orientation_crops(array, quads[i], vertical) for i in indices]
-        pairs = [(a, b) for a, b in pairs if a.size]
-        if len(pairs) < ORIENTATION_MIN_LINES:
+        crops = [
+            orientation_crops(array, quads[i], selected.vertical)
+            for i in selected.indices
+        ]
+        crops = [c for c in crops if c.upright.size]
+        if len(crops) < ORIENTATION_MIN_LINES:
             return OrientationConfidence(angle=0, confidence=0.0)
-        upright = _mean_rec_score(engine, [a for a, _ in pairs])
-        turned = _mean_rec_score(engine, [b for _, b in pairs])
-        return orientation_from_scores(vertical, upright, turned, axis_share)
+        upright = _mean_rec_score(engine, [c.upright for c in crops])
+        turned = _mean_rec_score(engine, [c.turned for c in crops])
+        return orientation_from_scores(
+            selected.vertical, upright, turned, selected.axis_share
+        )
 
     @staticmethod
     def get_deskew(input_file: Path, options: OcrOptions) -> float:
-        image, _dpi = _load_image(input_file)
+        image = _load_image(input_file).image
         return estimate_skew_angle(_boxes(_run(_engine_for(options), image, rec=False)))
 
     @staticmethod
@@ -1255,7 +1343,8 @@ class RapidOcrEngine(OcrEngine):
     ) -> tuple[OcrElement, str]:
         import numpy as np
 
-        image, dpi = _load_image(input_file)
+        loaded = _load_image(input_file)
+        image = loaded.image
         result = _run(_engine_for(options), image, rec=True)
         boxes = _boxes(result)
         page = rapidocr_to_ocr_tree(
@@ -1265,7 +1354,7 @@ class RapidOcrEngine(OcrEngine):
             result.word_results if boxes is not None else None,
             width=image.width,
             height=image.height,
-            dpi=dpi,
+            dpi=loaded.dpi,
             language=options.languages[0] if options.languages else None,
             page_number=page_number,
             image=np.asarray(image.convert('L')) if boxes is not None else None,
