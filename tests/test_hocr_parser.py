@@ -337,6 +337,64 @@ class TestHocrParserFontInfo:
         assert word.font.size == pytest.approx(12.5)
 
 
+class TestHocrParserLineMetrics:
+    """Test parsing of the x_size and x_descenders line properties."""
+
+    @staticmethod
+    def _parse_line(title: str, tmp_path: Path):
+        hocr = f"""<?xml version="1.0" encoding="UTF-8"?>
+        <html xmlns="http://www.w3.org/1999/xhtml"><body>
+        <div class='ocr_page' title='bbox 0 0 1000 1000'>
+         <p class='ocr_par'>
+          <span class='ocr_line' title="{title}">
+           <span class='ocrx_word' title='bbox 100 100 200 150'>word</span>
+          </span>
+         </p>
+        </div></body></html>"""
+        hocr_file = tmp_path / 'line_metrics.hocr'
+        hocr_file.write_text(hocr, encoding='utf-8')
+        return HocrParser(hocr_file).parse().lines[0]
+
+    def test_x_size_and_x_descenders(self, tmp_path):
+        line = self._parse_line(
+            'bbox 100 100 200 150; baseline 0 -10; '
+            'x_size 44.666668; x_descenders 11.166667; x_ascenders 11.5',
+            tmp_path,
+        )
+        assert line.x_size == pytest.approx(44.666668)
+        assert line.x_descenders == pytest.approx(11.166667)
+
+    def test_negative_x_descenders_is_a_depth(self, tmp_path):
+        line = self._parse_line(
+            'bbox 100 100 200 150; x_size 40; x_descenders -9; x_ascenders 10',
+            tmp_path,
+        )
+        assert line.x_descenders == 9
+
+    def test_exponent_notation(self, tmp_path):
+        line = self._parse_line(
+            'bbox 100 100 200 150; x_size 4.0e+01; x_descenders 1.5258789e-05',
+            tmp_path,
+        )
+        assert line.x_size == pytest.approx(40.0)
+        assert line.x_descenders == pytest.approx(1.5258789e-05)
+
+    @pytest.mark.parametrize(
+        'title',
+        [
+            'bbox 100 100 200 150',
+            'bbox 100 100 200 150; x_size 40',
+            'bbox 100 100 200 150; max_size 40; x_descenders 9',
+            'bbox 100 100 200 150; x_descenders 9',
+            'bbox 100 100 200 150; x_size 0; x_descenders 0',
+        ],
+    )
+    def test_incomplete_metrics_are_ignored(self, title, tmp_path):
+        line = self._parse_line(title, tmp_path)
+        assert line.x_size is None
+        assert line.x_descenders is None
+
+
 class TestHocrParserErrors:
     """Test error handling in HocrParser."""
 

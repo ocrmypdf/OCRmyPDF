@@ -26,6 +26,10 @@ from ocrmypdf.models.ocr_element import OcrClass, OcrElement
 
 log = logging.getLogger(__name__)
 
+# A line whose box reaches this far above the OCR engine's own line metrics is
+# taken to be stretched by one word reaching into a neighbouring line.
+STRETCHED_LINE_RATIO = 1.5
+
 
 def _is_rtl_text(text: str) -> bool:
     """Check if text is right-to-left based on Unicode bidi properties.
@@ -483,6 +487,27 @@ class Fpdf2PdfRenderer:
         font_size = line_size_height + intercept_pt
         if font_size < 1.0:
             font_size = line_size_height * 0.8
+
+        # The line box is the union of its words' boxes, so one word that reaches
+        # into the neighbouring line (a capital touching a descender above)
+        # stretches it, and the height above the baseline overstates the text
+        # size. The engine's own metrics for the line are not affected: x_size
+        # less the descenders is the distance from the baseline to the top of
+        # the line's ascenders. Such a stretch roughly doubles the height, while
+        # ordinary lines stay within about 1.3x of the metrics (the ascender
+        # estimate is a guess on short lines), so only a box well beyond the
+        # metrics is treated as stretched. Lines without a usable baseline are
+        # left alone: their baseline was placed assuming the text fills the box.
+        if (
+            has_meaningful_baseline
+            and line.x_size is not None
+            and line.x_descenders is not None
+        ):
+            metrics_size = self.coord_transform.px_to_pt(
+                line.x_size - line.x_descenders
+            )
+            if metrics_size >= 1.0 and font_size > STRETCHED_LINE_RATIO * metrics_size:
+                font_size = metrics_size
 
         # Total rotation for rendering (textangle + slope)
         total_rotation_deg = -textangle + slope_angle_deg
