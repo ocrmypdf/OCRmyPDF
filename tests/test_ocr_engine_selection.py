@@ -137,3 +137,67 @@ class TestOcrEnginePluginSelection:
 
         engine = null_ocr.get_ocr_engine(options=options)
         assert engine is None
+
+
+class TestNonTesseractEngineWithoutTesseract:
+    """Selecting an engine other than Tesseract must not require Tesseract."""
+
+    @pytest.fixture
+    def no_tesseract(self, monkeypatch):
+        """Make every Tesseract entry point behave as if it is not installed."""
+        from ocrmypdf._exec import tesseract
+
+        def missing(*args, **kwargs):
+            raise FileNotFoundError('tesseract')
+
+        for name in (
+            'version',
+            'get_languages',
+            'has_thresholding',
+            'get_orientation',
+            'get_deskew',
+            'generate_hocr',
+            'generate_pdf',
+        ):
+            monkeypatch.setattr(tesseract, name, missing)
+
+    @staticmethod
+    def _check(resources, outpdf, *args):
+        from ocrmypdf import api
+        from ocrmypdf.cli import get_options_and_plugins
+
+        options, plugin_manager = get_options_and_plugins(
+            args=[str(resources / 'linn.pdf'), str(outpdf), *args]
+        )
+        api.check_options(options, plugin_manager)
+        return options, plugin_manager
+
+    def test_tesseract_required_by_default(self, no_tesseract, resources, outpdf):
+        from ocrmypdf.exceptions import MissingDependencyError
+
+        with pytest.raises(MissingDependencyError):
+            self._check(resources, outpdf)
+
+    def test_tesseract_required_when_selected(self, no_tesseract, resources, outpdf):
+        from ocrmypdf.exceptions import MissingDependencyError
+
+        with pytest.raises(MissingDependencyError):
+            self._check(resources, outpdf, '--ocr-engine', 'tesseract')
+
+    def test_null_engine(self, no_tesseract, resources, outpdf):
+        options, plugin_manager = self._check(resources, outpdf, '--ocr-engine', 'none')
+        assert str(plugin_manager.get_ocr_engine(options=options)) == "No OCR engine"
+
+    def test_null_engine_ignores_tesseract_options(
+        self, no_tesseract, resources, outpdf
+    ):
+        # Tesseract-specific options are inert for other engines; they must
+        # not pull in a Tesseract version or feature check.
+        self._check(
+            resources,
+            outpdf,
+            '--ocr-engine',
+            'none',
+            '--tesseract-thresholding',
+            'sauvola',
+        )
