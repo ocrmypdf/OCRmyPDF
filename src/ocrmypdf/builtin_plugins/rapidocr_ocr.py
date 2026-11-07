@@ -71,9 +71,10 @@ DEFAULT_MAX_SIDE_LEN = 2000
 #: above its bottom edge. Detection boxes are padded around the glyphs; this
 #: was measured on 300 dpi Latin text.
 BASELINE_FRACTION = 0.25
-#: Height from the bottom of the descenders to the top of the ascenders, as
-#: a fraction of the detection box height.
+#: Height from the bottom of the descenders to the top of the ascenders, and
+#: descender depth, as fractions of the detection box height.
 TEXT_HEIGHT_FRACTION = 0.75
+DESCENDER_FRACTION = 0.15
 
 #: Least gap between words, as a fraction of the line's box height, so that
 #: the space the renderer adds after each word does not overlap the next.
@@ -504,6 +505,8 @@ def _fit_to_ink(line: OcrElement, image: Any, height: float) -> None:
         bottom=min(height, ink.bottom + max(0.0, rise)),
     )
     line.baseline = Baseline(slope=slope, intercept=ink.baseline - line.bbox.bottom)
+    line.x_size = ink.bottom - ink.top
+    line.x_descenders = ink.bottom - ink.baseline
 
 
 def _make_line(
@@ -521,6 +524,7 @@ def _make_line(
     thickness = (_dist(tl, bl) + _dist(tr, br)) / 2
 
     baseline = None
+    x_size = x_descenders = None
     if textangle is None:
         dx = br[0] - bl[0]
         slope = (br[1] - bl[1]) / dx if dx > 0 else 0.0
@@ -528,6 +532,10 @@ def _make_line(
         y_at_left = bl[1] - BASELINE_FRACTION * thickness
         y_at_left += slope * (bbox.left - bl[0])
         baseline = Baseline(slope=slope, intercept=y_at_left - bbox.bottom)
+        # The box height overstates the text size of a sloped line by its
+        # rise; these metrics, across the line, let the renderer cap it.
+        x_size = TEXT_HEIGHT_FRACTION * thickness
+        x_descenders = DESCENDER_FRACTION * thickness
 
     if words:
         word_quads = [
@@ -561,6 +569,8 @@ def _make_line(
         baseline=baseline,
         textangle=textangle,
         language=language,
+        x_size=x_size,
+        x_descenders=x_descenders,
         children=children,
     )
 
@@ -966,6 +976,10 @@ def ocr_tree_to_hocr(page: OcrElement) -> str:
                 )
             if line.textangle is not None:
                 title += f'; textangle {line.textangle:g}'
+            if line.x_size is not None and line.x_descenders is not None:
+                title += (
+                    f'; x_size {line.x_size:.1f}; x_descenders {line.x_descenders:.1f}'
+                )
             out.append(
                 f"<span class='ocr_line' id='line_{page_no + 1}_{n_line}' "
                 f"title='{title}'>"

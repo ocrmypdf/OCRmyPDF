@@ -320,6 +320,20 @@ class TestConversion:
         y += line.bbox.bottom + line.baseline.intercept
         assert y_edge - 0.3 * 50 < y < y_edge
 
+    def test_line_metrics_estimated_from_detection_box(self):
+        # 48 pixels thick: the text is about three quarters of that, with
+        # descenders a fifth of the text
+        page = convert(HORIZONTAL_BOXES, HORIZONTAL_TXTS, HORIZONTAL_WORDS)
+        line = page.lines[0]
+        assert line.x_size == pytest.approx(0.75 * 48.3)
+        assert line.x_descenders == pytest.approx(0.15 * 48.3)
+
+    def test_vertical_line_has_no_line_metrics(self):
+        page = convert([rect(400, 840, 450, 1600)], ("one two three",))
+        (line,) = page.lines
+        assert line.x_size is None
+        assert line.x_descenders is None
+
     def test_vertical_line_reads_downward(self):
         boxes = [rect(1488, 304, 1556, 970)]
         words = (
@@ -425,6 +439,8 @@ class TestInkMetrics:
         assert line.bbox.bottom == pytest.approx(148, abs=1)
         baseline = line.bbox.bottom + line.baseline.intercept
         assert baseline == pytest.approx(140, abs=1)
+        assert line.x_size == pytest.approx(36, abs=1)
+        assert line.x_descenders == pytest.approx(8, abs=1)
 
     def test_skewed_line(self):
         slope = 0.02
@@ -437,6 +453,9 @@ class TestInkMetrics:
         assert left_baseline == pytest.approx(140 - 10 * slope, abs=1.5)
         # The ink is 36 pixels high, and rises 20 pixels along the line
         assert line.bbox.height == pytest.approx(36 + 1000 * slope, abs=1.5)
+        # The ink's own height, measured along the line, excludes the rise
+        assert line.x_size == pytest.approx(36, abs=1.5)
+        assert line.x_descenders == pytest.approx(8, abs=1.5)
 
     def test_ignores_neighbouring_lines(self):
         # The padded box reaches into the descenders of the line above and
@@ -495,6 +514,13 @@ class TestHocr:
             original["skewed <line> & more"].baseline.intercept
         )
         assert by_text["这是"].textangle == 270
+        assert skewed.x_size == pytest.approx(
+            original["skewed <line> & more"].x_size, abs=0.1
+        )
+        assert skewed.x_descenders == pytest.approx(
+            original["skewed <line> & more"].x_descenders, abs=0.1
+        )
+        assert by_text["这是"].x_size is None
         assert lines[0].words[0].confidence == pytest.approx(0.9)
 
     def test_empty_page(self, tmp_path):
@@ -875,6 +901,28 @@ class TestRendering:
         assert [b[4] for b in boxes] == ['alpha', 'beta', 'gamma', 'delta']
         # Downhill to the right, in points (72/300 of a pixel)
         assert boxes[-1][3] - boxes[0][3] > 0.8 * 1350 * sin(radians(2)) * 72 / 300
+
+    def test_rising_line_is_not_oversized(self, tmp_path, pdftotext):
+        # A line rising to the right: its box spans the rise as well as the
+        # text, so sizing text from the box height would double it.
+        slope = -0.04
+        ink = [(110, 1090, 1052, 1080)]
+        quad = [[100, 1040], [1100, 1000], [1100, 1058], [100, 1098]]
+        rising = convert([quad], ("rising text line",), image=ink_page(ink, slope))
+        flat = convert(
+            [rect(100, 1040, 1100, 1098)], ("rising text line",), image=ink_page(ink)
+        )
+
+        def first_word(page, tmp):
+            tmp.mkdir()
+            boxes = self.word_boxes(pdftotext(self.render(page, tmp), '-bbox'))
+            return next(b for b in boxes if b[4] == 'rising')
+
+        f = first_word(flat, tmp_path / 'flat')
+        r = first_word(rising, tmp_path / 'rising')
+        # A tilted word's box is taller by its width times the slope
+        tilt = (r[2] - r[0]) * abs(slope)
+        assert r[3] - r[1] < 1.2 * (f[3] - f[1]) + tilt
 
     def test_vertical_line_reads_in_order(self, tmp_path, pdftotext):
         page = convert([rect(400, 840, 450, 1600)], ("one two three",))
