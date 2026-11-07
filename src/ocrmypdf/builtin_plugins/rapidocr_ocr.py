@@ -69,6 +69,10 @@ TEXT_HEIGHT_FRACTION = 0.75
 #: the space the renderer adds after each word does not overlap the next.
 WORD_GAP_FRACTION = 0.25
 
+#: Lines at least this many times longer than they are high are taken for
+#: prose, which is stacked into paragraphs; shorter ones may be table cells.
+WIDE_LINE_ASPECT = 8.0
+
 #: RapidOCR turns a crop to read it when it is this much taller than wide.
 VERTICAL_ASPECT = 1.5
 
@@ -439,13 +443,57 @@ def _make_line(
     )
 
 
-def _text_height(line: OcrElement) -> float:
-    """Estimated text height of a line, from its detection quad."""
+def _thickness(line: OcrElement) -> float:
+    """Height of a line's detection box, perpendicular to the line."""
     if line.poly and len(line.poly) == 4:
         tl, tr, br, bl = line.poly
-        return TEXT_HEIGHT_FRACTION * (_dist(tl, bl) + _dist(tr, br)) / 2
+        return (_dist(tl, bl) + _dist(tr, br)) / 2
     assert line.bbox is not None
-    return TEXT_HEIGHT_FRACTION * min(line.bbox.width, line.bbox.height)
+    return min(line.bbox.width, line.bbox.height)
+
+
+def _text_height(line: OcrElement) -> float:
+    """Estimated text height of a line, from its detection box."""
+    return TEXT_HEIGHT_FRACTION * _thickness(line)
+
+
+def _centre_y(line: OcrElement) -> float:
+    assert line.bbox is not None
+    return (line.bbox.top + line.bbox.bottom) / 2
+
+
+def _is_wide(line: OcrElement) -> bool:
+    """Whether a horizontal line is long enough to be a line of prose.
+
+    Table cells are short; lines of running text are long.
+    """
+    assert line.bbox is not None
+    return line.textangle is None and line.bbox.width >= WIDE_LINE_ASPECT * (
+        _thickness(line)
+    )
+
+
+def _same_row(a: OcrElement, b: OcrElement) -> bool:
+    return abs(_centre_y(a) - _centre_y(b)) < 0.4 * _thickness(a)
+
+
+def _is_table_cell(line: OcrElement, lines: list[OcrElement]) -> bool:
+    """Whether a line has a short line beside it on its row."""
+    assert line.bbox is not None
+    for other in lines:
+        if other is line or other.textangle is not None or _is_wide(other):
+            continue
+        assert other.bbox is not None
+        apart = other.bbox.left >= line.bbox.right or other.bbox.right <= line.bbox.left
+        if apart and _same_row(line, other):
+            return True
+    return False
+
+
+def _is_tabular(paragraph: list[OcrElement], lines: list[OcrElement]) -> bool:
+    """Whether most lines of a paragraph have short cells beside them."""
+    cells = sum(_is_table_cell(line, lines) for line in paragraph)
+    return 2 * cells > len(paragraph)
 
 
 def _line_pitch(paragraph: list[OcrElement], line: OcrElement) -> float | None:
@@ -476,26 +524,139 @@ def _line_pitch(paragraph: list[OcrElement], line: OcrElement) -> float | None:
     return None
 
 
-def _group_paragraphs(lines: list[OcrElement]) -> list[list[OcrElement]]:
-    """Group lines into paragraphs of vertically adjacent, aligned lines.
+def _stack_paragraphs(lines: list[OcrElement]) -> list[list[OcrElement]]:
+    """Stack lines of prose into paragraphs.
 
-    RapidOCR orders lines by their top edge, which interleaves the lines of
-    side-by-side columns. A line joins the paragraph whose last line lies
-    nearest above it, so paragraphs follow columns. Paragraphs are ordered
-    by their first line.
+    A line joins the paragraph whose last line lies nearest above it, so
+    paragraphs follow columns. Only long lines are stacked. A short line may
+    end a paragraph whose left edge it shares, unless it is a table cell;
+    every other short line is a paragraph of its own.
     """
     paragraphs: list[list[OcrElement]] = []
     for line in lines:
-        pitches = [
-            (pitch, n)
-            for n, paragraph in enumerate(paragraphs)
-            if (pitch := _line_pitch(paragraph, line)) is not None
-        ]
-        if pitches:
-            paragraphs[min(pitches)[1]].append(line)
-        else:
-            paragraphs.append([line])
+        wide = _is_wide(line)
+        if wide or not _is_table_cell(line, lines):
+            pitches = [
+                (pitch, n)
+                for n, paragraph in enumerate(paragraphs)
+                if _is_wide(paragraph[-1])
+                and (pitch := _line_pitch(paragraph, line)) is not None
+                and (wide or _left_aligned(paragraph[-1], line))
+            ]
+            if pitches:
+                paragraphs[min(pitches)[1]].append(line)
+                continue
+        paragraphs.append([line])
     return paragraphs
+
+
+def _left_aligned(a: OcrElement, b: OcrElement) -> bool:
+    assert a.bbox is not None and b.bbox is not None
+    return abs(a.bbox.left - b.bbox.left) < _text_height(a)
+
+
+def _split_rows(units: list[list[OcrElement]]) -> list[list[OcrElement]]:
+    """Split single lines into rows, each read left to right."""
+    rows: list[list[OcrElement]] = []
+    for line in sorted((u[0] for u in units), key=_centre_y):
+        if rows and _same_row(rows[-1][0], line):
+            rows[-1].append(line)
+        else:
+            rows.append([line])
+    return [sorted(row, key=lambda ln: ln.bbox.left if ln.bbox else 0) for row in rows]
+
+
+Column = tuple[float, float, list[list[OcrElement]]]
+
+
+def _unit_extent(unit: list[OcrElement]) -> tuple[float, float]:
+    boxes = [ln.bbox for ln in unit if ln.bbox is not None]
+    return min(b.left for b in boxes), max(b.right for b in boxes)
+
+
+def _columns(units: list[list[OcrElement]]) -> list[Column]:
+    """Group units whose horizontal extents overlap into columns."""
+    columns: list[Column] = []
+    for unit in sorted(units, key=lambda u: _unit_extent(u)[0]):
+        left, right = _unit_extent(unit)
+        if columns and left < columns[-1][1]:
+            column_left, column_right, members = columns[-1]
+            members.append(unit)
+            columns[-1] = (column_left, max(column_right, right), members)
+        else:
+            columns.append((left, right, [unit]))
+    return columns
+
+
+def _columns_match(a: list[Column], b: list[Column]) -> bool:
+    """Whether two bands have the same columns of prose."""
+    return len(a) == len(b) > 1 and all(
+        min(ra, rb) > max(la, lb) for (la, ra, _), (lb, rb, _) in zip(a, b, strict=True)
+    )
+
+
+def _layout_blocks(lines: list[OcrElement]) -> list[list[OcrElement]]:
+    """Arrange lines into blocks in reading order.
+
+    Prose is stacked into paragraphs that follow its columns. The page is
+    then cut into horizontal bands: a unit (paragraph or single line) joins
+    the band above if its first line is centred above the band's bottom, so
+    a band holds side-by-side columns of prose, or one row of a table.
+
+    A band holding a paragraph of several lines is read column by column.
+    Any other band is read row by row, each row a block of its cells from
+    left to right, as a reader would read a table.
+    """
+    stacked = _stack_paragraphs(
+        sorted(lines, key=lambda ln: ln.bbox.top if ln.bbox else 0)
+    )
+    # Long table cells stack like prose; when their rows hold short cells
+    # too, they are a table column, and are read by rows instead.
+    units: list[list[OcrElement]] = []
+    for paragraph in stacked:
+        if len(paragraph) > 1 and _is_tabular(paragraph, lines):
+            units.extend([line] for line in paragraph)
+        else:
+            units.append(paragraph)
+    units.sort(key=lambda u: u[0].bbox.top if u[0].bbox else 0)
+    bands: list[tuple[float, list[list[OcrElement]]]] = []
+    for unit in units:
+        bottom = max(ln.bbox.bottom for ln in unit if ln.bbox is not None)
+        if bands and _centre_y(unit[0]) < bands[-1][0]:
+            band_bottom, members = bands[-1]
+            members.append(unit)
+            bands[-1] = (max(band_bottom, bottom), members)
+        else:
+            bands.append((bottom, [unit]))
+    # Bands of prose columns that line up, with paragraph breaks between
+    # them, are one stretch of columns.
+    merged: list[list[list[OcrElement]]] = []
+    previous: list[Column] | None = None
+    for _bottom, members in bands:
+        columns = _columns(members) if any(len(unit) > 1 for unit in members) else None
+        if columns and previous and _columns_match(previous, columns):
+            merged[-1].extend(members)
+            previous = _columns(merged[-1])
+        else:
+            merged.append(members)
+            previous = columns
+    blocks: list[list[OcrElement]] = []
+    for members in merged:
+        if not any(len(unit) > 1 for unit in members):
+            blocks.extend(_split_rows(members))
+            continue
+        # Read column by column, except that neighbouring columns of single
+        # lines, such as labels and their values, are read by rows.
+        singles: list[list[OcrElement]] = []
+        for _left, _right, column in _columns(members):
+            if all(len(unit) == 1 for unit in column):
+                singles.extend(column)
+                continue
+            blocks.extend(_split_rows(singles))
+            singles = []
+            blocks.extend(sorted(column, key=lambda u: _centre_y(u[0])))
+        blocks.extend(_split_rows(singles))
+    return blocks
 
 
 def rapidocr_to_ocr_tree(
@@ -557,7 +718,7 @@ def rapidocr_to_ocr_tree(
         )
         if str(text).strip()
     ]
-    for group in _group_paragraphs(lines):
+    for group in _layout_blocks(lines):
         corners = [
             corner
             for ln in group
@@ -575,13 +736,35 @@ def rapidocr_to_ocr_tree(
     return page
 
 
+def _is_row(paragraph: OcrElement) -> bool:
+    """Whether a paragraph's lines are cells side by side on one row."""
+    lines = paragraph.children
+    return len(lines) > 1 and all(
+        _same_row(a, b)
+        and a.bbox is not None
+        and b.bbox is not None
+        and b.bbox.left >= a.bbox.left
+        for a, b in zip(lines, lines[1:], strict=False)
+    )
+
+
 def ocr_tree_to_text(page: OcrElement) -> str:
-    """Plain text of a page: lines on separate lines, paragraphs apart."""
-    paragraphs = [
-        '\n'.join(line.get_text_recursive() for line in paragraph.children)
-        for paragraph in page.paragraphs
-    ]
-    return '\n\n'.join(paragraphs) + '\n' if paragraphs else ''
+    """Plain text of a page.
+
+    The lines of a paragraph go on separate lines, with a blank line between
+    paragraphs. The cells of a table row go on one line, separated by spaces,
+    and rows of single lines follow each other without blank lines.
+    """
+    out: list[str] = []
+    previous_single = False
+    for paragraph in page.paragraphs:
+        texts = [line.get_text_recursive() for line in paragraph.children]
+        single = len(texts) == 1 or _is_row(paragraph)
+        if out:
+            out.append('\n' if single and previous_single else '\n\n')
+        out.append(' '.join(texts) if single else '\n'.join(texts))
+        previous_single = single
+    return ''.join(out) + '\n' if out else ''
 
 
 # --------------------------------------------------------------------------

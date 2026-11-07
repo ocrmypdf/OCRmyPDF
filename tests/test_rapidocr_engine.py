@@ -162,6 +162,118 @@ class TestConversion:
         page = convert(boxes, txts)
         assert ocr_tree_to_text(page) == "one\ntwo\nthree\nfour\n"
 
+    @staticmethod
+    def table(top, rows=5, cols=6):
+        boxes, txts = [], []
+        for r in range(rows):
+            for c in range(cols):
+                left, y = 100 + 300 * c, top + 50 * r
+                boxes.append(rect(left, y, left + 150, y + 42))
+                txts.append(f'r{r}c{c}')
+        return boxes, txts
+
+    def test_table_reads_row_by_row(self):
+        boxes, txts = self.table(100)
+        page = convert(boxes, txts)
+        # One line per cell in the text layer, grouped by row
+        assert len(page.lines) == 30
+        assert len(page.paragraphs) == 5
+        expected = ''.join(
+            ' '.join(f'r{r}c{c}' for c in range(6)) + '\n' for r in range(5)
+        )
+        assert ocr_tree_to_text(page) == expected
+
+    def test_table_rows_in_order_when_lines_arrive_shuffled(self):
+        boxes, txts = self.table(100)
+        order = sorted(range(30), key=lambda i: (i % 6, i // 6))  # by column
+        page = convert([boxes[i] for i in order], tuple(txts[i] for i in order))
+        assert ocr_tree_to_text(page).splitlines()[1] == 'r1c0 r1c1 r1c2 r1c3 r1c4 r1c5'
+
+    def test_header_above_table(self):
+        header = [rect(100, 100, 1700, 142), rect(100, 150, 1500, 192)]
+        caption = [rect(100, 250, 1200, 292)]  # left-aligned with column 0
+        boxes, txts = self.table(300)
+        page = convert(
+            header + caption + boxes,
+            ('header one', 'header two', 'Description of the samples', *txts),
+        )
+        lines = ocr_tree_to_text(page).split('\n')
+        assert lines[:4] == [
+            'header one',
+            'header two',
+            '',
+            'Description of the samples',
+        ]
+        assert lines[4] == 'r0c0 r0c1 r0c2 r0c3 r0c4 r0c5'
+        assert lines[8] == 'r4c0 r4c1 r4c2 r4c3 r4c4 r4c5'
+
+    def test_two_column_prose_with_short_last_lines(self):
+        boxes = []
+        txts = []
+        for n in range(4):
+            boxes.append(rect(100, 100 + 50 * n, 1000 if n < 3 else 300, 142 + 50 * n))
+            txts.append(f'left {n}')
+            boxes.append(rect(1300, 100 + 50 * n, 2200, 142 + 50 * n))
+            txts.append(f'right {n}')
+        boxes.append(rect(1300, 300, 1500, 342))
+        txts.append('right end')
+        page = convert(boxes, tuple(txts))
+        assert ocr_tree_to_text(page) == (
+            "left 0\nleft 1\nleft 2\nleft 3\n\n"
+            "right 0\nright 1\nright 2\nright 3\nright end\n"
+        )
+
+    def test_two_column_prose_with_paragraph_gaps(self):
+        # Paragraphs in the two columns end at about the same height; the
+        # columns must still be read one after the other.
+        def paragraph(name, left, top, n):
+            return [
+                (rect(left, top + 50 * i, left + 900, top + 42 + 50 * i), f'{name}{i}')
+                for i in range(n)
+            ]
+
+        lines = (
+            paragraph('a', 100, 100, 3)
+            + paragraph('b', 100, 300, 3)
+            + paragraph('c', 1300, 100, 3)
+            + paragraph('d', 1300, 300, 4)
+        )
+        lines.sort(key=lambda item: (item[0][0][1], item[0][0][0]))
+        page = convert([b for b, _ in lines], tuple(t for _, t in lines))
+        assert ocr_tree_to_text(page) == (
+            "a0\na1\na2\n\nb0\nb1\nb2\n\nc0\nc1\nc2\n\nd0\nd1\nd2\nd3\n"
+        )
+
+    def test_table_with_a_wide_column(self):
+        # Long descriptions stack like prose, but their neighbours on each row
+        # are table cells, so the table is still read by rows.
+        boxes, txts = [], []
+        for r in range(5):
+            y = 100 + 50 * r
+            for left, right, text in (
+                (100, 250, f'code{r}'),
+                (300, 1300, f'description number {r}'),
+                (1400, 1480, f'{r}'),
+                (1600, 1750, f'{r}.00'),
+            ):
+                boxes.append(rect(left, y, right, y + 42))
+                txts.append(text)
+        page = convert(boxes, tuple(txts))
+        assert ocr_tree_to_text(page).splitlines() == [
+            f'code{r} description number {r} {r} {r}.00' for r in range(5)
+        ]
+
+    def test_paragraph_beside_key_value_pairs(self):
+        boxes = [rect(100, 100 + 50 * i, 1000, 142 + 50 * i) for i in range(4)] + [
+            rect(1300, 100, 1500, 142),
+            rect(1700, 100, 1900, 142),
+            rect(1300, 150, 1500, 192),
+            rect(1700, 150, 1900, 192),
+        ]
+        txts = ('p0', 'p1', 'p2', 'p3', 'Date', '14/03', 'Due', '13/04')
+        page = convert(boxes, txts)
+        assert ocr_tree_to_text(page) == "p0\np1\np2\np3\n\nDate 14/03\nDue 13/04\n"
+
     def test_skewed_line_baseline(self):
         quad = rotated_quad(1200, 1000, 1800, 50, 2.0)
         page = convert([quad], ("skewed text line",))
@@ -294,10 +406,14 @@ class TestHocr:
         assert [ln.get_text_recursive() for ln in lines] == [
             ln.get_text_recursive() for ln in page.lines
         ]
-        skewed = lines[2]
+        by_text = {ln.get_text_recursive(): ln for ln in lines}
+        original = {ln.get_text_recursive(): ln for ln in page.lines}
+        skewed = by_text["skewed <line> & more"]
         assert skewed.baseline.slope == pytest.approx(0.0349, abs=1e-3)
-        assert skewed.baseline.intercept == round(page.lines[2].baseline.intercept)
-        assert lines[3].textangle == 270
+        assert skewed.baseline.intercept == round(
+            original["skewed <line> & more"].baseline.intercept
+        )
+        assert by_text["这是"].textangle == 270
         assert lines[0].words[0].confidence == pytest.approx(0.9)
 
     def test_empty_page(self, tmp_path):
