@@ -482,8 +482,15 @@ class Fpdf2PdfRenderer:
             .rotated(slope_angle_deg)  # Rotate by baseline slope
         )
 
-        # Calculate font size: height from baseline to top of line
+        # Calculate font size: height from baseline to top of line. A sloped
+        # line's box is the hull of its slanted text, so its top is level with
+        # the tops of the glyphs where the baseline is highest: the left end of
+        # a falling line, where the intercept is measured, but the right end of
+        # a rising one (negative slope, since y increases downward). Measure
+        # from the baseline there, or the rise inflates the text.
         font_size = line_size_height + intercept_pt
+        if slope < 0.0:
+            font_size += slope * line_size_width
         if font_size < 1.0:
             font_size = line_size_height * 0.8
 

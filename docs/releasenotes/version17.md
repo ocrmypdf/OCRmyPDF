@@ -30,6 +30,11 @@
 
 - Selecting an OCR engine other than Tesseract, including `--ocr-engine
   none`, no longer requires Tesseract to be installed.
+- Fixed the fpdf2 renderer writing the text of a line that rises to the right
+  too large, by up to the height of its rise, which also made the text of
+  neighbouring lines overlap. A sloped line's box spans its rise as well as
+  its text; the text size is now measured at the end of the line where the
+  baseline is highest, as it already was for lines that fall to the right.
 
 ## v17.13.2
 

@@ -969,6 +969,39 @@ class TestLineFontSize:
         without = self._font_sizes(self._page(""), multi_font_manager, tmp_path)
         assert sizes[1] == pytest.approx(without[1])
 
+    @pytest.mark.parametrize('slope', [-0.04, -0.01, 0.01, 0.04])
+    def test_sloped_line_font_size_excludes_rise(
+        self, slope, multi_font_manager, tmp_path
+    ):
+        """A sloped line's box spans its rise as well as its text.
+
+        Both lines' text reaches 46 pixels above the baseline. The sloped
+        line's box is the hull of its slanted text, so the box top is where the
+        baseline is highest: the right end of a rising line (negative slope in
+        image coordinates), the left end of a falling one.
+        """
+        left, right, above, below = 300, 2200, 46, 14
+        rise = slope * (right - left)
+        baseline_left = 1146
+        top = baseline_left + min(0.0, rise) - above
+        bottom = baseline_left + max(0.0, rise) + below
+        intercept = baseline_left - bottom
+        hocr = f"""<?xml version="1.0" encoding="UTF-8"?>
+        <html xmlns="http://www.w3.org/1999/xhtml"><body>
+         <div class='ocr_page' title='bbox 0 0 2550 3300; ppageno 0; scan_res 300 300'>
+          <p class='ocr_par'>
+          <span class='ocr_line' title="bbox 300 1000 2200 1060; baseline 0 -14">
+           <span class='ocrx_word' title='bbox 300 1000 700 1060'>principles</span>
+          </span>
+          <span class='ocr_line' title="bbox {left} {top:.0f} {right} {bottom:.0f}; baseline {slope} {intercept:.0f}">
+           <span class='ocrx_word' title='bbox {left} {top:.0f} {right} {bottom:.0f}'>sloped</span>
+          </span>
+          </p>
+         </div></body></html>"""
+        sizes = self._font_sizes(hocr, multi_font_manager, tmp_path)
+        assert len(sizes) == 2
+        assert sizes[1] == pytest.approx(sizes[0], rel=0.02)
+
     def test_steep_slope_rotated_line_is_not_capped(self, multi_font_manager, tmp_path):
         """A line whose rotation is inferred from its slope keeps its box size.
 
