@@ -347,6 +347,38 @@ def test_strip_hidden_text_objects_leave_one_text_state():
     assert _stripped(words) == b'/F1 59 Tf\n3 Tr\n100 Tz'
 
 
+def test_strip_hidden_text_object_keeps_exact_leading():
+    """The leading taken from TD keeps its precision, and is never -0."""
+    assert _stripped(b'BT 3 Tr 0 -14.123456789 TD (h) Tj 0 0 TD (h) Tj ET') == (
+        b'3 Tr\n0 TL'
+    )
+    assert _stripped(b'BT 3 Tr 0 -14.123456789 TD (h) Tj ET') == (
+        b'3 Tr\n14.123456789 TL'
+    )
+
+
+@pytest.mark.parametrize('operand', [b'/X', b'(5)', b'true'])
+def test_strip_hidden_text_object_with_malformed_td(operand):
+    """A TD whose operand is not a number is dropped, not an error."""
+    assert _stripped(b'BT 3 Tr 0 %s TD (h) Tj ET' % operand) == b'3 Tr'
+
+
+def test_strip_hidden_text_objects_leave_one_state_around_colour():
+    """Colour and other overwritten state does not pile up once per word."""
+    words = b''.join(
+        b'BT 0 g /F1 %d Tf 3 Tr (w) Tj ET 0 Tr ' % (10 + i) for i in range(50)
+    )
+    # Only what the hidden objects leave is merged; the page's own 0 Tr stays.
+    assert _stripped(words) == b'0 g\n/F1 59 Tf\n3 Tr\n0 Tr'
+
+
+def test_strip_hidden_text_objects_keep_cumulative_state():
+    """State that accumulates rather than being replaced is all kept."""
+    assert _stripped(b'BT 3 Tr /GS1 gs (h) Tj ET BT 3 Tr /GS2 gs (h) Tj ET') == (
+        b'3 Tr\n/GS1 gs\n3 Tr\n/GS2 gs'
+    )
+
+
 def test_strip_keeps_unterminated_text_object():
     """A text object with no ET is kept as it is."""
     assert _stripped(b'0 0 m 9 9 l S BT /F1 12 Tf (open) Tj') == (
