@@ -18,10 +18,14 @@ RapidOCR downloads from ModelScope the first time they are needed, into its
 own package directory. RapidOCR loads one recognition model at a time, so
 ``-l`` may only combine languages that the same model reads.
 
-RapidOCR does not measure page orientation or skew. This engine derives both
-from the detected text line boxes: skew from the angle of long lines, and
-orientation from the shape of the boxes combined with how confidently the
-longest lines are recognized either way up.
+RapidOCR does not measure page orientation or skew. This engine measures
+skew from the angle of the detected text lines. For orientation, the shape
+of the line boxes shows whether the page is sideways, and PaddlePaddle's
+PP-LCNet_x1_0_doc_ori page orientation model (Apache-2.0), downloaded on
+first use, says which way; an upside down reading, or a sideways one the
+model is unsure of, is confirmed by recognizing the longest lines both ways
+up. Without the model, orientation is judged by recognition alone, which is
+slower.
 
 RapidOCR's own text line angle classifier is never used. On documents it
 turns long Latin lines and nearly every Cyrillic line upside down, and
@@ -32,14 +36,20 @@ otherwise upright page is recognized poorly.
 
 from __future__ import annotations
 
+import hashlib
 import html
 import logging
+import os
+import sys
+import tempfile
 import threading
+import urllib.request
 from collections.abc import Sequence
 from dataclasses import dataclass
+from enum import Enum
 from math import atan2, degrees, hypot
 from pathlib import Path
-from typing import TYPE_CHECKING, Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any, BinaryIO
 
 from PIL import Image
 from pydantic import BaseModel, Field
@@ -1164,6 +1174,419 @@ def orientation_from_scores(
 
 
 # --------------------------------------------------------------------------
+# Page orientation model
+
+
+@dataclass(frozen=True, slots=True)
+class ModelFile:
+    """A model file that is downloaded when first needed."""
+
+    filename: str
+    url: str
+    size: int
+    sha256: str
+
+
+#: PP-LCNet_x1_0_doc_ori, PaddlePaddle's four-class document orientation
+#: classifier from PaddleClas, exported to ONNX. Apache-2.0 licensed.
+ORIENTATION_MODEL = ModelFile(
+    filename='PP-LCNet_x1_0_doc_ori.onnx',
+    url=(
+        'https://huggingface.co/PaddlePaddle/PP-LCNet_x1_0_doc_ori_onnx/resolve/'
+        '7330ab7039123e46af2dc03154b9969aa412c61d/inference.onnx'
+    ),
+    size=6_788_069,
+    sha256='af9a0a4f317ff0709ce752067807f819cb15d883f8ecad89f28df1c6ee2d9c92',
+)
+#: The model's classes, in order: how far the page is turned clockwise, as
+#: its inference.yml labels them. That is also Tesseract OSD's "Orientation
+#: in degrees", which OrientationConfidence.angle follows.
+ORIENTATION_MODEL_CLASSES = (0, 90, 180, 270)
+#: PaddleClas preprocessing for the model: shorter side resized to 256
+#: pixels, then a centred square of 224 pixels, normalised with ImageNet's
+#: channel means and standard deviations.
+ORIENTATION_RESIZE_SHORT = 256
+ORIENTATION_CROP = 224
+_IMAGENET_MEAN = (0.485, 0.456, 0.406)
+_IMAGENET_STD = (0.229, 0.224, 0.225)
+
+#: Seconds to wait for the model download to respond.
+DOWNLOAD_TIMEOUT = 30
+
+#: The model must give the orientation it names at least this probability;
+#: chance among its four classes is 0.25.
+MIN_MODEL_PROBABILITY = 0.5
+#: Below this probability, a sideways reading is confirmed by recognition.
+SURE_MODEL_PROBABILITY = 0.75
+#: Line boxes decide whether text runs along the page or across it. The
+#: winning direction needs at least this much line length, in multiples of
+#: the page's longer side, and this many times the length of the other.
+MIN_AXIS_WEIGHT = 1.0
+MIN_AXIS_RATIO = 2.0
+#: Confidence of a page on which the line boxes and the model fully agree.
+MAX_MODEL_CONFIDENCE = 30.0
+
+
+@dataclass(frozen=True, slots=True)
+class ModelOrientation:
+    """The page orientation model's answer.
+
+    Attributes:
+        angle: How far the page content is turned clockwise (0, 90, 180, 270).
+        probability: The probability the model gives that angle.
+    """
+
+    angle: int
+    probability: float
+
+
+@dataclass(frozen=True, slots=True)
+class AxisVotes:
+    """Length of the text lines that run along the page, and across it.
+
+    Each is the sum of the lengths of line boxes, in multiples of the page
+    image's longer side.
+    """
+
+    along: float
+    sideways: float
+
+
+class PageAxis(Enum):
+    """Which way a page's text lines run, as their boxes show."""
+
+    ALONG = 'along'
+    SIDEWAYS = 'sideways'
+    UNCLEAR = 'unclear'
+
+
+def axis_votes(quads: Sequence[Quad] | None, size: tuple[int, int]) -> AxisVotes:
+    """Measure the text lines that run along the page and across it.
+
+    Boxes at least VERTICAL_ASPECT times longer than they are thick vote,
+    weighted by their length; a box's shape is measured, not judged, so this
+    reliably tells a sideways page from one that is upright or upside down.
+    """
+    along = sideways = 0.0
+    for raw in quads if quads is not None else ():
+        width, height = _quad_dims(_as_quad(raw))
+        if width >= VERTICAL_ASPECT * height:
+            along += width
+        elif height >= VERTICAL_ASPECT * width:
+            sideways += height
+    scale = max(size) or 1
+    return AxisVotes(along=along / scale, sideways=sideways / scale)
+
+
+def page_axis(votes: AxisVotes) -> PageAxis:
+    """Decide which way a page's text lines run, if the votes are clear."""
+    if votes.sideways >= MIN_AXIS_WEIGHT and (
+        votes.sideways >= MIN_AXIS_RATIO * votes.along
+    ):
+        return PageAxis.SIDEWAYS
+    if (
+        votes.along >= MIN_AXIS_WEIGHT
+        and votes.along >= MIN_AXIS_RATIO * votes.sideways
+    ):
+        return PageAxis.ALONG
+    return PageAxis.UNCLEAR
+
+
+def _axis_angles(axis: PageAxis) -> tuple[int, ...]:
+    if axis is PageAxis.SIDEWAYS:
+        return (90, 270)
+    if axis is PageAxis.ALONG:
+        return (0, 180)
+    return ()
+
+
+def needs_recognition(votes: AxisVotes, direction: ModelOrientation) -> bool:
+    """Whether the model's reading must be confirmed by recognition.
+
+    An upside down reading always must be, and a sideways one if the model
+    is not sure of it.
+    """
+    return (
+        direction.angle in _axis_angles(page_axis(votes))
+        and direction.probability >= MIN_MODEL_PROBABILITY
+        and (
+            direction.angle == 180
+            or (direction.angle != 0 and direction.probability < SURE_MODEL_PROBABILITY)
+        )
+    )
+
+
+def _clamp(value: float) -> float:
+    return min(1.0, max(0.0, value))
+
+
+def combine_orientation(
+    votes: AxisVotes,
+    direction: ModelOrientation,
+    recognition: OrientationConfidence | None = None,
+) -> OrientationConfidence:
+    """Decide page orientation from the line boxes and the orientation model.
+
+    The model reads the whole page at 224 pixels square. Alone, it turns
+    upright maps, charts and covers, so it never decides on its own: the
+    line boxes say whether the page is sideways, and the model which way.
+
+    - Lines run across the page, and the model says 90 or 270: the page is
+      turned that way.
+    - Lines run along the page, and the model says 0: the page is upright.
+    - Lines run along the page, and the model says 180: the page is upside
+      down only if recognition, which compares how well the longest lines
+      read either way up, agrees.
+    - Anything else, including an unsure model (probability below 0.5) or
+      lines that run both ways, is not acted on: confidence is 0.
+
+    Confidence is put on the scale of Tesseract's OSD, so that OCRmyPDF's
+    default --rotate-pages-threshold of 14 keeps its meaning. It is 30 times
+    two factors: the model's certainty, its probability rescaled from chance
+    (0.25) to 1, and the winning direction's share of the line length
+    rescaled from a tie (0.5) to 0.75 or more. On text pages the model's
+    probability is about 0.92 and nearly all lines run one way, so agreement
+    lands at about 27; a probability under 0.6, or lines split 2 to 1, keeps
+    it under 14.
+
+    Where recognition was consulted (see :func:`needs_recognition`) and
+    agrees, the model's certainty is replaced by recognition's, its own
+    confidence over 20, if that is higher. So a sideways page that the model
+    is unsure of, such as a dense table of small figures, is still turned
+    when recognition agrees. If recognition disagrees, confidence is 0.
+
+    Args:
+        votes: Line lengths along the page and across it.
+        direction: The orientation model's answer.
+        recognition: The recognition comparison, if consulted.
+
+    Returns:
+        How far the page content is turned clockwise, and confidence.
+    """
+    no_decision = OrientationConfidence(angle=0, confidence=0.0)
+    axis = page_axis(votes)
+    if (
+        direction.angle not in _axis_angles(axis)
+        or direction.probability < MIN_MODEL_PROBABILITY
+    ):
+        return no_decision
+    certainty = _clamp((direction.probability - 0.25) / 0.75)
+    if needs_recognition(votes, direction):
+        if recognition is None or recognition.angle != direction.angle:
+            return no_decision
+        certainty = max(certainty, _clamp(recognition.confidence / 20))
+    share = max(votes.along, votes.sideways) / (votes.along + votes.sideways)
+    confidence = MAX_MODEL_CONFIDENCE * certainty * _clamp((share - 0.5) * 4)
+    return OrientationConfidence(angle=direction.angle, confidence=confidence)
+
+
+def orientation_model_input(image: Image.Image) -> Any:
+    """Prepare a page image for the orientation model.
+
+    Returns:
+        A float32 array of shape (1, 3, 224, 224).
+    """
+    import numpy as np
+
+    rgb = image.convert('RGB')
+    width, height = rgb.size
+    scale = ORIENTATION_RESIZE_SHORT / min(width, height)
+    resized = rgb.resize(
+        (max(1, round(width * scale)), max(1, round(height * scale))),
+        Image.Resampling.LANCZOS,
+        reducing_gap=3.0,
+    )
+    left = (resized.width - ORIENTATION_CROP) // 2
+    top = (resized.height - ORIENTATION_CROP) // 2
+    cropped = resized.crop((left, top, left + ORIENTATION_CROP, top + ORIENTATION_CROP))
+    pixels = np.asarray(cropped, dtype=np.float32) / 255.0
+    mean = np.array(_IMAGENET_MEAN, dtype=np.float32)
+    std = np.array(_IMAGENET_STD, dtype=np.float32)
+    return ((pixels - mean) / std).transpose(2, 0, 1)[None].astype(np.float32)
+
+
+class DocOrientationModel:
+    """The page orientation model, on ONNX Runtime."""
+
+    def __init__(self, model_path: Path | None = None, *, session: Any = None):
+        """Load the model from a file, or wrap an existing ONNX session."""
+        if session is None:
+            import onnxruntime as ort
+
+            session_options = ort.SessionOptions()
+            session_options.log_severity_level = 3
+            # OCRmyPDF runs one worker per core already
+            session_options.intra_op_num_threads = 1
+            session_options.inter_op_num_threads = 1
+            session = ort.InferenceSession(
+                str(model_path), session_options, providers=['CPUExecutionProvider']
+            )
+        self._session = session
+        self._input_name = session.get_inputs()[0].name
+
+    def __call__(self, image: Image.Image) -> ModelOrientation:
+        """Classify a page image. The model's output is already softmaxed."""
+        import numpy as np
+
+        output = self._session.run(
+            None, {self._input_name: orientation_model_input(image)}
+        )[0]
+        probabilities = np.asarray(output, dtype=np.float64).reshape(-1)
+        best = int(np.argmax(probabilities))
+        return ModelOrientation(
+            angle=ORIENTATION_MODEL_CLASSES[best],
+            probability=float(probabilities[best]),
+        )
+
+
+def _user_cache_dir() -> Path:
+    """OCRmyPDF's directory in the user's cache."""
+    if sys.platform == 'win32' and (local := os.environ.get('LOCALAPPDATA')):
+        return Path(local) / 'ocrmypdf' / 'Cache'
+    if sys.platform == 'darwin':
+        return Path.home() / 'Library' / 'Caches' / 'ocrmypdf'
+    xdg = os.environ.get('XDG_CACHE_HOME')
+    return (Path(xdg) if xdg else Path.home() / '.cache') / 'ocrmypdf'
+
+
+def orientation_model_dirs() -> list[Path]:
+    """Where the orientation model is looked for, and stored, in that order.
+
+    It is kept with RapidOCR's models, or in the user's cache if RapidOCR's
+    directory cannot be written.
+    """
+    rapidocr_dir = rapidocr_models_dir()
+    dirs = [rapidocr_dir] if rapidocr_dir is not None else []
+    return [*dirs, _user_cache_dir()]
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open('rb') as f:
+        for chunk in iter(lambda: f.read(1 << 20), b''):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _is_intact(path: Path, model: ModelFile) -> bool:
+    try:
+        return path.stat().st_size == model.size and _sha256(path) == model.sha256
+    except OSError:
+        return False
+
+
+def find_orientation_model() -> Path | None:
+    """Find a verified copy of the orientation model, if one is stored."""
+    for directory in orientation_model_dirs():
+        path = directory / ORIENTATION_MODEL.filename
+        if _is_intact(path, ORIENTATION_MODEL):
+            return path
+    return None
+
+
+def _urlopen(url: str, timeout: float) -> Any:
+    return urllib.request.urlopen(url, timeout=timeout)
+
+
+def _download(model: ModelFile, out: BinaryIO, timeout: float) -> None:
+    """Download a model file, and check its size and checksum."""
+    digest = hashlib.sha256()
+    size = 0
+    try:
+        with _urlopen(model.url, timeout) as response:
+            while chunk := response.read(1 << 16):
+                size += len(chunk)
+                if size > model.size:
+                    break
+                digest.update(chunk)
+                out.write(chunk)
+    except OSError as e:  # including URLError, HTTPError and timeouts
+        raise MissingDependencyError(
+            f"Could not download the page orientation model from {model.url}: {e}"
+        ) from e
+    if size != model.size or digest.hexdigest() != model.sha256:
+        raise MissingDependencyError(
+            f"The page orientation model downloaded from {model.url} does not "
+            "match its expected size and checksum."
+        )
+
+
+def download_orientation_model(timeout: float = DOWNLOAD_TIMEOUT) -> Path:
+    """Return the orientation model's path, downloading it if necessary.
+
+    The download is checked against the model's size and SHA-256 checksum,
+    and stored under a temporary name until complete, so that no damaged or
+    partial file is ever found under the model's name.
+
+    Raises:
+        MissingDependencyError: The model could not be downloaded or stored.
+    """
+    found = find_orientation_model()
+    if found is not None:
+        return found
+    model = ORIENTATION_MODEL
+    dirs = orientation_model_dirs()
+    for directory in dirs:
+        try:
+            directory.mkdir(parents=True, exist_ok=True)
+            fd, temp_name = tempfile.mkstemp(
+                prefix=f'.{model.filename}.', suffix='.part', dir=directory
+            )
+        except OSError:
+            continue  # not writable; try the next directory
+        temp = Path(temp_name)
+        try:
+            with os.fdopen(fd, 'wb') as out:
+                _download(model, out, timeout)
+            # Temporary files are private; the model is not
+            temp.chmod(0o644)
+            target = directory / model.filename
+            temp.replace(target)
+        finally:
+            temp.unlink(missing_ok=True)
+        log.info(f"Downloaded the page orientation model to {target}")
+        return target
+    raise MissingDependencyError(
+        "Could not store the page orientation model in any of: "
+        + ', '.join(str(d) for d in dirs)
+    )
+
+
+#: The orientation model's path once found or downloaded, False if it could
+#: not be had, or None if not yet looked for. Shared by all threads.
+_orientation_model_path_state: Path | bool | None = None
+_orientation_model_lock = threading.Lock()
+
+
+def _orientation_model_path() -> Path | None:
+    """Find or download the orientation model, once per process."""
+    global _orientation_model_path_state
+    with _orientation_model_lock:
+        if _orientation_model_path_state is None:
+            try:
+                _orientation_model_path_state = download_orientation_model()
+            except MissingDependencyError as e:
+                log.warning(
+                    f"{e} Judging page orientation by recognizing text instead, "
+                    "which is slower."
+                )
+                _orientation_model_path_state = False
+        state = _orientation_model_path_state
+    return state if isinstance(state, Path) else None
+
+
+def _orientation_model() -> DocOrientationModel | None:
+    """Return the current thread's orientation model, or None if unavailable."""
+    model = getattr(_thread_engines, 'orientation_model', None)
+    if model is None:
+        path = _orientation_model_path()
+        if path is None:
+            return None
+        model = _thread_engines.orientation_model = DocOrientationModel(path)
+    return model
+
+
+# --------------------------------------------------------------------------
 # RapidOCR engine
 
 
@@ -1334,6 +1757,29 @@ def _mean_rec_score(engine: Any, crops: list[Any]) -> float:
     return float(np.mean(scores)) if len(scores) else 0.0
 
 
+def _orientation_by_recognition(
+    engine: Any, image: Image.Image, quads: Any
+) -> OrientationConfidence:
+    """Judge orientation by recognizing the longest lines both ways up."""
+    import numpy as np
+
+    selected = select_orientation_lines(quads)
+    if selected is None:
+        return OrientationConfidence(angle=0, confidence=0.0)
+    array = np.asarray(image.convert('RGB'))[:, :, ::-1]  # RapidOCR wants BGR
+    crops = [
+        orientation_crops(array, quads[i], selected.vertical) for i in selected.indices
+    ]
+    crops = [c for c in crops if c.upright.size]
+    if len(crops) < ORIENTATION_MIN_LINES:
+        return OrientationConfidence(angle=0, confidence=0.0)
+    upright = _mean_rec_score(engine, [c.upright for c in crops])
+    turned = _mean_rec_score(engine, [c.turned for c in crops])
+    return orientation_from_scores(
+        selected.vertical, upright, turned, selected.axis_share
+    )
+
+
 class RapidOcrEngine(OcrEngine):
     """Implements OCR with RapidOCR."""
 
@@ -1359,27 +1805,23 @@ class RapidOcrEngine(OcrEngine):
 
     @staticmethod
     def get_orientation(input_file: Path, options: OcrOptions) -> OrientationConfidence:
-        import numpy as np
-
         image = _load_image(input_file).image
         engine = _engine_for(options)
         quads = _boxes(_run(engine, image, rec=False))
-        selected = select_orientation_lines(quads)
-        if selected is None:
+        votes = axis_votes(quads, image.size)
+        if page_axis(votes) is PageAxis.UNCLEAR:
+            log.debug(f"Orientation: {votes}; too few lines, or lines both ways")
             return OrientationConfidence(angle=0, confidence=0.0)
-        array = np.asarray(image.convert('RGB'))[:, :, ::-1]  # RapidOCR wants BGR
-        crops = [
-            orientation_crops(array, quads[i], selected.vertical)
-            for i in selected.indices
-        ]
-        crops = [c for c in crops if c.upright.size]
-        if len(crops) < ORIENTATION_MIN_LINES:
-            return OrientationConfidence(angle=0, confidence=0.0)
-        upright = _mean_rec_score(engine, [c.upright for c in crops])
-        turned = _mean_rec_score(engine, [c.turned for c in crops])
-        return orientation_from_scores(
-            selected.vertical, upright, turned, selected.axis_share
-        )
+        model = _orientation_model()
+        if model is None:
+            return _orientation_by_recognition(engine, image, quads)
+        direction = model(image)
+        recognition = None
+        if needs_recognition(votes, direction):
+            recognition = _orientation_by_recognition(engine, image, quads)
+        result = combine_orientation(votes, direction, recognition)
+        log.debug(f"Orientation: {votes}, {direction}, {recognition} -> {result}")
+        return result
 
     @staticmethod
     def get_deskew(input_file: Path, options: OcrOptions) -> float:

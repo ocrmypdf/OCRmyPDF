@@ -13,6 +13,7 @@ import importlib.util
 import re
 import shutil
 import subprocess
+import sys
 import threading
 from math import atan2, cos, degrees, radians, sin
 from pathlib import Path
@@ -1175,3 +1176,406 @@ class TestCyrillic:
         )
         assert result.angle == (360 - turn) % 360
         assert result.confidence >= 14
+
+
+# --------------------------------------------------------------------------
+# Page orientation model
+
+
+def _direction(angle, probability):
+    return rapidocr_ocr.ModelOrientation(angle=angle, probability=probability)
+
+
+def _votes(along, sideways):
+    return rapidocr_ocr.AxisVotes(along=along, sideways=sideways)
+
+
+class TestAxisVotes:
+    def test_length_weighted_and_normalised(self):
+        # 20 horizontal lines 1700 px long on a page 2200 px high
+        quads = TestOrientation.page(False, 20)
+        votes = rapidocr_ocr.axis_votes(quads, (2550, 3300))
+        assert votes.along == pytest.approx(20 * 1700 / 3300)
+        assert votes.sideways == 0
+
+    def test_vertical(self):
+        votes = rapidocr_ocr.axis_votes(TestOrientation.page(True, 5), (3300, 2550))
+        assert votes.along == 0
+        assert votes.sideways == pytest.approx(5 * 1700 / 3300)
+
+    def test_square_boxes_do_not_vote(self):
+        votes = rapidocr_ocr.axis_votes([rect(0, 0, 100, 90)], (1000, 1000))
+        assert votes == _votes(0, 0)
+
+    def test_no_boxes(self):
+        assert rapidocr_ocr.axis_votes(None, (100, 100)) == _votes(0, 0)
+
+    @pytest.mark.parametrize(
+        'along, sideways, axis',
+        [
+            (10, 0, 'along'),
+            (0, 10, 'sideways'),
+            (10, 4, 'along'),
+            (4, 10, 'sideways'),
+            (6, 4, 'unclear'),  # mixed
+            (0.3, 0, 'unclear'),  # too little text
+            (0, 0, 'unclear'),
+        ],
+    )
+    def test_page_axis(self, along, sideways, axis):
+        assert rapidocr_ocr.page_axis(_votes(along, sideways)).value == axis
+
+
+class TestCombineOrientation:
+    """The model never decides alone; the line boxes must agree."""
+
+    combine = staticmethod(rapidocr_ocr.combine_orientation)
+
+    @pytest.mark.parametrize('angle', [90, 270])
+    def test_sideways_page_turned_as_the_model_says(self, angle):
+        result = self.combine(_votes(0.5, 12), _direction(angle, 0.95))
+        assert result.angle == angle
+        assert result.confidence > 20
+
+    @pytest.mark.parametrize('angle', [0, 180])
+    def test_sideways_page_model_disagrees(self, angle):
+        result = self.combine(_votes(0.5, 12), _direction(angle, 0.95))
+        assert result.confidence == 0
+        assert result.angle == 0
+
+    def test_sideways_page_model_unsure(self):
+        result = self.combine(_votes(0, 12), _direction(90, 0.4))
+        assert result.confidence == 0
+
+    def test_upright_page(self):
+        result = self.combine(_votes(12, 0), _direction(0, 0.95))
+        assert result.angle == 0
+
+    def test_upright_page_model_unsure(self):
+        result = self.combine(_votes(12, 0), _direction(180, 0.3))
+        assert result == (0, 0.0)
+
+    @pytest.mark.parametrize('angle', [90, 270])
+    def test_upright_page_model_says_sideways(self, angle):
+        # Charts and maps that are upright, but which the model would turn
+        assert self.combine(_votes(12, 0.4), _direction(angle, 0.95)) == (0, 0.0)
+
+    def test_upside_down_needs_recognition(self):
+        assert rapidocr_ocr.needs_recognition(_votes(12, 0), _direction(180, 0.9))
+        assert not rapidocr_ocr.needs_recognition(_votes(12, 0), _direction(0, 0.9))
+        assert not rapidocr_ocr.needs_recognition(_votes(0, 12), _direction(90, 0.9))
+        assert not rapidocr_ocr.needs_recognition(_votes(12, 0), _direction(180, 0.4))
+        # Without recognition, an upside down reading is not acted on
+        assert self.combine(_votes(12, 0), _direction(180, 0.9)) == (0, 0.0)
+
+    def test_upside_down_when_recognition_agrees(self):
+        recognition = orientation_from_scores(False, 0.55, 0.9)
+        result = self.combine(_votes(12, 0), _direction(180, 0.9), recognition)
+        assert result.angle == 180
+        assert result.confidence > 20
+
+    def test_upside_down_when_recognition_disagrees(self):
+        recognition = orientation_from_scores(False, 0.9, 0.55)
+        result = self.combine(_votes(12, 0), _direction(180, 0.9), recognition)
+        assert result == (0, 0.0)
+
+    def test_weak_sideways_reading_needs_recognition(self):
+        # Dense tables of small figures leave the model less sure
+        assert rapidocr_ocr.needs_recognition(_votes(0, 12), _direction(270, 0.55))
+        assert not rapidocr_ocr.needs_recognition(_votes(0, 12), _direction(270, 0.9))
+        assert not rapidocr_ocr.needs_recognition(_votes(0, 12), _direction(0, 0.55))
+        # A weak upright reading changes nothing, so needs no confirmation
+        assert not rapidocr_ocr.needs_recognition(_votes(12, 0), _direction(0, 0.55))
+
+    def test_weak_sideways_reading_confirmed(self):
+        weak = _direction(270, 0.55)
+        assert self.combine(_votes(0, 12), weak) == (0, 0.0)  # unconfirmed
+        agrees = orientation_from_scores(True, 0.55, 0.9)  # 270
+        confirmed = self.combine(_votes(0, 12), weak, agrees)
+        assert confirmed.angle == 270
+        assert confirmed.confidence > 20
+        disagrees = orientation_from_scores(True, 0.9, 0.55)  # 90
+        assert self.combine(_votes(0, 12), weak, disagrees) == (0, 0.0)
+
+    def test_unclear_axis(self):
+        assert self.combine(_votes(6, 5), _direction(90, 0.99)) == (0, 0.0)
+        assert self.combine(_votes(0, 0), _direction(0, 0.25)) == (0, 0.0)
+
+    def test_confidence_on_tesseract_scale(self):
+        threshold = 14  # --rotate-pages-threshold default
+        strong = self.combine(_votes(0, 12), _direction(90, 0.93))
+        weak_model = self.combine(_votes(0, 12), _direction(90, 0.52))
+        weak_axis = self.combine(_votes(4, 9), _direction(90, 0.93))
+        assert strong.confidence > threshold + 8
+        assert weak_model.confidence < threshold
+        assert weak_axis.confidence < strong.confidence
+        assert strong.confidence <= 30
+
+
+class TestOrientationPreprocessing:
+    @pytest.mark.parametrize('size', [(2550, 3300), (3300, 2550), (300, 200)])
+    @pytest.mark.parametrize('mode', ['L', 'RGB'])
+    def test_shape_and_dtype(self, size, mode):
+        import numpy as np
+        from PIL import Image
+
+        batch = rapidocr_ocr.orientation_model_input(Image.new(mode, size, 255))
+        assert batch.shape == (1, 3, 224, 224)
+        assert batch.dtype == np.float32
+        # White, normalised with ImageNet's mean and deviation
+        assert batch[0, 0].max() == pytest.approx((1 - 0.485) / 0.229, rel=1e-4)
+
+    def test_centre_crop(self):
+        from PIL import Image, ImageDraw
+
+        # A black square in the middle survives the crop; the margins do not
+        image = Image.new('L', (1000, 2000), 255)
+        ImageDraw.Draw(image).rectangle((0, 0, 999, 299), fill=0)
+        ImageDraw.Draw(image).rectangle((400, 900, 600, 1100), fill=0)
+        batch = rapidocr_ocr.orientation_model_input(image)
+        channel = batch[0, 0]
+        assert channel[0].min() > 2  # top margin cropped away: white
+        assert channel[112, 112] < -2  # black centre
+
+
+class _FakeSession:
+    def __init__(self, output):
+        self.output = output
+        self.fed = None
+
+    def get_inputs(self):
+        return [type('Input', (), {'name': 'x'})()]
+
+    def run(self, output_names, feed):
+        self.fed = feed
+        import numpy as np
+
+        return [np.array([self.output], dtype=np.float32)]
+
+
+class TestDocOrientationModel:
+    @pytest.mark.parametrize(
+        'output, angle',
+        [
+            ([0.9, 0.05, 0.03, 0.02], 0),
+            ([0.05, 0.9, 0.03, 0.02], 90),
+            ([0.03, 0.05, 0.9, 0.02], 180),
+            ([0.02, 0.05, 0.03, 0.9], 270),
+        ],
+    )
+    def test_classes(self, output, angle):
+        from PIL import Image
+
+        session = _FakeSession(output)
+        model = rapidocr_ocr.DocOrientationModel(session=session)
+        result = model(Image.new('L', (400, 600), 255))
+        assert result.angle == angle
+        assert result.probability == pytest.approx(0.9)
+        assert session.fed['x'].shape == (1, 3, 224, 224)
+
+
+def _model_bytes():
+    return b'pretend this is an ONNX model'
+
+
+@pytest.fixture
+def model_file(monkeypatch, tmp_path):
+    """Point the orientation model's download at fake content."""
+    import hashlib
+
+    content = _model_bytes()
+    monkeypatch.setattr(
+        rapidocr_ocr,
+        'ORIENTATION_MODEL',
+        rapidocr_ocr.ModelFile(
+            filename='doc_ori.onnx',
+            url='https://example.invalid/inference.onnx',
+            size=len(content),
+            sha256=hashlib.sha256(content).hexdigest(),
+        ),
+    )
+    first, second = tmp_path / 'rapidocr', tmp_path / 'cache'
+    monkeypatch.setattr(rapidocr_ocr, 'orientation_model_dirs', lambda: [first, second])
+    return first, second
+
+
+class _Response:
+    def __init__(self, content):
+        import io
+
+        self.stream = io.BytesIO(content)
+
+    def read(self, n=-1):
+        return self.stream.read(n)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+
+class TestOrientationModelDownload:
+    def test_download_verified_and_stored(self, model_file, monkeypatch):
+        calls = []
+
+        def urlopen(url, timeout):
+            calls.append((url, timeout))
+            return _Response(_model_bytes())
+
+        monkeypatch.setattr(rapidocr_ocr, '_urlopen', urlopen)
+        path = rapidocr_ocr.download_orientation_model()
+        assert path == model_file[0] / 'doc_ori.onnx'
+        assert path.read_bytes() == _model_bytes()
+        assert calls[0][1] > 0  # a timeout is set
+        # Found without downloading again
+        assert rapidocr_ocr.download_orientation_model() == path
+        assert len(calls) == 1
+        assert list(model_file[0].iterdir()) == [path]  # no temporary files
+
+    @pytest.mark.skipif(sys.platform == 'win32', reason="POSIX permissions")
+    def test_readable_by_other_users(self, model_file, monkeypatch):
+        # For example, a model fetched by root while building a container
+        # image, and used by an unprivileged user
+        monkeypatch.setattr(
+            rapidocr_ocr, '_urlopen', lambda url, timeout: _Response(_model_bytes())
+        )
+        path = rapidocr_ocr.download_orientation_model()
+        assert path.stat().st_mode & 0o044 == 0o044
+
+    def test_unwritable_directory_uses_cache(self, model_file, monkeypatch):
+        first, second = model_file
+        first.write_text('a file where a directory should be')
+        monkeypatch.setattr(
+            rapidocr_ocr, '_urlopen', lambda url, timeout: _Response(_model_bytes())
+        )
+        assert rapidocr_ocr.download_orientation_model() == second / 'doc_ori.onnx'
+
+    def test_checksum_mismatch(self, model_file, monkeypatch):
+        monkeypatch.setattr(
+            rapidocr_ocr,
+            '_urlopen',
+            lambda url, timeout: _Response(b'X' * len(_model_bytes())),
+        )
+        with pytest.raises(MissingDependencyError, match="checksum"):
+            rapidocr_ocr.download_orientation_model()
+        assert not any(model_file[0].iterdir())
+
+    @pytest.mark.parametrize(
+        'error',
+        [
+            OSError('Network is unreachable'),
+            TimeoutError('timed out'),
+        ],
+    )
+    def test_network_errors(self, model_file, monkeypatch, error):
+        import urllib.error
+
+        def urlopen(url, timeout):
+            raise error
+
+        monkeypatch.setattr(rapidocr_ocr, '_urlopen', urlopen)
+        with pytest.raises(MissingDependencyError, match="orientation model"):
+            rapidocr_ocr.download_orientation_model()
+
+        def http_error(url, timeout):
+            raise urllib.error.HTTPError(url, 404, 'Not Found', {}, None)  # type: ignore[arg-type]
+
+        monkeypatch.setattr(rapidocr_ocr, '_urlopen', http_error)
+        with pytest.raises(MissingDependencyError, match="404"):
+            rapidocr_ocr.download_orientation_model()
+
+    def test_damaged_file_replaced(self, model_file, monkeypatch):
+        first, _ = model_file
+        first.mkdir()
+        (first / 'doc_ori.onnx').write_bytes(b'truncated')
+        monkeypatch.setattr(
+            rapidocr_ocr, '_urlopen', lambda url, timeout: _Response(_model_bytes())
+        )
+        path = rapidocr_ocr.download_orientation_model()
+        assert path.read_bytes() == _model_bytes()
+
+
+class TestOrientationModelFallback:
+    """Without the model, orientation is judged by recognition alone."""
+
+    def test_warns_once_and_falls_back(self, model_file, monkeypatch, caplog):
+        def offline(url, timeout):
+            raise OSError('Network is unreachable')
+
+        monkeypatch.setattr(rapidocr_ocr, '_urlopen', offline)
+        monkeypatch.setattr(rapidocr_ocr, '_orientation_model_path_state', None)
+        monkeypatch.setattr(rapidocr_ocr, '_thread_engines', threading.local())
+        with caplog.at_level('WARNING'):
+            assert rapidocr_ocr._orientation_model() is None
+            assert rapidocr_ocr._orientation_model() is None
+        warnings = [r for r in caplog.records if 'orientation model' in r.message]
+        assert len(warnings) == 1
+
+    def test_get_orientation_uses_recognition(self, monkeypatch, tmp_path):
+        from PIL import Image
+
+        image = tmp_path / 'page.png'
+        Image.new('L', (2550, 3300), 255).save(image, dpi=(300, 300))
+        quads = TestOrientation.page(False, 20)
+        result = type('Result', (), {'boxes': quads})()
+        monkeypatch.setattr(
+            rapidocr_ocr, '_engine_for', lambda options: lambda img, **kw: result
+        )
+        monkeypatch.setattr(rapidocr_ocr, '_orientation_model', lambda: None)
+        scores = iter([0.55, 0.9])  # upright, then turned over
+        monkeypatch.setattr(
+            rapidocr_ocr, '_mean_rec_score', lambda engine, crops: next(scores)
+        )
+        found = rapidocr_ocr.RapidOcrEngine.get_orientation(image, _options())
+        assert found.angle == 180
+
+    def test_model_skips_recognition(self, monkeypatch, tmp_path):
+        from PIL import Image
+
+        image = tmp_path / 'page.png'
+        Image.new('L', (3300, 2550), 255).save(image, dpi=(300, 300))
+        quads = TestOrientation.page(True, 20)
+        result = type('Result', (), {'boxes': quads})()
+        monkeypatch.setattr(
+            rapidocr_ocr, '_engine_for', lambda options: lambda img, **kw: result
+        )
+        monkeypatch.setattr(
+            rapidocr_ocr, '_orientation_model', lambda: lambda img: _direction(270, 0.9)
+        )
+
+        def no_recognition(engine, crops):
+            raise AssertionError("recognition should not run")
+
+        monkeypatch.setattr(rapidocr_ocr, '_mean_rec_score', no_recognition)
+        found = rapidocr_ocr.RapidOcrEngine.get_orientation(image, _options())
+        assert found.angle == 270
+        assert found.confidence >= 14
+
+
+def _orientation_model_or_skip():
+    path = rapidocr_ocr.find_orientation_model()
+    if path is None:
+        try:
+            path = rapidocr_ocr.download_orientation_model(timeout=20)
+        except MissingDependencyError as e:
+            pytest.skip(f"orientation model unavailable: {e}")
+    return rapidocr_ocr.DocOrientationModel(path)
+
+
+@needs_rapidocr
+class TestDocOrientationModelLive:
+    @pytest.mark.parametrize('turn', [0, 90, 180, 270])
+    def test_class_mapping(self, resources, tmp_path, turn):
+        """The model's classes are Tesseract OSD's "Orientation in degrees"."""
+        from PIL import Image
+
+        model = _orientation_model_or_skip()
+        # Page 1 of cardinal.pdf is upright
+        png = _rasterize(resources / 'cardinal.pdf', tmp_path / 'page.png')
+        with Image.open(png) as page:
+            # PIL turns counterclockwise, so the content is turned clockwise
+            # by 360 - turn
+            result = model(page.rotate(turn, expand=True))
+        assert result.angle == (360 - turn) % 360
+        assert result.probability > 0.5
