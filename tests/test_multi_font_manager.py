@@ -683,3 +683,89 @@ def test_mixed_script_word_warning_does_not_advise_installing_fonts(caplog):
     assert 'mixing scripts' in msg
     assert 'will not help' in msg
     assert 'U+' not in msg  # no codepoints to blame; nothing to install
+
+
+# --- Words split across fonts by coverage (#1783) ---
+
+
+def _hebrew_and_latin_fonts() -> dict[str, _FakeFontManager]:
+    # Like the real Noto faces: the Hebrew font has only '-' from ASCII, and
+    # the Latin font has no Hebrew.
+    return {
+        'NotoSansHebrew-Regular': _FakeFontManager('Hebrew.ttf', 'אבגדהוש- '),
+        'NotoSans-Regular': _FakeFontManager('NotoSans.ttf', '0123456789.,-:" abc'),
+    }
+
+
+def _runs(manager, text, language):
+    return [
+        (segment, font.font_path.name)
+        for segment, font in manager.select_fonts_for_word(text, language)
+    ]
+
+
+def test_word_one_font_covers_is_a_single_run():
+    manager = MultiFontManager(
+        font_provider=_FakeFontProvider(_hebrew_and_latin_fonts())
+    )
+    assert _runs(manager, 'שבא', 'heb') == [('שבא', 'Hebrew.ttf')]
+
+
+def test_mixed_script_word_is_split_into_font_runs(caplog):
+    """Hebrew with digits uses both fonts rather than glyphless Occulta."""
+    manager = MultiFontManager(
+        font_provider=_FakeFontProvider(_hebrew_and_latin_fonts())
+    )
+    with caplog.at_level(logging.WARNING):
+        runs = _runs(manager, 'ב-3.5', 'heb')
+    assert runs == [('ב-', 'Hebrew.ttf'), ('3.5', 'NotoSans.ttf')]
+    assert caplog.text == ''
+
+
+def test_font_runs_extend_the_current_font_over_shared_characters():
+    """Punctuation both fonts cover stays with the run it follows."""
+    manager = MultiFontManager(
+        font_provider=_FakeFontProvider(_hebrew_and_latin_fonts())
+    )
+    assert _runs(manager, '3-ב', 'heb') == [('3-', 'NotoSans.ttf'), ('ב', 'Hebrew.ttf')]
+    assert _runs(manager, '"שבא"', 'heb') == [
+        ('"', 'NotoSans.ttf'),
+        ('שבא', 'Hebrew.ttf'),
+        ('"', 'NotoSans.ttf'),
+    ]
+
+
+def test_font_runs_skip_whole_word_search_when_known_fonts_cover():
+    """Known fonts covering the word piecewise avoid the system-wide scan."""
+    provider = _FakeProviderWithSearch(_hebrew_and_latin_fonts(), {})
+    manager = MultiFontManager(font_provider=provider)
+    manager.select_fonts_for_word('ב-3.5', 'heb')
+    assert provider.search_calls == []
+
+
+def test_font_runs_use_coverage_search_for_unknown_scripts():
+    fonts = {'NotoSans-Regular': _FakeFontManager('NotoSans.ttf', 'ab')}
+    searchable = {'NotoSansCherokee-Regular': _FakeFontManager('Cherokee.ttf', 'Ꮳ')}
+    manager = MultiFontManager(font_provider=_FakeProviderWithSearch(fonts, searchable))
+    assert _runs(manager, 'aᏣb', None) == [
+        ('a', 'NotoSans.ttf'),
+        ('Ꮳ', 'Cherokee.ttf'),
+        ('b', 'NotoSans.ttf'),
+    ]
+
+
+def test_font_runs_prefer_one_font_found_by_search_for_the_whole_word():
+    fonts = {'NotoSans-Regular': _FakeFontManager('NotoSans.ttf', 'a')}
+    searchable = {'NotoSansCherokee-Regular': _FakeFontManager('Cherokee.ttf', 'aᏣ')}
+    manager = MultiFontManager(font_provider=_FakeProviderWithSearch(fonts, searchable))
+    assert _runs(manager, 'aᏣ', None) == [('aᏣ', 'Cherokee.ttf')]
+
+
+def test_font_runs_leave_only_uncoverable_characters_glyphless(caplog):
+    manager = MultiFontManager(
+        font_provider=_FakeFontProvider(_hebrew_and_latin_fonts())
+    )
+    with caplog.at_level(logging.WARNING):
+        runs = _runs(manager, 'ש3Ꮳ', 'heb')
+    assert runs == [('ש', 'Hebrew.ttf'), ('3', 'NotoSans.ttf'), ('Ꮳ', 'Occulta.ttf')]
+    assert 'U+13E3' in caplog.text
