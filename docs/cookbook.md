@@ -366,8 +366,9 @@ Things to know:
   24 MB wheel, 63 MB installed, and RapidOCR's dependency
   `opencv-python-headless` takes about 150 MB installed. All told, the extra
   adds about 340 MB to an installation. Each additional language model is
-  7.5 to 16 MB, stored in `site-packages/rapidocr/models`. The Ubuntu
-  {ref}`Docker image <docker-rapidocr>` includes RapidOCR.
+  7.5 to 16 MB, stored in `site-packages/rapidocr/models`. The Docker
+  images do not include RapidOCR, but you can
+  {ref}`build one that does <docker-rapidocr>`.
 - **Image size.** RapidOCR downscales pages whose longer side exceeds
   `--rapidocr-max-side-len` pixels (default 2000, about 180 dpi for a Letter
   page scanned at 300 dpi) before finding text. Raising it may help with very

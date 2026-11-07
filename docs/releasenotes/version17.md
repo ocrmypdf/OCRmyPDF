@@ -22,8 +22,9 @@
 - `python -m ocrmypdf.builtin_plugins.rapidocr_ocr download [LANGUAGE...]`
   downloads RapidOCR's page orientation model and any additional language
   models in advance, for offline use or container images.
-- The Ubuntu Docker image includes RapidOCR and its page orientation model.
-  The Alpine image does not, because ONNX Runtime does not support musl.
+- The Docker images do not include RapidOCR, to keep them small.
+  `.docker/Dockerfile.rapidocr` builds an image with RapidOCR, its page
+  orientation model and any additional languages on top of the Ubuntu image.
 
 **Fixes**
 
