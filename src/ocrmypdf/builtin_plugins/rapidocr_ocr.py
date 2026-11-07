@@ -1568,7 +1568,8 @@ def _orientation_model_path() -> Path | None:
             except MissingDependencyError as e:
                 log.warning(
                     f"{e} Judging page orientation by recognizing text instead, "
-                    "which is slower."
+                    f"which is slower. To download the model in advance, run: "
+                    f"{DOWNLOAD_COMMAND}"
                 )
                 _orientation_model_path_state = False
         state = _orientation_model_path_state
@@ -1589,6 +1590,8 @@ def _orientation_model() -> DocOrientationModel | None:
 # --------------------------------------------------------------------------
 # RapidOCR engine
 
+
+DOWNLOAD_COMMAND = 'python -m ocrmypdf.builtin_plugins.rapidocr_ocr download'
 
 INSTALL_HINT = (
     "Install them with: uv tool install 'ocrmypdf[rapidocr]' "
@@ -1696,7 +1699,8 @@ def _create_engine(config: _EngineConfig) -> Any:
             f"RapidOCR could not load its {rec.ocr_version} {rec.lang_type} "
             f"recognition model: {e}. Models other than the bundled one "
             f"download on first use into {rapidocr_models_dir()}, which needs "
-            "network access and a writable directory."
+            "network access and a writable directory. To download them in "
+            f"advance, run: {DOWNLOAD_COMMAND} LANGUAGE"
         ) from e
     return engine
 
@@ -1917,3 +1921,67 @@ def get_ocr_engine(options):
     if options is not None and _selected(options):
         return RapidOcrEngine()
     return None
+
+
+# --------------------------------------------------------------------------
+# Downloading models in advance
+
+
+def download_models(languages: Sequence[str]) -> None:
+    """Download the orientation model, and the models for the given languages.
+
+    Languages read by the bundled recognition model need nothing more.
+    """
+    print(f"Page orientation model: {download_orientation_model()}")
+    for lang in languages:
+        rec = rec_model_for_languages([lang])
+        _create_engine(_EngineConfig(DEFAULT_MAX_SIDE_LEN, rec))
+        print(
+            f"{lang}: {rec.ocr_version} {rec.lang_type} recognition model "
+            f"in {rapidocr_models_dir()}"
+        )
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    """Download RapidOCR models in advance."""
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        prog=DOWNLOAD_COMMAND.removesuffix(' download'),
+        description=(
+            "Download models for OCRmyPDF's RapidOCR engine in advance, instead "
+            "of on first use, for example while building a container image."
+        ),
+    )
+    commands = parser.add_subparsers(dest='command', required=True)
+    download = commands.add_parser(
+        'download',
+        help="Download the page orientation model and recognition models",
+        description=(
+            "Download the page orientation model, and the recognition models "
+            "for the given languages, into RapidOCR's model directory."
+        ),
+    )
+    download.add_argument(
+        'languages',
+        nargs='*',
+        metavar='LANGUAGE',
+        help=(
+            "Languages to download recognition models for, as given to -l, "
+            "such as kor or rus+ukr. Languages read by the bundled model, "
+            "including English, Chinese, Japanese and most Latin-script "
+            "languages, need no download."
+        ),
+    )
+    args = parser.parse_args(argv)
+    languages = [lang for arg in args.languages for lang in arg.split('+') if lang]
+    try:
+        download_models(languages)
+    except (BadArgsError, MissingDependencyError) as e:
+        print(e, file=sys.stderr)
+        return e.exit_code
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

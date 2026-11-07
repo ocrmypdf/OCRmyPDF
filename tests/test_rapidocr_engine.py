@@ -1579,3 +1579,47 @@ class TestDocOrientationModelLive:
             result = model(page.rotate(turn, expand=True))
         assert result.angle == (360 - turn) % 360
         assert result.probability > 0.5
+
+
+class TestDownloadCommand:
+    """Models can be fetched in advance, e.g. while building a container."""
+
+    @pytest.fixture
+    def fetched(self, monkeypatch, tmp_path):
+        configs = []
+        monkeypatch.setattr(
+            rapidocr_ocr, 'download_orientation_model', lambda: tmp_path / 'm.onnx'
+        )
+        monkeypatch.setattr(rapidocr_ocr, '_create_engine', configs.append)
+        return configs
+
+    def test_orientation_model_only(self, fetched, capsys):
+        assert rapidocr_ocr.main(['download']) == 0
+        assert fetched == []
+        assert 'm.onnx' in capsys.readouterr().out
+
+    def test_languages(self, fetched):
+        assert rapidocr_ocr.main(['download', 'kor', 'rus+ukr']) == 0
+        assert [c.rec.lang_type for c in fetched] == ['korean', 'eslav', 'eslav']
+
+    def test_bad_language(self, fetched, capsys):
+        assert rapidocr_ocr.main(['download', 'xyz']) != 0
+        assert 'xyz' in capsys.readouterr().err
+
+    def test_failed_download(self, monkeypatch, capsys):
+        def offline():
+            raise MissingDependencyError("Could not download the model")
+
+        monkeypatch.setattr(rapidocr_ocr, 'download_orientation_model', offline)
+        assert rapidocr_ocr.main(['download']) == MissingDependencyError.exit_code
+        assert 'Could not download' in capsys.readouterr().err
+
+    def test_runs_as_module(self):
+        result = subprocess.run(
+            [sys.executable, '-m', 'ocrmypdf.builtin_plugins.rapidocr_ocr', '--help'],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert result.returncode == 0
+        assert 'download' in result.stdout
