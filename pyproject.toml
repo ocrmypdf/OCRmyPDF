@@ -120,6 +120,8 @@ module = [
   'pypdfium2',
   'uharfbuzz',
   'pillow_heif',
+  'onnxruntime',
+  'onnxruntime.*',
 ]
 ignore_missing_imports = true
 

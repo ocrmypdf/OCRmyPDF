@@ -5,8 +5,8 @@
 
 RapidOCR runs PaddleOCR's PP-OCR detection, line orientation and recognition
 models on ONNX Runtime. It is an optional dependency, installed with
-``pip install ocrmypdf[rapidocr]``, and is imported only when this engine is
-selected.
+``uv tool install 'ocrmypdf[rapidocr]'``, and is imported only when this
+engine is selected.
 
 Usage:
     ocrmypdf --ocr-engine rapidocr input.pdf output.pdf
@@ -1167,15 +1167,56 @@ def orientation_from_scores(
 # RapidOCR engine
 
 
+INSTALL_HINT = (
+    "Install them with: uv tool install 'ocrmypdf[rapidocr]' "
+    "(or, in a virtual environment, uv pip install 'ocrmypdf[rapidocr]' or "
+    "pip install 'ocrmypdf[rapidocr]')"
+)
+
+
 def _import_rapidocr():
     try:
+        import onnxruntime  # noqa: F401
         import rapidocr
     except ImportError as e:
         raise MissingDependencyError(
             "The RapidOCR engine requires the rapidocr and onnxruntime packages. "
-            "Install them with: pip install ocrmypdf[rapidocr]"
+            + INSTALL_HINT
         ) from e
     return rapidocr
+
+
+def _model_load_errors() -> tuple[type[BaseException], ...]:
+    """Exceptions that mean a model could not be downloaded or loaded.
+
+    RapidOCR raises its own exception for HTTP errors, OSError for network
+    and file system errors, and ONNX Runtime raises its own exceptions,
+    which derive only from Exception, for damaged model files.
+    """
+    errors: list[type[BaseException]] = [OSError]
+    try:
+        from rapidocr.utils.download_file import DownloadFileException
+
+        errors.append(DownloadFileException)
+    except ImportError:
+        pass
+    try:
+        from onnxruntime.capi import onnxruntime_pybind11_state as ort_state
+
+        errors += [ort_state.Fail, ort_state.InvalidProtobuf, ort_state.NoSuchFile]
+    except ImportError:
+        pass
+    return tuple(errors)
+
+
+def rapidocr_models_dir() -> Path | None:
+    """Where RapidOCR keeps its models, or None if it is not installed."""
+    import importlib.util
+
+    spec = importlib.util.find_spec('rapidocr')
+    if spec is None or spec.origin is None:
+        return None
+    return Path(spec.origin).parent / 'models'
 
 
 @dataclass(frozen=True, slots=True)
@@ -1220,7 +1261,21 @@ def _get_engine(config: _EngineConfig) -> Any:
 
 def _create_engine(config: _EngineConfig) -> Any:
     rapidocr = _import_rapidocr()
-    return rapidocr.RapidOCR(params=config.rapidocr_params(rapidocr))
+    engine = rapidocr.RapidOCR(params=config.rapidocr_params(rapidocr))
+    # RapidOCR loads its models when first used, downloading any that are not
+    # bundled. Load them now, so that a failed download is reported here.
+    try:
+        engine._load_det_model()
+        engine._load_rec_model()
+    except _model_load_errors() as e:
+        rec = config.rec
+        raise MissingDependencyError(
+            f"RapidOCR could not load its {rec.ocr_version} {rec.lang_type} "
+            f"recognition model: {e}. Models other than the bundled one "
+            f"download on first use into {rapidocr_models_dir()}, which needs "
+            "network access and a writable directory."
+        ) from e
+    return engine
 
 
 def _engine_for(options: OcrOptions) -> Any:

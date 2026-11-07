@@ -679,8 +679,115 @@ class TestMissingDependency:
             return real_import(name, *args, **kwargs)
 
         monkeypatch.setattr(builtins, '__import__', no_rapidocr)
-        with pytest.raises(MissingDependencyError, match=r"ocrmypdf\[rapidocr\]"):
+        with pytest.raises(MissingDependencyError) as excinfo:
             rapidocr_ocr._import_rapidocr()
+        message = str(excinfo.value)
+        # uv first, with the extra quoted so that shells do not glob it
+        assert "uv tool install 'ocrmypdf[rapidocr]'" in message
+        assert message.index('uv tool install') < message.index('pip install')
+
+    def test_clean_error_without_onnxruntime(self, monkeypatch):
+        import builtins
+
+        real_import = builtins.__import__
+
+        def no_onnxruntime(name, *args, **kwargs):
+            if name == 'onnxruntime' or name.startswith('onnxruntime.'):
+                raise ImportError(name)
+            return real_import(name, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, '__import__', no_onnxruntime)
+        with pytest.raises(MissingDependencyError, match="onnxruntime"):
+            rapidocr_ocr._import_rapidocr()
+
+
+class _FailingModelLoad:
+    """Stands in for rapidocr.RapidOCR when a model cannot be loaded."""
+
+    error: BaseException = OSError('offline')
+
+    def __init__(self, params):
+        self.params = params
+
+    def _load_det_model(self):
+        return None
+
+    def _load_rec_model(self):
+        raise self.error
+
+
+def _fake_module(engine_class):
+    return type(
+        'rapidocr',
+        (),
+        {
+            'RapidOCR': engine_class,
+            'OCRVersion': str,
+            'ModelType': str,
+            'LangRec': str,
+        },
+    )
+
+
+class TestModelDownloadFailure:
+    """A recognition model RapidOCR fails to fetch gives a clean error."""
+
+    @pytest.fixture
+    def failing(self, monkeypatch):
+        monkeypatch.setattr(
+            rapidocr_ocr, '_import_rapidocr', lambda: _fake_module(_FailingModelLoad)
+        )
+        monkeypatch.setattr(rapidocr_ocr, '_thread_engines', threading.local())
+        return _FailingModelLoad
+
+    @pytest.mark.parametrize(
+        'error',
+        [
+            OSError('Network is unreachable'),
+            PermissionError(13, 'Permission denied'),
+        ],
+    )
+    def test_os_errors(self, failing, monkeypatch, error):
+        monkeypatch.setattr(failing, 'error', error)
+        with pytest.raises(MissingDependencyError, match="korean") as excinfo:
+            rapidocr_ocr._get_engine(
+                rapidocr_ocr._EngineConfig(2000, rec_model_for_languages(['kor']))
+            )
+        assert 'download' in str(excinfo.value)
+
+    @needs_rapidocr
+    def test_http_error(self, failing, monkeypatch):
+        from rapidocr.utils.download_file import DownloadFileException
+
+        monkeypatch.setattr(
+            failing, 'error', DownloadFileException('Failed to download x')
+        )
+        with pytest.raises(MissingDependencyError, match="korean"):
+            rapidocr_ocr._get_engine(
+                rapidocr_ocr._EngineConfig(2000, rec_model_for_languages(['kor']))
+            )
+
+    @needs_rapidocr
+    def test_corrupt_model(self, failing, monkeypatch, tmp_path):
+        import onnxruntime
+
+        bad = tmp_path / 'bad.onnx'
+        bad.write_bytes(b'not a model')
+        try:
+            onnxruntime.InferenceSession(str(bad))
+        except Exception as e:  # noqa: BLE001 - whatever onnxruntime raises
+            monkeypatch.setattr(failing, 'error', e)
+        with pytest.raises(MissingDependencyError, match="korean"):
+            rapidocr_ocr._get_engine(
+                rapidocr_ocr._EngineConfig(2000, rec_model_for_languages(['kor']))
+            )
+
+    def test_programming_errors_not_hidden(self, failing, monkeypatch):
+        monkeypatch.setattr(failing, 'error', KeyError('bug'))
+        with pytest.raises(KeyError):
+            rapidocr_ocr._get_engine(
+                rapidocr_ocr._EngineConfig(2000, rec_model_for_languages(['kor']))
+            )
 
 
 class TestCheckOptions:
@@ -904,6 +1011,12 @@ class _FakeRapidOCR:
 
     def __init__(self, params):
         self.created.append(params)
+
+    def _load_det_model(self):
+        return None
+
+    def _load_rec_model(self):
+        return None
 
     def __call__(self, image, **kwargs):
         if self.barrier is not None:
