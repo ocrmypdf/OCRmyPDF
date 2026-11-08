@@ -269,10 +269,13 @@ jobs:
         run: |
           choco install --yes --no-progress tesseract
           choco install --yes --no-progress --ignore-checksums ghostscript --version 9.56.1
-          choco install --yes --no-progress poppler --version=25.11.0
-          # choco unpacks poppler without adding it to PATH, and the runner
-          # already has xpdf's pdftotext, which tests cannot use.
-          $pdftotext = Get-ChildItem C:\ProgramData\chocolatey\lib\poppler\tools -Recurse -Filter pdftotext.exe | Select-Object -First 1
+          # Chocolatey's poppler package holds only source code, and the runner's
+          # own pdftotext is xpdf's, which tests cannot use. Fetch a poppler build.
+          $zip = "$env:RUNNER_TEMP\poppler.zip"
+          Invoke-WebRequest -Uri https://github.com/oschwartz10612/poppler-windows/releases/download/v26.09.0-0/Release-26.09.0-0.zip -OutFile $zip
+          if ((Get-FileHash $zip -Algorithm SHA256).Hash -ne '7a6f256a0ddf7536182246a5733331bf4677cbcc34f4663774947ad34556c8d0') { throw "poppler download checksum mismatch" }
+          Expand-Archive $zip -DestinationPath "$env:RUNNER_TEMP\poppler"
+          $pdftotext = Get-ChildItem "$env:RUNNER_TEMP\poppler" -Recurse -Filter pdftotext.exe | Select-Object -First 1
           if (-not $pdftotext) { throw "poppler's pdftotext.exe not found" }
           $pdftotext.DirectoryName | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
