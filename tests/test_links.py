@@ -351,3 +351,17 @@ def test_discard_structure_tree_clears_annotation_struct_parent(resources):
         annot.StructParent = 1
         assert discard_structure_tree(pdf)
         assert Name.StructParent not in annot
+
+
+def test_discard_structure_tree_tolerates_malformed_annots(resources):
+    from ocrmypdf._graft import discard_structure_tree
+
+    with Pdf.open(resources / 'link.pdf') as pdf:
+        pdf.Root.StructTreeRoot = pdf.make_indirect(
+            Dictionary(Type=Name.StructTreeRoot)
+        )
+        pdf.pages[0].Annots = 42
+        pdf.pages[1].StructParents = 0
+        assert discard_structure_tree(pdf)
+        # A malformed page must not stop the pages after it being cleaned
+        assert Name.StructParents not in pdf.pages[1].obj

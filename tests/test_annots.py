@@ -94,6 +94,18 @@ def test_annot_is_not_a_dictionary(trivial):
     assert len(trivial.pages[0].Annots) == 3
 
 
+@pytest.mark.parametrize(
+    'annots',
+    [42, Name.Junk, Dictionary(A=Dictionary(D=String('Missing')))],
+    ids=['integer', 'name', 'dictionary'],
+)
+def test_annots_is_not_an_array(trivial, annots):
+    """A malformed /Annots that is not an array holds no annotations."""
+    add_named_destinations(trivial)
+    trivial.pages[0].Annots = annots
+    assert remove_broken_goto_annotations(trivial) is False
+
+
 def test_annot_without_action_or_destination(trivial):
     add_named_destinations(trivial)
     trivial.pages[0].Annots = Array(

@@ -974,6 +974,16 @@ class TestAddSimpleFontToUnicode:
             # which Ghostscript 9.56 to 10.04 would drop.
             assert len(add_tounicode(pdf, font)) > 200
 
+    def test_direct_font_dictionary(self, add_tounicode):
+        with pikepdf.new() as pdf:
+            font = _make_simple_truetype_font(
+                pdf, flags=4, encoding=Name.WinAnsiEncoding
+            )
+            # A font stored directly in /Resources /Font, rather than as an
+            # indirect object, is not among pdf.objects.
+            direct_font = pikepdf.Dictionary(dict(font.items()))
+            assert len(add_tounicode(pdf, direct_font)) > 200
+
     def test_malformed_encoding_is_ignored(self, add_tounicode):
         with pikepdf.new() as pdf:
             encoding = pikepdf.Dictionary(

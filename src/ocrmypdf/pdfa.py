@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import base64
 import logging
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from contextlib import suppress
 from importlib.resources import files as package_files
 from pathlib import Path
@@ -144,7 +144,7 @@ def file_claims_pdfa(filename: Path):
 
 def _cid_font_is_embedded(type0_font: Object) -> bool:
     """Return True if a Type0 font's CID descendant carries embedded glyphs."""
-    for descendant in type0_font.get(Name.DescendantFonts, []):
+    for descendant in type0_font.get_list(Name.DescendantFonts, []):
         # A malformed PDF may store a non-dictionary here; `key in descriptor`
         # raises on those, so get_dict reduces anything that is not a
         # dictionary to None before we probe it.
@@ -187,7 +187,7 @@ def find_nonembedded_cid_fonts(pdf: Pdf) -> set[str]:
     return found
 
 
-def _iter_fonts(pdf: Pdf) -> Iterator[Object]:
+def _iter_fonts(pdf: Pdf) -> Iterator[pikepdf.Dictionary]:
     """Yield each font dictionary that the pages of a PDF can use, once.
 
     This covers the fonts of pages, form XObjects, annotation appearance
@@ -195,7 +195,7 @@ def _iter_fonts(pdf: Pdf) -> Iterator[Object]:
     """
     seen = pikepdf.ObjectSet()
 
-    def new_fonts(fonts) -> Iterator[Object]:
+    def new_fonts(fonts) -> Iterator[pikepdf.Dictionary]:
         for font in (fonts or {}).values():
             if isinstance(font, pikepdf.Dictionary) and seen.add(font):
                 yield font
@@ -288,10 +288,10 @@ def _simple_font_unicode_map(font: pikepdf.Dictionary) -> dict[int, str]:
     encoding = font.get(Name.Encoding)
     if isinstance(encoding, Name):
         base: Object | None = encoding
-        differences: Object = pikepdf.Array()
+        differences: Iterable[Object] = []
     elif isinstance(encoding, pikepdf.Dictionary):
         base = encoding.get(Name.BaseEncoding)
-        differences = encoding.get(Name.Differences, pikepdf.Array())
+        differences = encoding.get_list(Name.Differences, [])
     else:
         return {}
 
@@ -311,16 +311,15 @@ def _simple_font_unicode_map(font: pikepdf.Dictionary) -> dict[int, str]:
     elif isinstance(base, Name):
         mapping.update(EncodingDB.encodings.get(str(base)[1:], {}))
 
-    if isinstance(differences, pikepdf.Array):
-        code = 0
-        for item in differences:
-            if (number := _as_int(item)) is not None:
-                code = number
-            elif isinstance(item, Name):
-                mapping.pop(code, None)
-                with suppress(KeyError, ValueError, UnicodeDecodeError):
-                    mapping[code] = name2unicode(str(item)[1:])
-                code += 1
+    code = 0
+    for item in differences:
+        if (number := _as_int(item)) is not None:
+            code = number
+        elif isinstance(item, Name):
+            mapping.pop(code, None)
+            with suppress(KeyError, ValueError, UnicodeDecodeError):
+                mapping[code] = name2unicode(str(item)[1:])
+            code += 1
     return {code: text for code, text in mapping.items() if 0 <= code <= 0xFF}
 
 
@@ -372,22 +371,19 @@ def add_simple_font_tounicode(pdf: Pdf) -> int:
         The number of fonts that were given a /ToUnicode.
     """
     count = 0
-    for obj in pdf.objects:
-        if not isinstance(obj, pikepdf.Dictionary):
-            continue
+    for font in _iter_fonts(pdf):
         try:
             if (
-                obj.get(Name.Type) != Name.Font
-                or obj.get(Name.Subtype) not in _SIMPLE_FONT_SUBTYPES
-                or Name.ToUnicode in obj
+                font.get(Name.Subtype) not in _SIMPLE_FONT_SUBTYPES
+                or Name.ToUnicode in font
             ):
                 continue
-            mapping = _simple_font_unicode_map(obj)
+            mapping = _simple_font_unicode_map(font)
         except (AttributeError, TypeError, ValueError):
             continue
         if not mapping:
             continue
-        obj.ToUnicode = pdf.make_stream(_tounicode_cmap(mapping))
+        font.ToUnicode = pdf.make_stream(_tounicode_cmap(mapping))
         count += 1
     return count
 

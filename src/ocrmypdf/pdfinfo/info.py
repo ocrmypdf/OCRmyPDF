@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import NamedTuple
 
 from pdfminer.layout import LTPage, LTTextBox
-from pikepdf import Dictionary, Name, NamePath, Page, Pdf
+from pikepdf import Name, NamePath, Page, Pdf
 
 from ocrmypdf._concurrent import Executor, SerialExecutor
 from ocrmypdf._pageboxes import coerce_box
@@ -460,13 +460,13 @@ class PdfInfo:
             self._needs_rendering = pdf.Root.get_bool(
                 Name.NeedsRendering, False, coerce=True
             )
-            acroform = pdf.Root.get(Name.AcroForm)
-            if isinstance(acroform, Dictionary):
-                if len(acroform.get(Name.Fields, [])) > 0 or Name.XFA in acroform:
-                    self._has_acroform = True
-                self._has_signature = bool(
-                    acroform.get_int(Name.SigFlags, 0, coerce=True) & 1
-                )
+            self._has_acroform = (
+                bool(pdf.Root.get_list(NamePath.AcroForm.Fields))
+                or NamePath.AcroForm.XFA in pdf.Root
+            )
+            self._has_signature = bool(
+                pdf.Root.get_int(NamePath.AcroForm.SigFlags, 0, coerce=True) & 1
+            )
             self._is_tagged = pdf.Root.get_bool(MARKINFO_MARKED, False, coerce=True)
             self._has_structure_tree = Name.StructTreeRoot in pdf.Root
 

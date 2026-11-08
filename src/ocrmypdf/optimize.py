@@ -43,7 +43,6 @@ from pikepdf import (
     Dictionary,
     Name,
     NamePath,
-    Object,
     ObjectStreamMode,
     Pdf,
     PdfError,
@@ -130,7 +129,7 @@ def _filter_parameter(decode_parms: Any, key: Name, default: int) -> int | None:
 
 def extract_image_filter(
     image: Stream, xref: Xref
-) -> tuple[PdfImage, tuple[Name, Object]] | None:
+) -> tuple[PdfImage, tuple[str, Any]] | None:
     """Determine if an image is extractable."""
     if image.get(Name.Subtype) != Name.Image:
         return None

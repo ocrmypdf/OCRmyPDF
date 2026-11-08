@@ -46,7 +46,7 @@ def remove_broken_goto_annotations(pdf: Pdf) -> bool:
     names = set(k for k in nametree.keys())
 
     for n, page in enumerate(pdf.pages):
-        for annot in page.obj.get(Name.Annots, []):
+        for annot in page.obj.get_list(Name.Annots, []):
             if not isinstance(annot, Dictionary):
                 continue
             destination = annot.get(ACTION_DESTINATION)
@@ -71,12 +71,9 @@ def remove_broken_goto_annotations(pdf: Pdf) -> bool:
 
 def link_annotations(page: Page) -> list[Dictionary]:
     """Return the Link annotations (hyperlinks) of a page."""
-    annots = page.obj.get(Name.Annots)
-    if not isinstance(annots, Array):
-        return []
     return [
         annot
-        for annot in annots
+        for annot in page.obj.get_list(Name.Annots, [])
         if isinstance(annot, Dictionary) and annot.get(Name.Subtype) == Name.Link
     ]
 
@@ -144,8 +141,8 @@ def transfer_link_annotations(
     )
     kept = []
     for link in links:
-        rect = link.get(Name.Rect)
-        if not isinstance(rect, Array) or len(rect) != 4:
+        rect = link.get_list(Name.Rect)
+        if rect is None or len(rect) != 4:
             continue
         try:
             coords = [float(v) for v in rect]
@@ -154,8 +151,8 @@ def transfer_link_annotations(
         xa, ya = map_point(coords[0], coords[1])
         xb, yb = map_point(coords[2], coords[3])
         link[Name.Rect] = Array([min(xa, xb), min(ya, yb), max(xa, xb), max(ya, yb)])
-        quadpoints = link.get(Name.QuadPoints)
-        if isinstance(quadpoints, Array):
+        quadpoints = link.get_list(Name.QuadPoints)
+        if quadpoints is not None:
             try:
                 qp = [float(v) for v in quadpoints]
             except (TypeError, ValueError):

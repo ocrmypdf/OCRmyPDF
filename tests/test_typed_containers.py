@@ -55,7 +55,6 @@ CONTAINERS = [
     ('ocrmypdf.optimize', '_ImageXrefs'),
     ('ocrmypdf.optimize', '_JpegResult'),
     ('ocrmypdf.optimize', '_DeflateResult'),
-    ('ocrmypdf.pdfinfo._image', '_NamedImage'),
     ('ocrmypdf.subprocess._run', '_ProcessSetup'),
 ]
 

@@ -621,7 +621,7 @@ def discard_structure_tree(pdf: Pdf) -> bool:
             if Name.StructParents in page.obj:
                 del page.obj[Name.StructParents]
                 modified = True
-            for annot in page.obj.get(Name.Annots, []):
+            for annot in page.obj.get_list(Name.Annots, []):
                 if isinstance(annot, Dictionary) and Name.StructParent in annot:
                     del annot[Name.StructParent]
                     modified = True
