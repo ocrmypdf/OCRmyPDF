@@ -273,7 +273,13 @@ jobs:
           # choco unpacks poppler without adding it to PATH, and the runner
           # already has xpdf's pdftotext, which tests cannot use.
           $pdftotext = Get-ChildItem C:\ProgramData\chocolatey\lib\poppler\tools -Recurse -Filter pdftotext.exe | Select-Object -First 1
+          if (-not $pdftotext) { throw "poppler's pdftotext.exe not found" }
           $pdftotext.DirectoryName | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Show which pdftotext tests will use
+        run: |
+          Get-Command pdftotext -All | Format-Table -AutoSize Source
+          pdftotext -v 2>&1
 
       - name: Install Python packages
         # Pin uv to the interpreter from setup-python; otherwise uv may skip a
