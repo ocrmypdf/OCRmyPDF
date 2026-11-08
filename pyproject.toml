@@ -12,17 +12,16 @@ readme = "README.md"
 license = "MPL-2.0"
 requires-python = ">=3.11"
 dependencies = [
-  "fpdf2>=2.8.0",
-  "img2pdf>=0.5",
+  "fpdf2>=2.9.0",
+  "img2pdf>=0.6",
   "packaging>=20",
-  "pdfminer.six>=20260107",  # fixes parsing of tokens split across the read buffer/streams (gh #1361)
-  "pikepdf[pdfa]>=10.18",  # pikepdf.pdfa: PDF/A repair, validation and
-                           # verified save for speculative PDF/A conversion
-  "Pillow>=12",                # imageops.has_decoded_pixels() reads Image._im,
-                              # whose shape settled in 11 and is pinned by tests
+  "pdfminer.six>=20260107", # fixes parsing of tokens split across the read buffer/streams (gh #1361)
+  "pikepdf[pdfa]>=10.18",   # pikepdf.pdfa: PDF/A repair, validation and
+  # verified save for speculative PDF/A conversion
+  "Pillow>=13",
   "pluggy>=1",
-  "pydantic>=2.12.5",
-  "pypdfium2>=5.0.0",
+  "pydantic>=2.14",
+  "pypdfium2>=5.15.0",
   "rich>=13",
   "typing-extensions>=4.12; python_version < '3.13'",
   "uharfbuzz>=0.53.2",
@@ -54,10 +53,15 @@ Changelog = "https://github.com/ocrmypdf/OCRmyPDF/tree/main/docs/releasenotes"
 
 [project.optional-dependencies]
 # User-installable features - use `uv sync --extra <name>` or `pip install ocrmypdf[name]`
-heic = ["pillow-heif>=1.7.0"]  # HEIF/HEIC image support - wheels bundle GPLv2 x265, opt-in only
+heic = [
+  "pillow-heif>=1.7.0",
+] # HEIF/HEIC image support - wheels bundle GPLv2 x265, opt-in only
 watcher = ["watchfiles>=1.0", "cyclopts>=3", "python-dotenv"]
 webservice = ["streamlit>=1.41.0"]
-rapidocr = ["rapidocr>=3.10", "onnxruntime>=1.21"]  # Alternative CPU OCR engine (PP-OCR models)
+rapidocr = [
+  "rapidocr>=3.10",
+  "onnxruntime>=1.21",
+] # Alternative CPU OCR engine (PP-OCR models)
 
 [project.scripts]
 ocrmypdf = "ocrmypdf.__main__:run"
@@ -182,13 +186,13 @@ quote-style = "preserve"
 [dependency-groups]
 # Developer-only tools - use `uv sync --group <name>`
 dev = [
-    "mypy>=1.13.0",
-    "ruff>=0.14.11",
-    "prek>=0.4.8",
-    "ipykernel>=6.29.5",
-    "reportlab>=4.4.4",
-    "cyclopts>=4.5.1",
-    "pygithub>=2.9.1",
+  "mypy>=1.13.0",
+  "ruff>=0.14.11",
+  "prek>=0.4.8",
+  "ipykernel>=6.29.5",
+  "reportlab>=4.4.4",
+  "cyclopts>=4.5.1",
+  "pygithub>=2.9.1",
 ]
 test = [
   # Core testing framework
