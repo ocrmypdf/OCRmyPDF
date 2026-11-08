@@ -124,6 +124,7 @@ module = [
   'pypdfium2',
   'uharfbuzz',
   'pillow_heif',
+  'numpy',
   'onnxruntime',
   'onnxruntime.*',
   'rapidocr',
