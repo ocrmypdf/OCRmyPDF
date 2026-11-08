@@ -31,6 +31,7 @@ from ocrmypdf._jobcontext import PageContext, PdfContext
 from ocrmypdf._logging import PageNumberFilter
 from ocrmypdf._metadata import PikepdfProgress
 from ocrmypdf._options import OcrOptions
+from ocrmypdf._pageboxes import _format_pages
 from ocrmypdf._pipeline import (
     FinishedPdf,
     create_ocr_image,
@@ -379,7 +380,7 @@ def do_get_pdfinfo(pdf_path: Path, executor: Executor, options) -> PdfInfo:
         check_pages = _pages_from_ranges(check_pages, total_pages=total_pages)
         options.pages = check_pages
 
-    return get_pdfinfo(
+    pdfinfo = get_pdfinfo(
         pdf_path,
         executor=executor,
         detailed_analysis=options.redo_ocr,
@@ -388,6 +389,15 @@ def do_get_pdfinfo(pdf_path: Path, executor: Executor, options) -> PdfInfo:
         use_threads=options.use_threads,
         check_pages=check_pages,
     )
+    if check_pages:
+        missing = [pageno for pageno in check_pages if pageno >= len(pdfinfo)]
+        if missing:
+            log.warning(
+                "--pages refers to page %s, but the input file has only %d pages",
+                _format_pages(missing),
+                len(pdfinfo),
+            )
+    return pdfinfo
 
 
 def preprocess(
