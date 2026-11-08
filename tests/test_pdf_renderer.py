@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import logging
 import re
-import shutil
 import subprocess
 from io import StringIO
 from pathlib import Path
@@ -30,6 +29,8 @@ from ocrmypdf.hocrtransform import (
     OcrClass,
     OcrElement,
 )
+
+from .conftest import have_poppler_pdftotext
 
 
 def text_from_pdf(filename: Path) -> str:
@@ -61,8 +62,8 @@ def multi_font_manager(font_dir):
 @pytest.fixture
 def pdftotext():
     """Extract text with poppler's pdftotext, skipping if it is unavailable."""
-    if shutil.which('pdftotext') is None:
-        pytest.skip("pdftotext not available")
+    if not have_poppler_pdftotext():
+        pytest.skip("poppler pdftotext not available")
 
     def extract_text(pdf_path: Path) -> str:
         return subprocess.check_output(

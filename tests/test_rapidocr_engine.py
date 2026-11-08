@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import importlib.util
 import re
-import shutil
 import subprocess
 import sys
 import threading
@@ -34,6 +33,8 @@ from ocrmypdf.builtin_plugins.rapidocr_ocr import (
 )
 from ocrmypdf.exceptions import BadArgsError, MissingDependencyError
 from ocrmypdf.hocrtransform import HocrParser, OcrClass
+
+from .conftest import have_poppler_pdftotext
 
 have_rapidocr = importlib.util.find_spec('rapidocr') is not None
 needs_rapidocr = pytest.mark.skipif(not have_rapidocr, reason="rapidocr not installed")
@@ -855,8 +856,8 @@ class TestCheckOptions:
 
 @pytest.fixture
 def pdftotext():
-    if shutil.which('pdftotext') is None:
-        pytest.skip("pdftotext not available")
+    if not have_poppler_pdftotext():
+        pytest.skip("poppler pdftotext not available")
 
     def extract(pdf: Path, *args) -> str:
         return subprocess.check_output(

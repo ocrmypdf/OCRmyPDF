@@ -3,11 +3,13 @@
 
 from __future__ import annotations
 
+import functools
 import json
 import logging
 import os
 import platform
 import re
+import shutil
 import sys
 import time
 import warnings
@@ -74,6 +76,19 @@ def have_unpaper():
     except Exception:  # pylint: disable=broad-except
         return False
     return True
+
+
+@functools.cache
+def have_poppler_pdftotext() -> bool:
+    """Whether the pdftotext on PATH is poppler's.
+
+    xpdf ships a pdftotext too, but it lacks options such as -bbox and orders
+    text differently, so tests written against poppler cannot use it.
+    """
+    if shutil.which('pdftotext') is None:
+        return False
+    proc = run(['pdftotext', '-v'], capture_output=True, text=True, check=False)
+    return 'poppler' in (proc.stdout + proc.stderr).lower()
 
 
 TESTS_ROOT = Path(__file__).parent.resolve()

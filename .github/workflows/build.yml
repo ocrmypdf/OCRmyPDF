@@ -270,6 +270,10 @@ jobs:
           choco install --yes --no-progress tesseract
           choco install --yes --no-progress --ignore-checksums ghostscript --version 9.56.1
           choco install --yes --no-progress poppler --version=25.11.0
+          # choco unpacks poppler without adding it to PATH, and the runner
+          # already has xpdf's pdftotext, which tests cannot use.
+          $pdftotext = Get-ChildItem C:\ProgramData\chocolatey\lib\poppler\tools -Recurse -Filter pdftotext.exe | Select-Object -First 1
+          $pdftotext.DirectoryName | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Install Python packages
         # Pin uv to the interpreter from setup-python; otherwise uv may skip a

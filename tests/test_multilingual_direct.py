@@ -13,7 +13,6 @@ This tests the fpdf2 renderer with various language groups:
 
 from __future__ import annotations
 
-import shutil
 import subprocess
 from pathlib import Path
 
@@ -22,6 +21,8 @@ import pytest
 from ocrmypdf.font import MultiFontManager
 from ocrmypdf.fpdf_renderer import DebugRenderOptions, Fpdf2PdfRenderer
 from ocrmypdf.hocrtransform.hocr_parser import HocrParser
+
+from .conftest import have_poppler_pdftotext
 
 RESOURCES = Path(__file__).parent / "resources"
 
@@ -32,9 +33,8 @@ def pdftotext():
 
     Skips the test if pdftotext is not available.
     """
-    pdftotext_path = shutil.which('pdftotext')
-    if pdftotext_path is None:
-        pytest.skip("pdftotext not available")
+    if not have_poppler_pdftotext():
+        pytest.skip("poppler pdftotext not available")
 
     def extract_text(pdf_path: Path) -> str:
         return subprocess.check_output(

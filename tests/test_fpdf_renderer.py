@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import shutil
 import subprocess
 from pathlib import Path
 
@@ -20,6 +19,8 @@ from ocrmypdf.fpdf_renderer import (
 )
 from ocrmypdf.hocrtransform.hocr_parser import HocrParser
 from ocrmypdf.models.ocr_element import Baseline, BoundingBox, OcrClass, OcrElement
+
+from .conftest import have_poppler_pdftotext
 
 
 @pytest.fixture
@@ -58,9 +59,8 @@ def pdftotext():
 
     Skips the test if pdftotext is not available.
     """
-    pdftotext_path = shutil.which('pdftotext')
-    if pdftotext_path is None:
-        pytest.skip("pdftotext not available")
+    if not have_poppler_pdftotext():
+        pytest.skip("poppler pdftotext not available")
 
     def extract_text(pdf_path: Path) -> str:
         return subprocess.check_output(
