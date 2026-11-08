@@ -15,8 +15,9 @@ The bundled PP-OCRv6 recognition model reads Chinese, Japanese, English and
 about fifty Latin-script languages. Other scripts (Korean, Cyrillic, Arabic,
 Devanagari, Thai, Greek, Tamil, Telugu, Georgian) use separate models that
 RapidOCR downloads from ModelScope the first time they are needed, into its
-own package directory. RapidOCR loads one recognition model at a time, so
-``-l`` may only combine languages that the same model reads.
+own package directory, or into --rapidocr-model-dir (or
+$OCRMYPDF_RAPIDOCR_MODEL_DIR) if given. RapidOCR loads one recognition model
+at a time, so ``-l`` may only combine languages that the same model reads.
 
 RapidOCR does not measure page orientation or skew. This engine measures
 skew from the angle of the detected text lines. For orientation, the shape
@@ -67,6 +68,10 @@ log = logging.getLogger(__name__)
 
 DEFAULT_MAX_SIDE_LEN = 2000
 
+#: Environment variable naming the directory to keep models in, used when
+#: --rapidocr-model-dir is not given.
+MODEL_DIR_ENV = 'OCRMYPDF_RAPIDOCR_MODEL_DIR'
+
 #: Where the baseline sits in a detection box, as a fraction of the box height
 #: above its bottom edge. Detection boxes are padded around the glyphs; this
 #: was measured on 300 dpi Latin text.
@@ -109,6 +114,11 @@ ORIENTATION_MAX_ASPECT = 25
 # Options
 
 
+def _model_dir_from_env() -> Path | None:
+    value = os.environ.get(MODEL_DIR_ENV)
+    return Path(value) if value else None
+
+
 class RapidOcrOptions(BaseModel):
     """Options specific to the RapidOCR engine."""
 
@@ -119,6 +129,17 @@ class RapidOcrOptions(BaseModel):
             description="Downscale images whose longer side exceeds this many pixels",
         ),
     ] = DEFAULT_MAX_SIDE_LEN
+
+    model_dir: Annotated[
+        Path | None,
+        Field(
+            default_factory=_model_dir_from_env,
+            description=(
+                "Directory to keep RapidOCR's models and the page orientation "
+                "model in, instead of RapidOCR's package directory"
+            ),
+        ),
+    ]
 
     @classmethod
     def add_arguments_to_parser(cls, parser, namespace: str = 'rapidocr'):
@@ -137,6 +158,20 @@ class RapidOcrOptions(BaseModel):
                 "many pixels before detecting text. The default of 2000 reduces "
                 "a 300 dpi Letter page to about 180 dpi. Larger values may "
                 "recognize small print better, at the cost of speed."
+            ),
+        )
+        group.add_argument(
+            f'--{namespace}-model-dir',
+            type=Path,
+            metavar='DIR',
+            default=None,
+            dest=f'{namespace}_model_dir',
+            help=(
+                "Keep RapidOCR's models, and the page orientation model, in this "
+                "directory instead of RapidOCR's package directory. Models found "
+                "missing are downloaded into it. Useful when the package "
+                "directory is read-only, or to share models between "
+                f"installations. Defaults to ${MODEL_DIR_ENV} if set."
             ),
         )
 
@@ -1463,14 +1498,14 @@ def _user_cache_dir() -> Path:
     return (Path(xdg) if xdg else Path.home() / '.cache') / 'ocrmypdf'
 
 
-def orientation_model_dirs() -> list[Path]:
+def orientation_model_dirs(model_dir: Path | None = None) -> list[Path]:
     """Where the orientation model is looked for, and stored, in that order.
 
-    It is kept with RapidOCR's models, or in the user's cache if RapidOCR's
-    directory cannot be written.
+    It is kept with RapidOCR's models, in model_dir if given, or in the user's
+    cache if that directory cannot be written.
     """
-    rapidocr_dir = rapidocr_models_dir()
-    dirs = [rapidocr_dir] if rapidocr_dir is not None else []
+    models_dir = model_dir if model_dir is not None else rapidocr_models_dir()
+    dirs = [models_dir] if models_dir is not None else []
     return [*dirs, _user_cache_dir()]
 
 
@@ -1489,9 +1524,9 @@ def _is_intact(path: Path, model: ModelFile) -> bool:
         return False
 
 
-def find_orientation_model() -> Path | None:
+def find_orientation_model(model_dir: Path | None = None) -> Path | None:
     """Find a verified copy of the orientation model, if one is stored."""
-    for directory in orientation_model_dirs():
+    for directory in orientation_model_dirs(model_dir):
         path = directory / ORIENTATION_MODEL.filename
         if _is_intact(path, ORIENTATION_MODEL):
             return path
@@ -1525,7 +1560,9 @@ def _download(model: ModelFile, out: BinaryIO, timeout: float) -> None:
         )
 
 
-def download_orientation_model(timeout: float = DOWNLOAD_TIMEOUT) -> Path:
+def download_orientation_model(
+    model_dir: Path | None = None, *, timeout: float = DOWNLOAD_TIMEOUT
+) -> Path:
     """Return the orientation model's path, downloading it if necessary.
 
     The download is checked against the model's size and SHA-256 checksum,
@@ -1535,11 +1572,11 @@ def download_orientation_model(timeout: float = DOWNLOAD_TIMEOUT) -> Path:
     Raises:
         MissingDependencyError: The model could not be downloaded or stored.
     """
-    found = find_orientation_model()
+    found = find_orientation_model(model_dir)
     if found is not None:
         return found
     model = ORIENTATION_MODEL
-    dirs = orientation_model_dirs()
+    dirs = orientation_model_dirs(model_dir)
     for directory in dirs:
         try:
             directory.mkdir(parents=True, exist_ok=True)
@@ -1566,39 +1603,42 @@ def download_orientation_model(timeout: float = DOWNLOAD_TIMEOUT) -> Path:
     )
 
 
-#: The orientation model's path once found or downloaded, False if it could
-#: not be had, or None if not yet looked for. Shared by all threads.
-_orientation_model_path_state: Path | bool | None = None
+#: The orientation model's path once found or downloaded, or None if it could
+#: not be had, by model directory. Shared by all threads.
+_orientation_model_paths: dict[Path | None, Path | None] = {}
 _orientation_model_lock = threading.Lock()
 
 
-def _orientation_model_path() -> Path | None:
+def _orientation_model_path(model_dir: Path | None = None) -> Path | None:
     """Find or download the orientation model, once per process."""
-    global _orientation_model_path_state
     with _orientation_model_lock:
-        if _orientation_model_path_state is None:
+        if model_dir not in _orientation_model_paths:
             try:
-                _orientation_model_path_state = download_orientation_model()
+                path = download_orientation_model(model_dir)
             except MissingDependencyError as e:
                 log.warning(
                     f"{e} Judging page orientation by recognizing text instead, "
                     f"which is slower. To download the model in advance, run: "
                     f"{DOWNLOAD_COMMAND}"
                 )
-                _orientation_model_path_state = False
-        state = _orientation_model_path_state
-    return state if isinstance(state, Path) else None
+                path = None
+            _orientation_model_paths[model_dir] = path
+        return _orientation_model_paths[model_dir]
 
 
-def _orientation_model() -> DocOrientationModel | None:
+def _orientation_model(model_dir: Path | None = None) -> DocOrientationModel | None:
     """Return the current thread's orientation model, or None if unavailable."""
-    model = getattr(_thread_engines, 'orientation_model', None)
-    if model is None:
-        path = _orientation_model_path()
-        if path is None:
-            return None
-        model = _thread_engines.orientation_model = DocOrientationModel(path)
-    return model
+    models: dict[Path, DocOrientationModel] | None = getattr(
+        _thread_engines, 'orientation_models', None
+    )
+    if models is None:
+        models = _thread_engines.orientation_models = {}
+    path = _orientation_model_path(model_dir)
+    if path is None:
+        return None
+    if path not in models:
+        models[path] = DocOrientationModel(path)
+    return models[path]
 
 
 # --------------------------------------------------------------------------
@@ -1665,10 +1705,11 @@ class _EngineConfig:
 
     max_side_len: int
     rec: RecModel
+    model_dir: Path | None = None
 
     def rapidocr_params(self, rapidocr: Any) -> dict[str, Any]:
         """RapidOCR's ``params`` for this configuration."""
-        return {
+        params = {
             'Global.log_level': 'error',
             'Global.max_side_len': self.max_side_len,
             'Global.return_word_box': True,
@@ -1680,6 +1721,9 @@ class _EngineConfig:
             'Rec.model_type': rapidocr.ModelType(self.rec.model_type),
             'Rec.lang_type': rapidocr.LangRec(self.rec.lang_type),
         }
+        if self.model_dir is not None:
+            params['Global.model_root_dir'] = str(self.model_dir)
+        return params
 
 
 #: RapidOCR instances of the current thread, by configuration. A RapidOCR
@@ -1709,12 +1753,18 @@ def _create_engine(config: _EngineConfig) -> Any:
         engine._load_rec_model()
     except _model_load_errors() as e:
         rec = config.rec
+        if config.model_dir is None:
+            missing = (
+                "Models other than the bundled one download on first use "
+                f"into {rapidocr_models_dir()}"
+            )
+        else:
+            missing = f"Models download on first use into {config.model_dir}"
         raise MissingDependencyError(
             f"RapidOCR could not load its {rec.ocr_version} {rec.lang_type} "
-            f"recognition model: {e}. Models other than the bundled one "
-            f"download on first use into {rapidocr_models_dir()}, which needs "
-            "network access and a writable directory. To download them in "
-            f"advance, run: {DOWNLOAD_COMMAND} LANGUAGE"
+            f"recognition model: {e}. {missing}, which needs network access "
+            "and a writable directory. To download them in advance, run: "
+            f"{DOWNLOAD_COMMAND} LANGUAGE"
         ) from e
     return engine
 
@@ -1724,6 +1774,7 @@ def _engine_for(options: OcrOptions) -> Any:
         _EngineConfig(
             max_side_len=options.rapidocr.max_side_len,
             rec=rec_model_for_languages(options.languages),
+            model_dir=options.rapidocr.model_dir,
         )
     )
 
@@ -1830,7 +1881,7 @@ class RapidOcrEngine(OcrEngine):
         if page_axis(votes) is PageAxis.UNCLEAR:
             log.debug(f"Orientation: {votes}; too few lines, or lines both ways")
             return OrientationConfidence(angle=0, confidence=0.0)
-        model = _orientation_model()
+        model = _orientation_model(options.rapidocr.model_dir)
         if model is None:
             return _orientation_by_recognition(engine, image, quads)
         direction = model(image)
@@ -1927,6 +1978,9 @@ def check_options(options):
             "Use --pdf-renderer fpdf2."
         )
     rec_model_for_languages(options.languages)
+    model_dir = options.rapidocr.model_dir
+    if model_dir is not None and model_dir.exists() and not model_dir.is_dir():
+        raise BadArgsError(f"--rapidocr-model-dir {model_dir} is not a directory.")
 
 
 @hookimpl
@@ -1941,18 +1995,22 @@ def get_ocr_engine(options):
 # Downloading models in advance
 
 
-def download_models(languages: Sequence[str]) -> None:
+def download_models(languages: Sequence[str], model_dir: Path | None = None) -> None:
     """Download the orientation model, and the models for the given languages.
 
-    Languages read by the bundled recognition model need nothing more.
+    Languages read by the bundled recognition model need nothing more. A
+    model_dir starts empty, though, so without languages, the bundled models
+    are fetched into it.
     """
-    print(f"Page orientation model: {download_orientation_model()}")
+    print(f"Page orientation model: {download_orientation_model(model_dir)}")
+    if model_dir is not None and not languages:
+        languages = ['eng']
     for lang in languages:
         rec = rec_model_for_languages([lang])
-        _create_engine(_EngineConfig(DEFAULT_MAX_SIDE_LEN, rec))
+        _create_engine(_EngineConfig(DEFAULT_MAX_SIDE_LEN, rec, model_dir))
         print(
             f"{lang}: {rec.ocr_version} {rec.lang_type} recognition model "
-            f"in {rapidocr_models_dir()}"
+            f"in {model_dir or rapidocr_models_dir()}"
         )
 
 
@@ -1973,7 +2031,18 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="Download the page orientation model and recognition models",
         description=(
             "Download the page orientation model, and the recognition models "
-            "for the given languages, into RapidOCR's model directory."
+            "for the given languages, into RapidOCR's model directory, or the "
+            "one given by --model-dir."
+        ),
+    )
+    download.add_argument(
+        '--model-dir',
+        type=Path,
+        metavar='DIR',
+        default=_model_dir_from_env(),
+        help=(
+            "Download into this directory instead of RapidOCR's, for use with "
+            f"ocrmypdf --rapidocr-model-dir. Defaults to ${MODEL_DIR_ENV} if set."
         ),
     )
     download.add_argument(
@@ -1990,7 +2059,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
     languages = [lang for arg in args.languages for lang in arg.split('+') if lang]
     try:
-        download_models(languages)
+        download_models(languages, args.model_dir)
     except (BadArgsError, MissingDependencyError) as e:
         print(e, file=sys.stderr)
         return e.exit_code

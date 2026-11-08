@@ -262,6 +262,18 @@ docker build -t ocrmypdf-rapidocr \
 :::
 
 Then run, for example, `ocrmypdf --ocr-engine rapidocr -l rus in.pdf out.pdf`.
+
+Alternatively, keep the models on a volume, so that downloads persist between
+containers: mount it and point `OCRMYPDF_RAPIDOCR_MODEL_DIR` at it.
+
+:::{code} bash
+docker run --rm -i -v rapidocr-models:/models \
+  -e OCRMYPDF_RAPIDOCR_MODEL_DIR=/models \
+  ocrmypdf-rapidocr --ocr-engine rapidocr -l kor - - <input.pdf >output.pdf
+:::
+
+The first run downloads every model it needs into the volume, including those
+the image already has.
 The same `python -m ocrmypdf.builtin_plugins.rapidocr_ocr download` command
 that the Dockerfile runs works outside Docker, to fetch models in advance on a
 machine that will later be offline.

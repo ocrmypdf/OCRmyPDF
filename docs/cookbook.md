@@ -369,6 +369,15 @@ Things to know:
   7.5 to 16 MB, stored in `site-packages/rapidocr/models`. The Docker
   images do not include RapidOCR, but you can
   {ref}`build one that does <docker-rapidocr>`.
+- **Model directory.** To keep the models somewhere other than RapidOCR's
+  package directory, for example because it is read-only or to share models
+  between installations, give `--rapidocr-model-dir DIR`, set the
+  `OCRMYPDF_RAPIDOCR_MODEL_DIR` environment variable, or pass
+  `rapidocr_model_dir=` to `ocrmypdf.ocr()`. The directory holds all of
+  RapidOCR's models, including the ones it otherwise bundles, and the page
+  orientation model; any that are missing are downloaded into it on first
+  use. `python -m ocrmypdf.builtin_plugins.rapidocr_ocr download --model-dir
+  DIR kor` fills it in advance.
 - **Image size.** RapidOCR downscales pages whose longer side exceeds
   `--rapidocr-max-side-len` pixels (default 2000, about 180 dpi for a Letter
   page scanned at 300 dpi) before finding text. Raising it may help with very

@@ -1444,7 +1444,9 @@ def model_file(monkeypatch, tmp_path):
         ),
     )
     first, second = tmp_path / 'rapidocr', tmp_path / 'cache'
-    monkeypatch.setattr(rapidocr_ocr, 'orientation_model_dirs', lambda: [first, second])
+    monkeypatch.setattr(
+        rapidocr_ocr, 'orientation_model_dirs', lambda model_dir=None: [first, second]
+    )
     return first, second
 
 
@@ -1553,7 +1555,7 @@ class TestOrientationModelFallback:
             raise OSError('Network is unreachable')
 
         monkeypatch.setattr(rapidocr_ocr, '_urlopen', offline)
-        monkeypatch.setattr(rapidocr_ocr, '_orientation_model_path_state', None)
+        monkeypatch.setattr(rapidocr_ocr, '_orientation_model_paths', {})
         monkeypatch.setattr(rapidocr_ocr, '_thread_engines', threading.local())
         with caplog.at_level('WARNING'):
             assert rapidocr_ocr._orientation_model() is None
@@ -1571,7 +1573,7 @@ class TestOrientationModelFallback:
         monkeypatch.setattr(
             rapidocr_ocr, '_engine_for', lambda options: lambda img, **kw: result
         )
-        monkeypatch.setattr(rapidocr_ocr, '_orientation_model', lambda: None)
+        monkeypatch.setattr(rapidocr_ocr, '_orientation_model', lambda model_dir: None)
         scores = iter([0.55, 0.9])  # upright, then turned over
         monkeypatch.setattr(
             rapidocr_ocr, '_mean_rec_score', lambda engine, crops: next(scores)
@@ -1590,7 +1592,9 @@ class TestOrientationModelFallback:
             rapidocr_ocr, '_engine_for', lambda options: lambda img, **kw: result
         )
         monkeypatch.setattr(
-            rapidocr_ocr, '_orientation_model', lambda: lambda img: _direction(270, 0.9)
+            rapidocr_ocr,
+            '_orientation_model',
+            lambda model_dir: lambda img: _direction(270, 0.9),
         )
 
         def no_recognition(engine, crops):
@@ -1637,7 +1641,9 @@ class TestDownloadCommand:
     def fetched(self, monkeypatch, tmp_path):
         configs = []
         monkeypatch.setattr(
-            rapidocr_ocr, 'download_orientation_model', lambda: tmp_path / 'm.onnx'
+            rapidocr_ocr,
+            'download_orientation_model',
+            lambda model_dir=None: tmp_path / 'm.onnx',
         )
         monkeypatch.setattr(rapidocr_ocr, '_create_engine', configs.append)
         return configs
@@ -1656,7 +1662,7 @@ class TestDownloadCommand:
         assert 'xyz' in capsys.readouterr().err
 
     def test_failed_download(self, monkeypatch, capsys):
-        def offline():
+        def offline(model_dir=None):
             raise MissingDependencyError("Could not download the model")
 
         monkeypatch.setattr(rapidocr_ocr, 'download_orientation_model', offline)
@@ -1672,3 +1678,143 @@ class TestDownloadCommand:
         )
         assert result.returncode == 0
         assert 'download' in result.stdout
+
+
+class TestModelDir:
+    """Models can be kept in a directory of the user's choosing."""
+
+    @pytest.fixture(autouse=True)
+    def no_env(self, monkeypatch):
+        monkeypatch.delenv(rapidocr_ocr.MODEL_DIR_ENV, raising=False)
+
+    def test_default_is_rapidocr_package(self):
+        assert _options().rapidocr.model_dir is None
+
+    def test_cli(self, tmp_path):
+        options = _options('--rapidocr-model-dir', str(tmp_path))
+        assert options.rapidocr.model_dir == tmp_path
+
+    def test_environment(self, monkeypatch, tmp_path):
+        monkeypatch.setenv(rapidocr_ocr.MODEL_DIR_ENV, str(tmp_path))
+        assert _options().rapidocr.model_dir == tmp_path
+
+    def test_cli_overrides_environment(self, monkeypatch, tmp_path):
+        monkeypatch.setenv(rapidocr_ocr.MODEL_DIR_ENV, str(tmp_path / 'env'))
+        options = _options('--rapidocr-model-dir', str(tmp_path / 'cli'))
+        assert options.rapidocr.model_dir == tmp_path / 'cli'
+
+    def test_api(self, tmp_path):
+        from ocrmypdf.api import create_options, setup_plugin_infrastructure
+        from ocrmypdf.cli import get_parser
+
+        setup_plugin_infrastructure()
+        options = create_options(
+            input_file='in.pdf',
+            output_file='out.pdf',
+            parser=get_parser(),
+            ocr_engine='rapidocr',
+            rapidocr_model_dir=tmp_path,
+        )
+        assert options.rapidocr.model_dir == tmp_path
+
+    def test_must_be_a_directory(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(rapidocr_ocr, '_import_rapidocr', lambda: None)
+        not_a_dir = tmp_path / 'file'
+        not_a_dir.write_text('')
+        with pytest.raises(BadArgsError, match="directory"):
+            rapidocr_ocr.check_options(_options('--rapidocr-model-dir', str(not_a_dir)))
+
+    def test_need_not_exist_yet(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(rapidocr_ocr, '_import_rapidocr', lambda: None)
+        rapidocr_ocr.check_options(
+            _options('--rapidocr-model-dir', str(tmp_path / 'new'))
+        )
+
+    def test_passed_to_rapidocr(self, fake_rapidocr, tmp_path):
+        rapidocr_ocr._engine_for(_options('--rapidocr-model-dir', str(tmp_path)))
+        assert fake_rapidocr.created[0]['Global.model_root_dir'] == str(tmp_path)
+
+    def test_rapidocr_default_left_alone(self, fake_rapidocr):
+        rapidocr_ocr._engine_for(_options())
+        assert 'Global.model_root_dir' not in fake_rapidocr.created[0]
+
+    def test_orientation_model_dirs(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(rapidocr_ocr, '_user_cache_dir', lambda: tmp_path / 'c')
+        assert rapidocr_ocr.orientation_model_dirs(tmp_path / 'm') == [
+            tmp_path / 'm',
+            tmp_path / 'c',
+        ]
+
+    def test_orientation_model_stored_there(self, monkeypatch, tmp_path):
+        import hashlib
+
+        content = _model_bytes()
+        monkeypatch.setattr(
+            rapidocr_ocr,
+            'ORIENTATION_MODEL',
+            rapidocr_ocr.ModelFile(
+                filename='doc_ori.onnx',
+                url='https://example.invalid/inference.onnx',
+                size=len(content),
+                sha256=hashlib.sha256(content).hexdigest(),
+            ),
+        )
+        monkeypatch.setattr(rapidocr_ocr, '_user_cache_dir', lambda: tmp_path / 'c')
+        monkeypatch.setattr(
+            rapidocr_ocr, '_urlopen', lambda url, timeout: _Response(content)
+        )
+        path = rapidocr_ocr.download_orientation_model(tmp_path / 'm')
+        assert path == tmp_path / 'm' / 'doc_ori.onnx'
+
+    def test_orientation_model_found_per_directory(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(rapidocr_ocr, '_orientation_model_paths', {})
+        monkeypatch.setattr(
+            rapidocr_ocr,
+            'download_orientation_model',
+            lambda model_dir=None: (model_dir or tmp_path) / 'doc_ori.onnx',
+        )
+        a = rapidocr_ocr._orientation_model_path(tmp_path / 'a')
+        b = rapidocr_ocr._orientation_model_path(tmp_path / 'b')
+        assert (a, b) == (
+            tmp_path / 'a' / 'doc_ori.onnx',
+            tmp_path / 'b' / 'doc_ori.onnx',
+        )
+
+    def test_download_command(self, monkeypatch, tmp_path):
+        stored = []
+        configs = []
+        monkeypatch.setattr(
+            rapidocr_ocr,
+            'download_orientation_model',
+            lambda model_dir=None: stored.append(model_dir) or tmp_path / 'm.onnx',
+        )
+        monkeypatch.setattr(rapidocr_ocr, '_create_engine', configs.append)
+        assert rapidocr_ocr.main(['download', '--model-dir', str(tmp_path), 'kor']) == 0
+        assert stored == [tmp_path]
+        assert [c.model_dir for c in configs] == [tmp_path]
+
+    def test_download_command_environment(self, monkeypatch, tmp_path):
+        stored = []
+        monkeypatch.setenv(rapidocr_ocr.MODEL_DIR_ENV, str(tmp_path))
+        monkeypatch.setattr(
+            rapidocr_ocr,
+            'download_orientation_model',
+            lambda model_dir=None: stored.append(model_dir) or tmp_path / 'm.onnx',
+        )
+        assert rapidocr_ocr.main(['download']) == 0
+        assert stored == [tmp_path]
+
+    def test_download_command_fetches_bundled_models(self, monkeypatch, tmp_path):
+        # A model directory starts empty, so the models RapidOCR bundles in its
+        # package must be fetched into it too
+        configs = []
+        monkeypatch.setattr(
+            rapidocr_ocr,
+            'download_orientation_model',
+            lambda model_dir=None: tmp_path / 'm.onnx',
+        )
+        monkeypatch.setattr(rapidocr_ocr, '_create_engine', configs.append)
+        assert rapidocr_ocr.main(['download', '--model-dir', str(tmp_path)]) == 0
+        assert [(c.rec, c.model_dir) for c in configs] == [
+            (rec_model_for_languages(['eng']), tmp_path)
+        ]
