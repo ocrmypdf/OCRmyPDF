@@ -208,7 +208,8 @@ test = [
   # Type stubs for testing
   "types-humanfriendly",
   # Extended test capabilities (merged from extended_test)
-  "pymupdf>=1.24.14",
+  # pymupdf requires onnxruntime, which has no wheels for Python 3.15 yet
+  "pymupdf>=1.24.14; python_version < '3.15'",
 ]
 docs = [
   "myst-parser>=4.0.1",

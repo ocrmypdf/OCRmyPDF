@@ -1662,9 +1662,6 @@ name = "networkx"
 version = "3.7"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
-    "python_full_version >= '3.15' and sys_platform == 'win32'",
-    "python_full_version >= '3.15' and sys_platform == 'emscripten'",
-    "python_full_version >= '3.15' and sys_platform != 'emscripten' and sys_platform != 'win32'",
     "python_full_version == '3.14.*' and sys_platform == 'win32'",
     "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
     "python_full_version == '3.14.*' and sys_platform != 'emscripten' and sys_platform != 'win32'",
@@ -1914,7 +1911,7 @@ streamlit-dev = [
 test = [
     { name = "coverage" },
     { name = "hypothesis" },
-    { name = "pymupdf" },
+    { name = "pymupdf", marker = "python_full_version < '3.15'" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "pytest-xdist" },
@@ -1972,7 +1969,7 @@ streamlit-dev = [
 test = [
     { name = "coverage", extras = ["toml"], specifier = ">=6.2" },
     { name = "hypothesis", specifier = ">=6.36.0" },
-    { name = "pymupdf", specifier = ">=1.24.14" },
+    { name = "pymupdf", marker = "python_full_version < '3.15'", specifier = ">=1.24.14" },
     { name = "pytest", specifier = ">=6.2.5" },
     { name = "pytest-cov", specifier = ">=3.0.0" },
     { name = "pytest-xdist", specifier = ">=2.5.0" },
@@ -2814,10 +2811,10 @@ name = "pymupdf"
 version = "2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "networkx", version = "3.6.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
-    { name = "networkx", version = "3.7", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
-    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
-    { name = "numpy", version = "2.5.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "networkx", version = "3.6.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12' or python_full_version >= '3.15'" },
+    { name = "networkx", version = "3.7", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12' and python_full_version < '3.15'" },
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12' or python_full_version >= '3.15'" },
+    { name = "numpy", version = "2.5.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12' and python_full_version < '3.15'" },
     { name = "onnxruntime" },
     { name = "psutil" },
     { name = "pymupdf-layout" },
