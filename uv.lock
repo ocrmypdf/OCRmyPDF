@@ -1911,6 +1911,8 @@ streamlit-dev = [
 test = [
     { name = "coverage" },
     { name = "hypothesis" },
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "numpy", version = "2.5.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "pymupdf", marker = "python_full_version < '3.15'" },
     { name = "pytest" },
     { name = "pytest-cov" },
@@ -1969,6 +1971,7 @@ streamlit-dev = [
 test = [
     { name = "coverage", extras = ["toml"], specifier = ">=6.2" },
     { name = "hypothesis", specifier = ">=6.36.0" },
+    { name = "numpy", specifier = ">=2" },
     { name = "pymupdf", marker = "python_full_version < '3.15'", specifier = ">=1.24.14" },
     { name = "pytest", specifier = ">=6.2.5" },
     { name = "pytest-cov", specifier = ">=3.0.0" },
