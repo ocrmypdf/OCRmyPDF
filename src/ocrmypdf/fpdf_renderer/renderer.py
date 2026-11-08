@@ -731,10 +731,9 @@ class Fpdf2PdfRenderer:
             if _is_rtl_text(''.join(w.text or '' for w in words)):
                 # Right-to-left words advance against the baseline direction
                 progress = -progress
-        elif words and self._is_cjk_only(words[0].text or ''):
-            if abs(uy) > abs(ux):
-                # Vertical CJK: read downward
-                progress = uy
+        elif words and self._is_cjk_only(words[0].text or '') and abs(uy) > abs(ux):
+            # Vertical CJK: read downward
+            progress = uy
         if progress < 0:
             textangle = textangle - 180.0 if textangle > 0 else textangle + 180.0
         return textangle

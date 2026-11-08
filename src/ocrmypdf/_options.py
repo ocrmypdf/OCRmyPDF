@@ -669,12 +669,15 @@ class OcrOptions(BaseModel):
                 if value is not None:
                     kwargs[field_name] = _convert_value(value)
             # Check for special mappings
-            elif namespace == 'optimize' and field_name == 'level':
-                # 'optimize' field maps to 'level' in OptimizeOptions
-                if 'optimize' in OcrOptions.model_fields:
-                    value = self.optimize
-                    if value is not None:
-                        kwargs[field_name] = _convert_value(value)
+            # 'optimize' field maps to 'level' in OptimizeOptions
+            elif (
+                namespace == 'optimize'
+                and field_name == 'level'
+                and 'optimize' in OcrOptions.model_fields
+            ):
+                value = self.optimize
+                if value is not None:
+                    kwargs[field_name] = _convert_value(value)
 
         # Create and cache the plugin options instance
         instance = model_class(**kwargs)
