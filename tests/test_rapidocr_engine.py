@@ -1795,14 +1795,17 @@ class TestModelDir:
 
     def test_download_command_environment(self, monkeypatch, tmp_path):
         stored = []
+        configs = []
         monkeypatch.setenv(rapidocr_ocr.MODEL_DIR_ENV, str(tmp_path))
         monkeypatch.setattr(
             rapidocr_ocr,
             'download_orientation_model',
             lambda model_dir=None: stored.append(model_dir) or tmp_path / 'm.onnx',
         )
+        monkeypatch.setattr(rapidocr_ocr, '_create_engine', configs.append)
         assert rapidocr_ocr.main(['download']) == 0
         assert stored == [tmp_path]
+        assert [c.model_dir for c in configs] == [tmp_path]
 
     def test_download_command_fetches_bundled_models(self, monkeypatch, tmp_path):
         # A model directory starts empty, so the models RapidOCR bundles in its
