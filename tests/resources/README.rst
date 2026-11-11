@@ -50,6 +50,9 @@ the copyright holder(s) and license(s) applicable to these resources.
     *   - enormous.pdf
         - synthetic
         - very large PDF page
+    *   - explicit-dest-repro.pdf
+        - synthetic
+        - GoTo links: an explicit destination array whose action dictionary is also a name-tree entry, a valid named destination, and a URI
     *   - epson.pdf
         - synthetic
         - a linearized PDF containing some unusual indirect objects, created by an Epson printer; printout of a Wikipedia article (CC-BY-SA)
