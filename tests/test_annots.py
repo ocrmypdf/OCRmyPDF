@@ -146,3 +146,35 @@ def test_explicit_destination_array_is_kept(trivial):
 
     assert remove_broken_goto_annotations(trivial) is False
     assert Name.D in trivial.pages[0].Annots[0].A
+
+
+def _annot_named(pdf: Pdf, label: str) -> Dictionary:
+    for annot in pdf.pages[0].Annots:
+        if str(annot.get(Name.Contents, '')) == label:
+            return annot
+    raise AssertionError(f'no annotation named {label}')
+
+
+def test_explicit_destination_file_is_kept(resources, caplog):
+    """A real file with an explicit /D array must keep the link and the name tree.
+
+    One name-tree entry is the same indirect object as the link action, so
+    deleting /D from the annotation would damage the name tree as well.
+    """
+    with Pdf.open(resources / 'explicit-dest-repro.pdf') as pdf:
+        explicit = _annot_named(pdf, 'explicit')
+        named = _annot_named(pdf, 'named')
+        uri = _annot_named(pdf, 'uri')
+        shared = NameTree(pdf.Root.Names.Dests)['SharedAction']
+
+        assert isinstance(explicit.A.D, Array)
+        assert explicit.A.objgen == shared.objgen
+
+        assert remove_broken_goto_annotations(pdf) is False
+
+        assert isinstance(explicit.A.D, Array)
+        assert Name.D in shared
+        assert explicit.A.objgen == shared.objgen
+        assert str(named.A.D) == 'PageTwo'
+        assert Name.URI in uri.A
+        assert 'non-existent named destination' not in caplog.text

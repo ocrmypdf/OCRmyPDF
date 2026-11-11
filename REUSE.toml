@@ -58,6 +58,12 @@ SPDX-FileCopyrightText = "(C) 2025 James R. Barlow"
 SPDX-License-Identifier = "CC-BY-SA-4.0"
 
 [[annotations]]
+path = "tests/resources/explicit-dest-repro.pdf"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "(C) 2026 Jonas Walti"
+SPDX-License-Identifier = "CC-BY-SA-4.0"
+
+[[annotations]]
 path = ["tests/resources/graph.pdf", "tests/resources/graph_ocred.pdf"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "(C) 2012 SmokeyJoe"
