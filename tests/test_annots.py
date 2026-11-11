@@ -1,4 +1,5 @@
 # SPDX-FileCopyrightText: 2024 James R. Barlow
+# SPDX-FileCopyrightText: 2026 Jonas Walti
 # SPDX-License-Identifier: MPL-2.0
 
 from __future__ import annotations
@@ -130,3 +131,18 @@ def test_broken_destination_is_disabled(trivial, caplog):
     assert Name.A in trivial.pages[0].Annots[0], "only /D is removed"
     assert 'non-existent named destination' in caplog.text
     assert 'page 1' in caplog.text
+
+
+def test_explicit_destination_array_is_kept(trivial):
+    """/D may be an explicit destination array rather than a named destination.
+
+    An explicit destination refers to its target page directly, so it is never
+    present in the name tree and must not be treated as a broken name.
+    """
+    add_named_destinations(trivial)
+    destination = Array([trivial.pages[0].obj, Name.XYZ, 0, 792, 0])
+    annot = link_annot(trivial, A=Dictionary(S=Name.GoTo, D=destination))
+    trivial.pages[0].Annots = Array([annot])
+
+    assert remove_broken_goto_annotations(trivial) is False
+    assert Name.D in trivial.pages[0].Annots[0].A

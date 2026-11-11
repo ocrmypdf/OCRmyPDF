@@ -52,6 +52,12 @@ def remove_broken_goto_annotations(pdf: Pdf) -> bool:
             destination = annot.get(ACTION_DESTINATION)
             if destination is None:
                 continue
+            # /D may hold either a named destination or an explicit destination
+            # array such as [page /XYZ left top zoom] (ISO 32000-1, 12.3.2.3).
+            # An explicit destination references its target page directly and
+            # never appears in the name tree, so there is nothing to validate.
+            if isinstance(destination, Array):
+                continue
             # We found an annotation that points to a named destination
             named_destination = str(destination)
             if named_destination not in names:
