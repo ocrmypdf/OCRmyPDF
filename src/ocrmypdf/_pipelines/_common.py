@@ -39,6 +39,7 @@ from ocrmypdf._pipeline import (
     finish_output_pdf,
     get_orientation_correction,
     get_pdfinfo,
+    is_vector_only_page,
     preprocess_clean,
     preprocess_deskew,
     preprocess_remove_background,
@@ -407,11 +408,26 @@ def preprocess(
     return image
 
 
+def page_is_lossless(page_context: PageContext) -> bool:
+    """Check if the page's original content will be kept in the output."""
+    return page_context.options.lossless_reconstruction or is_vector_only_page(
+        page_context
+    )
+
+
 def make_intermediate_images(
     page_context: PageContext, orientation_correction: int
 ) -> IntermediateImages:
     """Create intermediate and preprocessed images for OCR."""
     options = page_context.options
+    lossless = page_is_lossless(page_context)
+    if is_vector_only_page(page_context):
+        # Digitally produced; nothing to straighten, clean or flatten
+        remove_background = deskew = clean_final = False
+    else:
+        remove_background = options.remove_background
+        deskew = options.deskew
+        clean_final = options.clean_final
 
     ocr_image = preprocess_out = None
     rasterize_out = rasterize(
@@ -421,22 +437,22 @@ def make_intermediate_images(
         remove_vectors=False,
     )
 
-    if not any([options.clean, options.clean_final, options.remove_vectors]):
+    if not any([options.clean, clean_final, options.remove_vectors]):
         ocr_image = preprocess_out = preprocess(
             page_context,
             rasterize_out,
-            options.remove_background,
-            options.deskew,
+            remove_background,
+            deskew,
             clean=False,
         )
     else:
-        if not options.lossless_reconstruction:
+        if not lossless:
             preprocess_out = preprocess(
                 page_context,
                 rasterize_out,
-                options.remove_background,
-                options.deskew,
-                clean=options.clean_final,
+                remove_background,
+                deskew,
+                clean=clean_final,
             )
         if options.remove_vectors:
             rasterize_ocr_out = rasterize(
@@ -452,7 +468,7 @@ def make_intermediate_images(
         if (
             preprocess_out
             and rasterize_ocr_out == rasterize_out
-            and options.clean == options.clean_final
+            and options.clean == clean_final
         ):
             # Optimization: image for OCR is identical to presentation image
             ocr_image = preprocess_out
@@ -460,8 +476,8 @@ def make_intermediate_images(
             ocr_image = preprocess(
                 page_context,
                 rasterize_ocr_out,
-                options.remove_background,
-                options.deskew,
+                remove_background,
+                deskew,
                 clean=options.clean,
             )
     return IntermediateImages(ocr_image=ocr_image, visible_image=preprocess_out)
@@ -483,7 +499,7 @@ def process_page(page_context: PageContext) -> PageImages:
     ocr_image_out = create_ocr_image(images.ocr_image, page_context)
 
     pdf_page_from_image_out = None
-    if not options.lossless_reconstruction:
+    if not page_is_lossless(page_context):
         assert preprocess_out
         visible_image_out = preprocess_out
         if should_visible_page_image_use_jpg(page_context.pageinfo):

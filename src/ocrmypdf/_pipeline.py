@@ -457,6 +457,23 @@ def get_canvas_square_dpi(
     return Resolution(units, units)
 
 
+def is_vector_only_page(page_context: PageContext) -> bool:
+    """Check if a page is drawn only with vector graphics and will keep its look.
+
+    Such a page has no images or text, which suggests it was produced digitally
+    and any text on it was converted to outlines. Unless OCR is forced, the
+    visible page is preserved and image preprocessing (deskew, clean-final,
+    remove-background) is not applied to it.
+    """
+    pageinfo = page_context.pageinfo
+    return (
+        not page_context.options.is_force_mode
+        and not pageinfo.images
+        and not pageinfo.has_text
+        and pageinfo.has_vector
+    )
+
+
 def is_ocr_required(page_context: PageContext) -> bool:
     """Check if the page needs to be OCR'd."""
     pageinfo = page_context.pageinfo
@@ -493,22 +510,18 @@ def is_ocr_required(page_context: PageContext) -> bool:
         elif options.mode == ProcessingMode.skip:
             log.info("skipping all processing on this page")
             ocr_required = False
-    elif not pageinfo.images and not options.lossless_reconstruction:
-        # We found a page with no images and no text. That means it may
-        # have vector art that the user wants to OCR. If we determined
-        # lossless reconstruction is not possible then we have to rasterize
-        # the image. So if OCR is being forced, take that to mean YES, go
-        # ahead and rasterize. If not forced, then pretend there's no text
-        # on the page at all so we don't lose anything.
-        # This could be made smarter by explicitly searching for vector art.
-        if options.is_force_mode and options.oversample:
+    elif not pageinfo.images and options.is_force_mode:
+        # A page with no images and no text may still have vector art that the
+        # user wants to OCR. Forcing OCR rasterizes the whole page, so take
+        # that to mean YES, go ahead and rasterize.
+        if options.oversample:
             # The user really wants to reprocess this file
             log.info(
                 "page has no images - "
                 f"rasterizing at {options.oversample} DPI because "
                 "--force-ocr --oversample (or --mode force --oversample) was specified"
             )
-        elif options.is_force_mode:
+        else:
             # Warn the user they might not want to do this
             log.warning(
                 "page has no images - "
@@ -517,14 +530,26 @@ def is_ocr_required(page_context: PageContext) -> bool:
                 "likely increasing file size. Use --oversample to adjust the "
                 "DPI."
             )
-        else:
-            log.info(
-                "page has no images - "
-                "skipping all processing on this page to avoid losing detail. "
-                "Use --force-ocr (or --mode force) if you wish to perform OCR on "
-                "pages that have vector content."
+    elif is_vector_only_page(page_context):
+        # The visible page is kept as is, so OCR costs no detail. Text that was
+        # converted to outlines is only recognizable this way.
+        message = (
+            "page has vector content but no text or images - "
+            "sending to OCR in case it contains text drawn as vector outlines"
+        )
+        if not options.lossless_reconstruction:
+            message += (
+                "; --deskew, --clean-final and --remove-background have no "
+                "effect on this page"
             )
-            ocr_required = False
+        log.info(message)
+    elif not pageinfo.images and not options.lossless_reconstruction:
+        # Image preprocessing would replace this page with a raster of nothing.
+        log.info(
+            "page is blank (no images, text or vector graphics) - "
+            "skipping all processing on this page"
+        )
+        ocr_required = False
 
     if ocr_required and options.skip_big and pageinfo.images:
         pixel_count = pageinfo.width_pixels * pageinfo.height_pixels

@@ -227,3 +227,22 @@ def test_pagesize_consistency(renderer, resources, outpdf):
 
     assert isclose(before_dims[0], after_dims[0], rel_tol=1e-4)
     assert isclose(before_dims[1], after_dims[1], rel_tol=1e-4)
+
+
+@pytest.mark.parametrize(
+    'preproc',
+    [
+        '--deskew',
+        pytest.param(
+            '--clean-final',
+            marks=pytest.mark.skipif(not have_unpaper(), reason="requires unpaper"),
+        ),
+    ],
+)
+def test_vector_only_page_preprocessing_keeps_page(preproc, resources, outpdf):
+    check_ocrmypdf(resources / 'vector.pdf', outpdf, preproc, '--output-type', 'pdf')
+
+    page = PdfInfo(outpdf)[0]
+    assert not page.images, "vector-only page was replaced by a raster image"
+    assert page.has_vector
+    assert page.has_text, "vector-only page was not OCRed"

@@ -196,7 +196,10 @@ might remove desirable content, especially from poor quality scans.
 
 :::{note}
 In many cases image processing will rasterize PDF pages as images,
-potentially losing quality.
+potentially losing quality. Pages drawn only with vector graphics, with no
+images or text, are left as they are: they are likely produced digitally, so
+`--deskew`, `--clean-final` and `--remove-background` have no effect on them,
+but they are still OCRed in case they contain text converted to outlines.
 :::
 
 :::{warning}

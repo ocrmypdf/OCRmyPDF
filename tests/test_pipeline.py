@@ -16,6 +16,7 @@ from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen.canvas import Canvas
 
 from ocrmypdf import _metadata, _pipeline, pdfinfo
+from ocrmypdf._options import OcrOptions
 from ocrmypdf._pipeline import _select_raster_device
 from ocrmypdf.helpers import Resolution
 from ocrmypdf.pdfinfo import Encoding
@@ -422,3 +423,77 @@ def test_unwrap_single_filter_arrays():
     assert pikepdf.Name.DecodeParms not in null_dp
     assert isinstance(chain.Filter, pikepdf.Array)
     assert len(chain.Filter) == 2
+
+
+def _make_vector_only_pdf(path, draw_vector=True):
+    canvas = Canvas(str(path), pagesize=(4 * inch, 4 * inch))
+    if draw_vector:
+        canvas.line(1 * inch, 1 * inch, 3 * inch, 3 * inch)
+    canvas.showPage()
+    canvas.save()
+    return path
+
+
+@pytest.mark.parametrize('mode', ['default', 'skip', 'redo'])
+def test_vector_only_page_sent_for_ocr(mode, tmp_path, caplog):
+    pdf = _make_vector_only_pdf(tmp_path / 'vector.pdf')
+    page_context = Mock()
+    page_context.pageinfo = pdfinfo.PdfInfo(pdf)[0]
+    page_context.options = OcrOptions(
+        input_file=pdf, output_file=tmp_path / 'out.pdf', mode=mode
+    )
+    caplog.set_level(logging.INFO)
+
+    assert _pipeline.is_ocr_required(page_context)
+    assert 'text drawn as vector outlines' in caplog.text
+
+
+def test_blank_page_not_reported_as_vector(tmp_path, caplog):
+    pdf = _make_vector_only_pdf(tmp_path / 'blank.pdf', draw_vector=False)
+    page_context = Mock()
+    page_context.pageinfo = pdfinfo.PdfInfo(pdf)[0]
+    page_context.options = OcrOptions(input_file=pdf, output_file=tmp_path / 'o.pdf')
+    caplog.set_level(logging.INFO)
+
+    assert _pipeline.is_ocr_required(page_context)
+    assert 'vector outlines' not in caplog.text
+
+
+@pytest.mark.parametrize('mode', ['default', 'skip'])
+@pytest.mark.parametrize('preproc', ['deskew', 'clean_final', 'remove_background'])
+def test_vector_only_page_image_preprocessing_is_noop(mode, preproc, tmp_path, caplog):
+    pdf = _make_vector_only_pdf(tmp_path / 'vector.pdf')
+    page_context = Mock()
+    page_context.pageinfo = pdfinfo.PdfInfo(pdf)[0]
+    page_context.options = OcrOptions(
+        input_file=pdf, output_file=tmp_path / 'out.pdf', mode=mode, **{preproc: True}
+    )
+    caplog.set_level(logging.INFO)
+
+    assert _pipeline.is_ocr_required(page_context)
+    assert 'text drawn as vector outlines' in caplog.text
+    assert _pipeline.is_vector_only_page(page_context)
+
+
+def test_vector_only_page_force_mode_not_noop(tmp_path):
+    pdf = _make_vector_only_pdf(tmp_path / 'vector.pdf')
+    page_context = Mock()
+    page_context.pageinfo = pdfinfo.PdfInfo(pdf)[0]
+    page_context.options = OcrOptions(
+        input_file=pdf, output_file=tmp_path / 'out.pdf', mode='force', deskew=True
+    )
+    assert not _pipeline.is_vector_only_page(page_context)
+
+
+def test_blank_page_with_deskew_still_skipped(tmp_path, caplog):
+    pdf = _make_vector_only_pdf(tmp_path / 'blank.pdf', draw_vector=False)
+    page_context = Mock()
+    page_context.pageinfo = pdfinfo.PdfInfo(pdf)[0]
+    page_context.options = OcrOptions(
+        input_file=pdf, output_file=tmp_path / 'o.pdf', deskew=True
+    )
+    caplog.set_level(logging.INFO)
+
+    assert not _pipeline.is_ocr_required(page_context)
+    assert not _pipeline.is_vector_only_page(page_context)
+    assert 'vector content' not in caplog.text
