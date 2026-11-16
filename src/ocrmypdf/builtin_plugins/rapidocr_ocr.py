@@ -1798,6 +1798,92 @@ def _load_image(input_file: Path) -> _PageImage:
     return _PageImage(loaded, dpi)
 
 
+@dataclass(frozen=True, slots=True)
+class _Shrunk:
+    """A page image shrunk to RapidOCR's longest side limit."""
+
+    image: Image.Image
+    #: Page image pixels per shrunk image pixel, across and down
+    scale_x: float
+    scale_y: float
+
+
+def _shrink(image: Image.Image, max_side_len: int) -> _Shrunk:
+    """Shrink an image whose longer side exceeds max_side_len to fit it.
+
+    RapidOCR would shrink it anyway, but with interpolation that takes no
+    account of the pixels between its samples. Shrinking a page rendered at
+    400 dpi to 2000 pixels that way breaks up thin strokes, and RapidOCR
+    then misses '<' and misreads digits. A Lanczos filter averages them in.
+    """
+    width, height = image.size
+    longest = max(width, height)
+    if longest <= max_side_len:
+        return _Shrunk(image, 1.0, 1.0)
+    factor = max_side_len / longest
+    size = (max(1, round(width * factor)), max(1, round(height * factor)))
+    return _Shrunk(
+        image.resize(size, Image.Resampling.LANCZOS),
+        width / size[0],
+        height / size[1],
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class _OcrResult:
+    """RapidOCR's findings on a page image, in that image's pixels."""
+
+    #: Line quads, or None if no text was found
+    boxes: Any
+    txts: tuple[str, ...]
+    scores: tuple[float, ...]
+    #: Each line's (text, score, quad) word results, when recognized
+    word_results: Sequence[Any] | None
+
+
+def _scale_quad(quad: Any, scale_x: float, scale_y: float) -> Any:
+    if quad is None:
+        return None
+    return [[float(x) * scale_x, float(y) * scale_y] for x, y in quad]
+
+
+def _ocr(
+    engine: Any, image: Image.Image, max_side_len: int, *, rec: bool
+) -> _OcrResult:
+    """Detect, and optionally recognize, text on a page image.
+
+    The image is shrunk to max_side_len first; the results are returned in
+    the pixels of the image as given.
+    """
+    import numpy as np
+
+    shrunk = _shrink(image, max_side_len)
+    result = _run(engine, shrunk.image, rec=rec)
+    boxes = _boxes(result)
+    if boxes is None:
+        return _OcrResult(None, (), (), None)
+    sx, sy = shrunk.scale_x, shrunk.scale_y
+    word_results = getattr(result, 'word_results', None) if rec else None
+    if sx != 1.0 or sy != 1.0:
+        boxes = np.asarray(boxes, dtype=np.float64) * (sx, sy)
+        if word_results:
+            word_results = tuple(
+                tuple(
+                    (text, score, _scale_quad(quad, sx, sy))
+                    for text, score, quad in line
+                )
+                for line in word_results
+            )
+    if not rec:
+        return _OcrResult(boxes, (), (), None)
+    return _OcrResult(
+        boxes,
+        tuple(str(t) for t in result.txts),
+        tuple(float(s) for s in result.scores),
+        word_results,
+    )
+
+
 def _run(engine: Any, image: Image.Image, *, rec: bool) -> Any:
     """Detect, and optionally recognize, text; return RapidOCR's result."""
     # RapidOCR keeps these flags between calls, so always pass all of them
@@ -1876,7 +1962,7 @@ class RapidOcrEngine(OcrEngine):
     def get_orientation(input_file: Path, options: OcrOptions) -> OrientationConfidence:
         image = _load_image(input_file).image
         engine = _engine_for(options)
-        quads = _boxes(_run(engine, image, rec=False))
+        quads = _ocr(engine, image, options.rapidocr.max_side_len, rec=False).boxes
         votes = axis_votes(quads, image.size)
         if page_axis(votes) is PageAxis.UNCLEAR:
             log.debug(f"Orientation: {votes}; too few lines, or lines both ways")
@@ -1895,7 +1981,10 @@ class RapidOcrEngine(OcrEngine):
     @staticmethod
     def get_deskew(input_file: Path, options: OcrOptions) -> float:
         image = _load_image(input_file).image
-        return estimate_skew_angle(_boxes(_run(_engine_for(options), image, rec=False)))
+        result = _ocr(
+            _engine_for(options), image, options.rapidocr.max_side_len, rec=False
+        )
+        return estimate_skew_angle(result.boxes)
 
     @staticmethod
     def supports_generate_ocr() -> bool:
@@ -1911,12 +2000,14 @@ class RapidOcrEngine(OcrEngine):
 
         loaded = _load_image(input_file)
         image = loaded.image
-        result = _run(_engine_for(options), image, rec=True)
-        boxes = _boxes(result)
+        result = _ocr(
+            _engine_for(options), image, options.rapidocr.max_side_len, rec=True
+        )
+        boxes = result.boxes
         page = rapidocr_to_ocr_tree(
             boxes,
-            tuple(result.txts) if boxes is not None else None,
-            tuple(float(s) for s in result.scores) if boxes is not None else None,
+            result.txts if boxes is not None else None,
+            result.scores if boxes is not None else None,
             result.word_results if boxes is not None else None,
             width=image.width,
             height=image.height,

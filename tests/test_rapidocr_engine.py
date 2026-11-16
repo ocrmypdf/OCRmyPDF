@@ -32,7 +32,7 @@ from ocrmypdf.builtin_plugins.rapidocr_ocr import (
     select_orientation_lines,
 )
 from ocrmypdf.exceptions import BadArgsError, MissingDependencyError
-from ocrmypdf.hocrtransform import HocrParser, OcrClass
+from ocrmypdf.hocrtransform import BoundingBox, HocrParser, OcrClass
 
 from .conftest import have_poppler_pdftotext
 
@@ -1165,6 +1165,112 @@ class TestAngleClassifierDisabled:
         getattr(rapidocr_ocr.RapidOcrEngine, method)(image, _options())
         assert ocr.calls
         assert all(call.get('use_cls') is False for call in ocr.calls)
+
+
+class _SizeRecordingOcr:
+    """Stands in for a RapidOCR instance; records image sizes, finds one line.
+
+    The line it reports spans the middle half of the image's width, in the
+    pixels of the image it was given.
+    """
+
+    def __init__(self):
+        self.sizes = []
+
+    def __call__(self, image, **kwargs):
+        import numpy as np
+
+        width, height = image.size
+        self.sizes.append((width, height))
+        left, right = width / 4, width * 3 / 4
+        top, bottom = height / 2 - 20, height / 2 + 20
+        quad = [[left, top], [right, top], [right, bottom], [left, bottom]]
+        rec = kwargs.get('use_rec')
+        return type(
+            'Result',
+            (),
+            {
+                'boxes': np.array([quad], dtype=np.float32),
+                'txts': ('word',) if rec else None,
+                'scores': (0.9,) if rec else None,
+                'word_results': ((('word', 0.9, quad),),) if rec else None,
+            },
+        )()
+
+
+class TestDownscale:
+    """Large page images are shrunk for RapidOCR with an antialiasing filter.
+
+    RapidOCR's own downscale to its longest side limit interpolates without
+    filtering, which breaks up thin strokes such as '<' on images rendered at
+    a much higher resolution than the limit.
+    """
+
+    @staticmethod
+    def _page(tmp_path, width, height):
+        from PIL import Image
+
+        image = tmp_path / 'page.png'
+        Image.new('L', (width, height), 255).save(image, dpi=(400, 400))
+        return image
+
+    @pytest.mark.parametrize(
+        'method', ['generate_ocr', 'get_deskew', 'get_orientation']
+    )
+    def test_engine_never_sees_more_than_max_side_len(
+        self, monkeypatch, tmp_path, method
+    ):
+        ocr = _SizeRecordingOcr()
+        monkeypatch.setattr(rapidocr_ocr, '_engine_for', lambda options: ocr)
+        monkeypatch.setattr(rapidocr_ocr, '_orientation_model', lambda d: None)
+        image = self._page(tmp_path, 4400, 3400)
+        getattr(rapidocr_ocr.RapidOcrEngine, method)(image, _options())
+        assert ocr.sizes
+        assert all(max(size) == 2000 for size in ocr.sizes)
+
+    def test_follows_max_side_len_option(self, monkeypatch, tmp_path):
+        ocr = _SizeRecordingOcr()
+        monkeypatch.setattr(rapidocr_ocr, '_engine_for', lambda options: ocr)
+        image = self._page(tmp_path, 4400, 3400)
+        options = _options('--rapidocr-max-side-len', '3000')
+        rapidocr_ocr.RapidOcrEngine.generate_ocr(image, options)
+        assert ocr.sizes == [(3000, 2318)]
+
+    def test_small_image_unchanged(self, monkeypatch, tmp_path):
+        ocr = _SizeRecordingOcr()
+        monkeypatch.setattr(rapidocr_ocr, '_engine_for', lambda options: ocr)
+        image = self._page(tmp_path, 1600, 1200)
+        rapidocr_ocr.RapidOcrEngine.generate_ocr(image, _options())
+        assert ocr.sizes == [(1600, 1200)]
+
+    def test_text_placed_in_page_image_pixels(self, monkeypatch, tmp_path):
+        ocr = _SizeRecordingOcr()
+        monkeypatch.setattr(rapidocr_ocr, '_engine_for', lambda options: ocr)
+        image = self._page(tmp_path, 4400, 3400)
+        page, text = rapidocr_ocr.RapidOcrEngine.generate_ocr(image, _options())
+        assert text.strip() == 'word'
+        assert page.bbox == BoundingBox(left=0, top=0, right=4400, bottom=3400)
+        assert page.dpi == pytest.approx(400, abs=0.01)
+        line = page.children[0].children[0]
+        assert line.bbox.left == pytest.approx(1100, abs=3)
+        assert line.bbox.right == pytest.approx(3300, abs=3)
+        word = line.children[0]
+        assert word.bbox.left == pytest.approx(1100, abs=3)
+        assert word.bbox.right == pytest.approx(3300, abs=3)
+
+    def test_fine_detail_averaged_not_aliased(self):
+        import numpy as np
+        from PIL import Image
+
+        # One-pixel black and white columns, shrunk by a factor that is not a
+        # whole number: a filter that averages gives even grey; interpolation
+        # without one gives stripes.
+        stripes = np.zeros((300, 4401), dtype=np.uint8)
+        stripes[:, ::2] = 255
+        shrunk = rapidocr_ocr._shrink(Image.fromarray(stripes), 2000)
+        assert shrunk.image.size == (2000, 136)
+        middle = np.asarray(shrunk.image)[20:-20, 20:-20].astype(float)
+        assert middle.std() < 16
 
 
 RUSSIAN_LINES = [

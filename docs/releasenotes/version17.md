@@ -3,6 +3,18 @@
 
 # v17
 
+## v17.14.2
+
+**Fixes**
+
+- Fixed RapidOCR missing thin characters such as `<` and misreading digits
+  on pages rasterized at well above `--rapidocr-max-side-len`, as happens with
+  `--redo-ocr`, which rasterizes at 400 dpi. RapidOCR shrank such pages with
+  interpolation that skips the pixels between its samples, breaking up thin
+  strokes. OCRmyPDF now shrinks them itself with a Lanczos filter first. On
+  one scanned assay table, the text layer kept 222 of 229 printed `<` signs,
+  up from 163.
+
 ## v17.14.1
 
 **Fixes**

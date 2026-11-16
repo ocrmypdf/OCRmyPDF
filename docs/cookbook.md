@@ -381,10 +381,11 @@ Things to know:
   orientation model; any that are missing are downloaded into it on first
   use. `python -m ocrmypdf.builtin_plugins.rapidocr_ocr download --model-dir
   DIR kor` fills it in advance.
-- **Image size.** RapidOCR downscales pages whose longer side exceeds
-  `--rapidocr-max-side-len` pixels (default 2000, about 180 dpi for a Letter
-  page scanned at 300 dpi) before finding text. Raising it may help with very
-  small print, at the cost of speed and memory.
+- **Image size.** Pages whose longer side exceeds `--rapidocr-max-side-len`
+  pixels (default 2000, about 180 dpi for a Letter page scanned at 300 dpi)
+  are downscaled before RapidOCR finds text, with a Lanczos filter so that
+  thin strokes survive. Raising it may help with very small print, at the
+  cost of speed and memory.
 - **Orientation and deskew.** `--rotate-pages` and `--deskew` work without
   Tesseract. Skew is measured from the angle of the detected lines. For
   orientation, the shape of the detected lines shows whether a page is
