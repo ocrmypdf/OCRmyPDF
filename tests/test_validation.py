@@ -389,6 +389,19 @@ def test_sidecar_same_as_output_other_spelling():
         vd.check_options_sidecar(opts)
 
 
+def test_sidecar_stdout_with_stdin_input_allowed():
+    """The stdin input ('-') and stdout sidecar ('-') are distinct streams and allowed."""
+    opts = make_opts(input_file='-', output_file='out.pdf', sidecar='-')
+    vd.check_options_sidecar(opts)
+
+
+def test_sidecar_and_output_both_stdout_rejected():
+    """Output PDF and sidecar cannot both use stdout."""
+    opts = make_opts(input_file='in.pdf', output_file='-', sidecar='-')
+    with pytest.raises(BadArgsError, match=r'--sidecar file must be different'):
+        vd.check_options_sidecar(opts)
+
+
 @pytest.mark.parametrize(
     'sidecar',
     ['notes.txt', 'in.txt', 'sub/in.pdf'],
