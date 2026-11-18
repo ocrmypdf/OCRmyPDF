@@ -3,6 +3,15 @@
 
 # v17
 
+## v17.14.3
+
+**Fixes**
+
+- Fixed `--skip-text` dropping fillable form fields when PDF/A conversion ran.
+  `--output-type auto` now keeps a regular PDF so the form stays fillable, and
+  an explicit PDF/A output type stops with an error that points at
+  `--output-type pdf`. {issue}`1790`
+
 ## v17.14.2
 
 **Fixes**

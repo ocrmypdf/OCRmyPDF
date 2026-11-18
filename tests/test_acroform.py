@@ -9,8 +9,10 @@ import pikepdf
 import pytest
 
 import ocrmypdf
+from ocrmypdf.exceptions import ExitCode
+from ocrmypdf.pdfa import file_claims_pdfa
 
-from .conftest import check_ocrmypdf
+from .conftest import check_ocrmypdf, run_ocrmypdf_api
 
 # pylint: disable=redefined-outer-name
 
@@ -33,6 +35,76 @@ def test_acroform_message(acroform, caplog, outpdf):
     check_ocrmypdf(acroform, outpdf, '--plugin', 'tests/plugins/tesseract_noop.py')
     assert 'fillable form' in caplog.text
     assert '--force-ocr' in caplog.text
+
+
+def test_skip_text_auto_keeps_acroform(acroform, caplog, outpdf):
+    """Auto mode must keep the form instead of emitting PDF/A without fields."""
+    caplog.set_level(logging.INFO)
+    with pikepdf.open(acroform) as original:
+        field_count = len(original.Root.AcroForm.Fields)
+    check_ocrmypdf(
+        acroform,
+        outpdf,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
+        '--skip-text',
+        '--output-type',
+        'auto',
+    )
+    assert not file_claims_pdfa(outpdf)['pass']
+    with pikepdf.open(outpdf) as pdf:
+        assert len(pdf.Root.AcroForm.Fields) == field_count
+        assert any(
+            annot.get('/Subtype') == '/Widget'
+            for page in pdf.pages
+            for annot in (page.get('/Annots') or [])
+        )
+    assert '--output-type pdf' in caplog.text
+
+
+def test_skip_text_pdfa_refuses_acroform(acroform, caplog, outpdf):
+    """An explicit PDF/A request must stop instead of dropping the form."""
+    caplog.set_level(logging.ERROR)
+    exitcode = run_ocrmypdf_api(
+        acroform,
+        outpdf,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
+        '--skip-text',
+        '--output-type',
+        'pdfa',
+    )
+    assert exitcode == ExitCode.input_file
+    assert not outpdf.exists() or outpdf.stat().st_size == 0
+    assert '--output-type pdf' in caplog.text
+
+
+def test_skip_text_pdf_keeps_acroform(acroform, outpdf):
+    """--output-type pdf keeps the same fields as the input."""
+    with pikepdf.open(acroform) as original:
+        field_count = len(original.Root.AcroForm.Fields)
+    check_ocrmypdf(
+        acroform,
+        outpdf,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
+        '--skip-text',
+        '--output-type',
+        'pdf',
+    )
+    with pikepdf.open(outpdf) as pdf:
+        assert len(pdf.Root.AcroForm.Fields) == field_count
+
+
+def test_force_ocr_acroform(acroform, outpdf):
+    """Force mode still finishes; flattening the form is intentional."""
+    check_ocrmypdf(
+        acroform,
+        outpdf,
+        '--plugin',
+        'tests/plugins/tesseract_noop.py',
+        '--force-ocr',
+    )
 
 
 @pytest.fixture
