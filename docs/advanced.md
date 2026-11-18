@@ -102,7 +102,9 @@ If `--mode skip` (or `--skip-text`) is issued, then no image processing or OCR w
 performed on pages that already have text. The page will be copied to
 the output. This may be useful for documents that contain both "born
 digital" and scanned content, or to use OCRmyPDF to normalize and
-convert to PDF/A regardless of their contents.
+convert to PDF/A regardless of their contents. If the file has an
+interactive form, `--mode skip` keeps the form by outputting a regular
+PDF under `--output-type auto`.
 
 If `--mode redo` (or `--redo-ocr`) is issued, then a detailed text analysis is performed.
 Text is categorized as either visible or invisible. Invisible text (OCR)
@@ -569,6 +571,32 @@ keep the existing text layer, use `--output-type pdf`. To produce PDF/A anyway,
 re-run OCR with `--force-ocr`, which discards the original text layer and
 rebuilds it with embedded fonts. Text layers whose fonts are *already embedded*
 are converted to PDF/A normally.
+
+### Interactive forms and PDF/A
+
+:::{versionadded} 17.14.3
+OCRmyPDF now refuses to drop interactive form fields during PDF/A conversion.
+:::
+
+The PDF/A standard itself permits AcroForm fields that have appearance
+streams (PDF/A forbids XFA forms, `NeedAppearances`, and actions), but
+OCRmyPDF's PDF/A backends cannot carry a form through conversion. Speculative
+conversion does not support `/AcroForm`, so OCRmyPDF falls back to
+Ghostscript, and Ghostscript's PDF/A output drops `/AcroForm` fields and
+widget annotations. A fillable form then becomes a static page even though
+the drawn values remain.
+
+Rather than emit a file that silently lost the form, OCRmyPDF detects this
+situation and:
+
+- with `--output-type auto` (the default), produces a regular PDF instead of
+  PDF/A, preserving the fields;
+- with an explicit `--output-type pdfa` (or `pdfa-1`/`pdfa-2`/`pdfa-3`), stops
+  with an error.
+
+To keep the fields, use `--output-type pdf`. To flatten the form on purpose
+and produce PDF/A, use `--force-ocr` (or `--mode force` / `--mode
+force-ocr-no-links`).
 
 ### Speculative PDF/A conversion
 
