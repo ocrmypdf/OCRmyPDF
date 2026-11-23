@@ -253,6 +253,11 @@ jobs:
     needs: lint
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.experimental || false }}
+    # pwsh is the Windows default already; saying so lets actionlint, which
+    # cannot see through matrix.os, stop shellchecking these scripts as bash.
+    defaults:
+      run:
+        shell: pwsh
     strategy:
       matrix:
         os: [windows-latest]
