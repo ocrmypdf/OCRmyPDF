@@ -316,6 +316,12 @@ class OcrOptions(BaseModel):
             return [DEFAULT_LANGUAGE]
         return v
 
+    @field_validator('jobs')
+    @classmethod
+    def validate_jobs(cls, v):
+        """Use all the CPU cores for 0, as for None."""
+        return v or None
+
     @field_validator('title', 'author', 'keywords', 'subject')
     @classmethod
     def validate_metadata_unicode(cls, v):

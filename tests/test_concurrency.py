@@ -312,3 +312,18 @@ def test_process_workers_see_plugin_options(start_method, resources, tmp_path):
     assert p.returncode == 0, p.stderr
     assert "has no attribute 'tesseract'" not in p.stderr
     assert outpdf.exists()
+
+
+def test_jobs_zero_uses_all_the_cpu_cores(resources, tmp_path):
+    """--jobs 0 is the same as not giving --jobs; it failed with an AssertionError."""
+    output = tmp_path / 'out.pdf'
+    ocrmypdf.ocr(
+        resources / 'trivial.pdf',
+        output,
+        jobs=0,
+        optimize=0,
+        plugins=[NOOP_PLUGIN],
+        progress_bar=False,
+    )
+    with pikepdf.open(output) as pdf:
+        assert len(pdf.pages) == 1
