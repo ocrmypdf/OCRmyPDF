@@ -86,29 +86,47 @@ jobs:
       - name: Install Tesseract from PPA
         if: matrix.tesseract_ppa == 'ppa'
         run: |
-          sudo add-apt-repository -y ppa:alex-p/tesseract-ocr5
+          # add-apt-repository runs apt-get update; Launchpad returns 503 often
+          # enough to cost a leg, so retry like the other package steps.
+          for attempt in 1 2 3; do
+            sudo add-apt-repository -y ppa:alex-p/tesseract-ocr5 && exit 0
+            echo "::warning::add-apt-repository failed (attempt $attempt of 3)"
+            sleep $((attempt * 30))
+          done
+          echo "::error::Tesseract PPA could not be added"
+          exit 1
 
       - name: Install common packages
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            curl \
-            fonts-noto-core \
-            fonts-noto-cjk \
-            ghostscript \
-            jbig2dec \
-            img2pdf \
-            libexempi8 \
-            libffi-dev \
-            libsm6 libxext6 libxrender-dev \
-            pngquant \
-            poppler-utils \
-            tesseract-ocr \
-            tesseract-ocr-deu \
-            tesseract-ocr-eng \
-            tesseract-ocr-osd \
-            unpaper \
-            zlib1g
+          # Launchpad's PPA mirror and the Ubuntu archive both have spells of
+          # 503s lasting a minute or more, longer than apt's own retries cover.
+          for attempt in 1 2 3; do
+            if sudo apt-get -o Acquire::Retries=3 update &&
+              sudo apt-get -o Acquire::Retries=3 install -y --no-install-recommends \
+                curl \
+                fonts-noto-core \
+                fonts-noto-cjk \
+                ghostscript \
+                jbig2dec \
+                img2pdf \
+                libexempi8 \
+                libffi-dev \
+                libsm6 libxext6 libxrender-dev \
+                pngquant \
+                poppler-utils \
+                tesseract-ocr \
+                tesseract-ocr-deu \
+                tesseract-ocr-eng \
+                tesseract-ocr-osd \
+                unpaper \
+                zlib1g; then
+              exit 0
+            fi
+            echo "::warning::apt-get failed (attempt $attempt of 3)"
+            sleep $((attempt * 30))
+          done
+          echo "::error::System packages could not be installed"
+          exit 1
 
       - name: Install Python packages
         # Pin uv to the interpreter from setup-python; otherwise uv may skip a
@@ -235,6 +253,11 @@ jobs:
     needs: lint
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.experimental || false }}
+    # pwsh is the Windows default already; saying so lets actionlint, which
+    # cannot see through matrix.os, stop shellchecking these scripts as bash.
+    defaults:
+      run:
+        shell: pwsh
     strategy:
       matrix:
         os: [windows-latest]
@@ -267,8 +290,19 @@ jobs:
 
       - name: Install system packages
         run: |
-          choco install --yes --no-progress tesseract
-          choco install --yes --no-progress --ignore-checksums ghostscript --version 9.56.1
+          # The Chocolatey community feed times out (504) now and then; retry
+          # each install, and check the exit code, which pwsh does not do itself.
+          function Install-Choco {
+            for ($attempt = 1; $attempt -le 3; $attempt++) {
+              choco install --yes --no-progress @args
+              if ($LASTEXITCODE -eq 0) { return }
+              Write-Output "::warning::choco install $args failed (attempt $attempt of 3)"
+              Start-Sleep -Seconds (30 * $attempt)
+            }
+            throw "choco install $args failed"
+          }
+          Install-Choco tesseract
+          Install-Choco --ignore-checksums ghostscript --version 9.56.1
           # Chocolatey's poppler package holds only source code, and the runner's
           # own pdftotext is xpdf's, which tests cannot use. Fetch a poppler build.
           $zip = "$env:RUNNER_TEMP\poppler.zip"
@@ -319,6 +353,11 @@ jobs:
 
       - name: Make wheels and sdist
         run: |
+          # Hatchling normalizes sdist mtimes to a fixed 2020-02-02 date when
+          # SOURCE_DATE_EPOCH is unset, which makes release tarballs look
+          # frozen in time (#1789). Pin it to the commit timestamp so the
+          # tarball dates track the release and rebuilds are byte-identical.
+          export SOURCE_DATE_EPOCH="$(git log -1 --pretty=%ct)"
           uv build --sdist --wheel
 
       - uses: actions/upload-artifact@v7
