@@ -52,7 +52,7 @@ from ocrmypdf._plugin_manager import OcrmypdfPluginManager
 from ocrmypdf._validation import (
     report_output_file_size,
 )
-from ocrmypdf.exceptions import ExitCode, ExitCodeException
+from ocrmypdf.exceptions import BadArgsError, ExitCode, ExitCodeException
 from ocrmypdf.helpers import (
     check_pdf,
     pikepdf_enable_mmap,
@@ -393,11 +393,13 @@ def do_get_pdfinfo(pdf_path: Path, executor: Executor, options) -> PdfInfo:
     if check_pages:
         missing = [pageno for pageno in check_pages if pageno >= len(pdfinfo)]
         if missing:
-            log.warning(
-                "--pages refers to page %s, but the input file has only %d pages",
-                _format_pages(missing),
-                len(pdfinfo),
+            message = (
+                f"--pages refers to page(s) {_format_pages(missing)}, "
+                f"but the input file has only {len(pdfinfo)} pages"
             )
+            if len(missing) == len(check_pages):
+                raise BadArgsError(message)
+            log.warning(message)
     return pdfinfo
 
 

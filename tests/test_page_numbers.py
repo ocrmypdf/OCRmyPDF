@@ -132,9 +132,26 @@ def test_pages_beyond_the_document_warn(multipage, outpdf, caplog):
         output_type='pdf',
         plugins=['tests/plugins/tesseract_cache.py'],
     )
-    assert "--pages refers to page 7-8, but the input file has only 6 pages" in (
+    assert "--pages refers to page(s) 7-8, but the input file has only 6 pages" in (
         caplog.text
     )
     pi = PdfInfo(outpdf)
     assert pi.pages[4].has_text
     assert pi.pages[5].has_text
+
+
+def test_pages_all_beyond_the_document_is_an_error(multipage, outpdf):
+    # multipage has 6 pages; none of the requested pages exist
+    with pytest.raises(
+        BadArgsError,
+        match=r"page\(s\) 7, 9-10, but the input file has only 6 pages",
+    ):
+        ocrmypdf.ocr(
+            multipage,
+            outpdf,
+            pages='7,9-10',
+            optimize=0,
+            output_type='pdf',
+            plugins=['tests/plugins/tesseract_cache.py'],
+        )
+    assert not outpdf.exists()
