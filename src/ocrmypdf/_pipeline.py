@@ -42,7 +42,6 @@ from ocrmypdf.exceptions import (
     DpiError,
     EncryptedPdfError,
     InputFileError,
-    InteractiveFormError,
     NonEmbeddedFontsError,
     PdfaConversionFailedError,
     PriorOcrFoundError,
@@ -1185,9 +1184,16 @@ def convert_to_pdfa(input_pdf: Path, input_ps_stub: Path, context: PdfContext) -
         if nonembedded:
             raise NonEmbeddedFontsError(nonembedded)
         # Ghostscript's PDF/A conversion drops /AcroForm fields and widget
-        # annotations. Refuse unless the user asked to flatten the form.
+        # annotations. The drawn field values remain, so the output is still a
+        # faithful archive copy; warn rather than refuse, since PDF/A was
+        # requested explicitly. Force modes flatten the form on purpose.
         if not options.is_force_mode and has_acroform(pdf_file):
-            raise InteractiveFormError()
+            log.warning(
+                "The input PDF contains an interactive form (/AcroForm). PDF/A "
+                "conversion will remove its fields, leaving a static page that "
+                "shows their current values. Use --output-type pdf to keep the "
+                "form fillable."
+            )
         # Ghostscript loses the Unicode meaning of glyph names in the simple
         # fonts it rewrites, unless it is given as /ToUnicode (issue #1297).
         added_tounicode = add_simple_font_tounicode(pdf_file)
@@ -1340,7 +1346,6 @@ def _ghostscript_pdfa_fallback(input_pdf: Path, context: PdfContext) -> Path | N
         SubprocessOutputError,
         ColorConversionNeededError,
         NonEmbeddedFontsError,
-        InteractiveFormError,
     ) as e:
         log.info('Auto mode: Ghostscript could not produce PDF/A (%s)', e)
         return None

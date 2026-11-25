@@ -9,10 +9,9 @@ import pikepdf
 import pytest
 
 import ocrmypdf
-from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.pdfa import file_claims_pdfa
 
-from .conftest import check_ocrmypdf, run_ocrmypdf_api
+from .conftest import check_ocrmypdf
 
 # pylint: disable=redefined-outer-name
 
@@ -62,10 +61,10 @@ def test_skip_text_auto_keeps_acroform(acroform, caplog, outpdf):
     assert '--output-type pdf' in caplog.text
 
 
-def test_skip_text_pdfa_refuses_acroform(acroform, caplog, outpdf):
-    """An explicit PDF/A request must stop instead of dropping the form."""
-    caplog.set_level(logging.ERROR)
-    exitcode = run_ocrmypdf_api(
+def test_skip_text_pdfa_warns_acroform(acroform, caplog, outpdf):
+    """An explicit PDF/A request proceeds, but warns that the form is removed."""
+    caplog.set_level(logging.WARNING)
+    check_ocrmypdf(
         acroform,
         outpdf,
         '--plugin',
@@ -74,8 +73,8 @@ def test_skip_text_pdfa_refuses_acroform(acroform, caplog, outpdf):
         '--output-type',
         'pdfa',
     )
-    assert exitcode == ExitCode.input_file
-    assert not outpdf.exists() or outpdf.stat().st_size == 0
+    assert file_claims_pdfa(outpdf)['pass']
+    assert 'interactive form' in caplog.text
     assert '--output-type pdf' in caplog.text
 
 

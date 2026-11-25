@@ -574,8 +574,9 @@ are converted to PDF/A normally.
 
 ### Interactive forms and PDF/A
 
-:::{versionadded} 17.14.3
-OCRmyPDF now refuses to drop interactive form fields during PDF/A conversion.
+:::{versionchanged} 17.15.0
+`--output-type auto` keeps interactive forms by outputting a regular PDF, and
+an explicit PDF/A output type warns that the form will be removed.
 :::
 
 The PDF/A standard itself permits AcroForm fields that have appearance
@@ -586,13 +587,13 @@ Ghostscript, and Ghostscript's PDF/A output drops `/AcroForm` fields and
 widget annotations. A fillable form then becomes a static page even though
 the drawn values remain.
 
-Rather than emit a file that silently lost the form, OCRmyPDF detects this
-situation and:
+Rather than lose the form silently, OCRmyPDF detects this situation and:
 
 - with `--output-type auto` (the default), produces a regular PDF instead of
   PDF/A, preserving the fields;
-- with an explicit `--output-type pdfa` (or `pdfa-1`/`pdfa-2`/`pdfa-3`), stops
-  with an error.
+- with an explicit `--output-type pdfa` (or `pdfa-1`/`pdfa-2`/`pdfa-3`),
+  produces PDF/A as requested and warns that the form fields were removed.
+  The fields' current values remain drawn on the page.
 
 To keep the fields, use `--output-type pdf`. To flatten the form on purpose
 and produce PDF/A, use `--force-ocr` (or `--mode force` / `--mode

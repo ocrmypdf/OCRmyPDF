@@ -177,26 +177,6 @@ class NonEmbeddedFontsError(InputFileError):
         )
 
 
-class InteractiveFormError(InputFileError):
-    """Input has an interactive form that PDF/A conversion would remove.
-
-    Ghostscript's PDF/A conversion drops ``/AcroForm`` fields and widget
-    annotations. OCRmyPDF refuses an explicit PDF/A request rather than emit a
-    file that can no longer be filled
-    (see https://github.com/ocrmypdf/OCRmyPDF/issues/1790).
-    """
-
-    message = dedent(
-        """\
-        The input PDF contains an interactive form (/AcroForm). PDF/A
-        conversion would remove the interactive form.
-
-        Use --output-type pdf to keep the fields, or --force-ocr to flatten
-        the form on purpose.
-        """
-    )
-
-
 class ColorConversionNeededError(BadArgsError):
     """PDF needs color conversion to a standard color space.
 

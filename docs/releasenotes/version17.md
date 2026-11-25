@@ -3,14 +3,16 @@
 
 # v17
 
-## v17.14.3
+## v17.15.0
 
-**Fixes**
+**Changes**
 
-- Fixed `--skip-text` dropping fillable form fields when PDF/A conversion ran.
-  `--output-type auto` now keeps a regular PDF so the form stays fillable, and
-  an explicit PDF/A output type stops with an error that points at
-  `--output-type pdf`. {issue}`1790`
+- Fillable PDF forms now stay fillable under the default `--output-type auto`.
+  PDF/A conversion removes form fields, so for an input with an interactive
+  form (`/AcroForm`), `auto` now outputs a regular PDF instead of PDF/A,
+  unless a force mode is flattening the form on purpose. An explicit
+  `--output-type pdfa` still produces PDF/A, with the fields' current values
+  drawn on the page, and now warns that the form was removed. {issue}`1790`
 
 ## v17.14.2
 
