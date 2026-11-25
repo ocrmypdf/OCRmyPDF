@@ -332,6 +332,11 @@ Online documentation is located at:
         "PDF.  Might remove desired content.",
     )
     preprocessing.add_argument(
+        '--force-grayscale',
+        action='store_true',
+        help="Convert color pages to contrast-preserving grayscale in the final PDF",
+    )
+    preprocessing.add_argument(
         '--unpaper-args',
         type=str,
         default=None,

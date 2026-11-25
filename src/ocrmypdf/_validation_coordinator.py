@@ -102,11 +102,14 @@ class ValidationCoordinator:
 
         # Validate redo mode compatibility
         if options.mode == ProcessingMode.redo and (
-            options.deskew or options.clean_final or options.remove_background
+            options.deskew
+            or options.clean_final
+            or options.force_grayscale
+            or options.remove_background
         ):
             raise ValueError(
                 "--redo-ocr (or --mode redo) is not currently compatible with "
-                "--deskew, --clean-final, and --remove-background"
+                "--deskew, --clean-final, --force-grayscale, and --remove-background"
             )
 
         # Validate output type compatibility

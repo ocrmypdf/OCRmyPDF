@@ -232,6 +232,7 @@ class OcrOptions(BaseModel):
     deskew: bool = False
     clean: bool = False
     clean_final: bool = False
+    force_grayscale: bool = False
     rotate_pages: bool = False
     remove_background: bool = False
     remove_vectors: bool = False
@@ -450,11 +451,14 @@ class OcrOptions(BaseModel):
     def validate_redo_ocr_options(self):
         """Validate options compatible with redo mode."""
         if self.mode == ProcessingMode.redo and (
-            self.deskew or self.clean_final or self.remove_background
+            self.deskew
+            or self.clean_final
+            or self.force_grayscale
+            or self.remove_background
         ):
             raise ValueError(
                 "--redo-ocr (or --mode redo) is not currently compatible with "
-                "--deskew, --clean-final, and --remove-background"
+                "--deskew, --clean-final, --force-grayscale, and --remove-background"
             )
         return self
 
@@ -479,6 +483,7 @@ class OcrOptions(BaseModel):
             [
                 self.deskew,
                 self.clean_final,
+                self.force_grayscale,
                 self.is_force_mode,
                 self.remove_background,
             ]
