@@ -353,6 +353,11 @@ jobs:
 
       - name: Make wheels and sdist
         run: |
+          # Hatchling normalizes sdist mtimes to a fixed 2020-02-02 date when
+          # SOURCE_DATE_EPOCH is unset, which makes release tarballs look
+          # frozen in time (#1789). Pin it to the commit timestamp so the
+          # tarball dates track the release and rebuilds are byte-identical.
+          export SOURCE_DATE_EPOCH="$(git log -1 --pretty=%ct)"
           uv build --sdist --wheel
 
       - uses: actions/upload-artifact@v7
