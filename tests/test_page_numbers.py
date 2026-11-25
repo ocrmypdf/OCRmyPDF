@@ -120,3 +120,21 @@ def test_pages_end_alone(multipage, outpdf):
     pi = PdfInfo(outpdf)
     assert not pi.pages[0].has_text
     assert pi.pages[5].has_text
+
+
+def test_pages_beyond_the_document_warn(multipage, outpdf, caplog):
+    # multipage has 6 pages; pages 7 and 8 do not exist
+    ocrmypdf.ocr(
+        multipage,
+        outpdf,
+        pages='5-8',
+        optimize=0,
+        output_type='pdf',
+        plugins=['tests/plugins/tesseract_cache.py'],
+    )
+    assert "--pages refers to page 7-8, but the input file has only 6 pages" in (
+        caplog.text
+    )
+    pi = PdfInfo(outpdf)
+    assert pi.pages[4].has_text
+    assert pi.pages[5].has_text
