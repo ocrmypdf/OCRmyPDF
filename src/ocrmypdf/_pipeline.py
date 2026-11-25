@@ -69,7 +69,7 @@ from ocrmypdf.pdfa import (
     get_pdf_save_settings as get_pdf_save_settings,  # re-exported
 )
 from ocrmypdf.pdfinfo import Colorspace, Encoding, FloatRect, Ink, PageInfo, PdfInfo
-from ocrmypdf.pdfinfo.info import PageResolutionProfile
+from ocrmypdf.pdfinfo.info import PageResolutionProfile, has_acroform
 from ocrmypdf.pluginspec import GhostscriptRasterDevice, OrientationConfidence
 
 try:
@@ -1183,6 +1183,17 @@ def convert_to_pdfa(input_pdf: Path, input_ps_stub: Path, context: PdfContext) -
         nonembedded = find_nonembedded_cid_fonts(pdf_file)
         if nonembedded:
             raise NonEmbeddedFontsError(nonembedded)
+        # Ghostscript's PDF/A conversion drops /AcroForm fields and widget
+        # annotations. The drawn field values remain, so the output is still a
+        # faithful archive copy; warn rather than refuse, since PDF/A was
+        # requested explicitly. Force modes flatten the form on purpose.
+        if not options.is_force_mode and has_acroform(pdf_file):
+            log.warning(
+                "The input PDF contains an interactive form (/AcroForm). PDF/A "
+                "conversion will remove its fields, leaving a static page that "
+                "shows their current values. Use --output-type pdf to keep the "
+                "form fillable."
+            )
         # Ghostscript loses the Unicode meaning of glyph names in the simple
         # fonts it rewrites, unless it is given as /ToUnicode (issue #1297).
         added_tounicode = add_simple_font_tounicode(pdf_file)
@@ -1344,22 +1355,37 @@ def _ghostscript_pdfa_fallback(input_pdf: Path, context: PdfContext) -> Path | N
     return gs_out
 
 
-def _auto_keeps_regular_pdf(input_pdf: Path) -> bool:
+def _auto_keeps_regular_pdf(input_pdf: Path, context: PdfContext) -> bool:
     """Return True if 'auto' output type must not attempt PDF/A at all.
 
     Non-embedded CID fonts cannot be made PDF/A without Ghostscript font
-    substitution that corrupts CID/CJK text. Rather than risk an existing
-    text layer, 'auto' downgrades to a regular PDF (the same outcome as any
-    other case where best-effort PDF/A is not achievable).
+    substitution that corrupts CID/CJK text. An interactive form cannot be
+    made PDF/A without removing its fields, unless a force mode is flattening
+    the form on purpose. Rather than risk an existing text layer or form,
+    'auto' downgrades to a regular PDF (the same outcome as any other case
+    where best-effort PDF/A is not achievable).
+
+    Args:
+        input_pdf: The PDF that would be converted.
+        context: The PDF context, used to tell force mode from the others.
     """
     with pikepdf.open(input_pdf, conversion_mode='explicit') as pdf_file:
         nonembedded = find_nonembedded_cid_fonts(pdf_file)
+        interactive_form = not context.options.is_force_mode and has_acroform(pdf_file)
     if nonembedded:
         log.info(
             "Auto mode: input has non-embedded CID fonts (%s) that cannot be "
             "converted to PDF/A without corrupting the text; outputting a "
             "regular PDF. Use --output-type pdf to select this explicitly.",
             ', '.join(sorted(nonembedded)),
+        )
+        return True
+    if interactive_form:
+        log.info(
+            "Auto mode: input has an interactive form (/AcroForm) that PDF/A "
+            "conversion would remove; outputting a regular PDF. Use "
+            "--output-type pdf to keep the fields, or --force-ocr to flatten "
+            "the form on purpose.",
         )
         return True
     return False
@@ -1475,7 +1501,8 @@ def finish_output_pdf(
     - for 'auto', Ghostscript is best-effort, and a regular PDF is output if
       it is unavailable, fails, or is ruled out by ``--pdfa-backend internal``.
       Inputs with non-embedded CID fonts are output as regular PDF without
-      attempting PDF/A.
+      attempting PDF/A. Inputs with an interactive form are too, unless a
+      force mode is flattening the form.
 
     For 'auto', the output type achieved, 'pdfa' or 'pdf', is recorded as
     ``_actual_output_type`` in the options' ``extra_attrs``.
@@ -1512,7 +1539,7 @@ def finish_output_pdf(
             pdf, context, executor, pdfa_output_type, optimize_filename
         )
 
-    if auto and _auto_keeps_regular_pdf(input_pdf):
+    if auto and _auto_keeps_regular_pdf(input_pdf, context):
         return finish(None)
 
     speculative = try_speculative_pdfa(input_pdf, context)

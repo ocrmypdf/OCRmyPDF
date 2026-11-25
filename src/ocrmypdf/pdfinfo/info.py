@@ -50,6 +50,14 @@ def _box_rect(values: Iterable) -> FloatRect:
     return (b[0], b[1], b[2], b[3])
 
 
+def has_acroform(pdf: Pdf) -> bool:
+    """Return True if the open PDF has an interactive form (AcroForm or XFA)."""
+    return (
+        bool(pdf.Root.get_list(NamePath.AcroForm.Fields))
+        or NamePath.AcroForm.XFA in pdf.Root
+    )
+
+
 def simplify_textboxes(
     miner_page: LTPage, textbox_getter: Callable[[LTPage], Iterator[LTTextBox]]
 ) -> Iterator[TextboxInfo]:
@@ -460,10 +468,7 @@ class PdfInfo:
             self._needs_rendering = pdf.Root.get_bool(
                 Name.NeedsRendering, False, coerce=True
             )
-            self._has_acroform = (
-                bool(pdf.Root.get_list(NamePath.AcroForm.Fields))
-                or NamePath.AcroForm.XFA in pdf.Root
-            )
+            self._has_acroform = has_acroform(pdf)
             self._has_signature = bool(
                 pdf.Root.get_int(NamePath.AcroForm.SigFlags, 0, coerce=True) & 1
             )
