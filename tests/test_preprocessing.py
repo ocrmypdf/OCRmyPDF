@@ -1,16 +1,23 @@
 # SPDX-FileCopyrightText: 2022 James R. Barlow
+# SPDX-FileCopyrightText: 2026 Surfire
 # SPDX-License-Identifier: MPL-2.0
 
 from __future__ import annotations
 
+from io import BytesIO
 from math import isclose
 
+import img2pdf
+import pikepdf
 import pytest
-from PIL import Image
+from pdfminer.high_level import extract_text
+from pikepdf.pdfa import validate_written
+from PIL import Image, ImageDraw, ImageFont
 
 from ocrmypdf._exec import ghostscript, tesseract
 from ocrmypdf.exceptions import ExitCode
 from ocrmypdf.helpers import Resolution
+from ocrmypdf.pdfa import output_type_to_flavour
 from ocrmypdf.pdfinfo import PdfInfo
 from ocrmypdf.pluginspec import GhostscriptRasterDevice
 
@@ -186,6 +193,109 @@ def test_oversample(renderer, resources, outpdf):
 
     print(pdfinfo[0].dpi.x)
     assert abs(pdfinfo[0].dpi.x - 350) < 1
+
+
+@pytest.mark.parametrize(
+    ('dpi', 'rotation', 'image_ext', 'output_type'),
+    [
+        (144, 0, 'png', 'pdf'),
+        (144, 90, 'jpg', 'pdfa-2'),
+        (432, 0, 'png', 'pdf'),
+    ],
+)
+def test_oversample_deskew_visible_resolution(
+    dpi, rotation, image_ext, output_type, outdir, outpdf, monkeypatch
+):
+    """Deskew may use oversampled pixels, but emits the ordinary raster DPI."""
+    ocr_log = outdir / 'ocr_image.log'
+    monkeypatch.setenv('OCRMYPDF_TEST_OCR_IMAGE_LOG', str(ocr_log))
+    image = Image.new('L', (6 * dpi, 4 * dpi), 255)
+    draw = ImageDraw.Draw(image)
+    font = ImageFont.load_default(size=dpi // 3)
+    for line, text in enumerate(
+        ('QUARTZ SAMPLE', 'SEARCHABLE PAGE', 'PRESERVE GEOMETRY'), start=1
+    ):
+        draw.text((dpi // 2, line * dpi - dpi // 3), text, fill=0, font=font)
+    if rotation:
+        image = image.transpose(Image.Transpose.ROTATE_90)
+    scan = outdir / f'scan.{image_ext}'
+    image.save(scan, dpi=(dpi, dpi))
+    source = outdir / 'scan.pdf'
+    with pikepdf.Pdf.open(BytesIO(img2pdf.convert(str(scan)))) as pdf:
+        if rotation:
+            pdf.pages[0].obj.Rotate = rotation
+        pdf.save(source)
+
+    proc = run_ocrmypdf(
+        source,
+        outpdf,
+        '--deskew',
+        '--oversample',
+        '360',
+        '--plugin',
+        'tests/plugins/ocr_image_recorder.py',
+        '--output-type',
+        output_type,
+        '--pdfa-backend',
+        'internal',
+        '-O0',
+        '-j1',
+    )
+    assert proc.returncode == 0, proc.stderr
+    ocr_dpi = max(360, dpi)
+    assert ocr_log.read_text().split() == [str(6 * ocr_dpi), str(4 * ocr_dpi), 'L']
+    out_page = PdfInfo(outpdf)[0]
+    assert out_page.images[0].dpi.x == pytest.approx(dpi, abs=1)
+    assert out_page.images[0].dpi.y == pytest.approx(dpi, abs=1)
+    page_size = float(out_page.width_inches), float(out_page.height_inches)
+    if out_page.rotation % 180:
+        page_size = page_size[::-1]
+    assert page_size == pytest.approx((6, 4), abs=0.001)
+    assert 'QUARTZ SAMPLE' in extract_text(outpdf)
+    if output_type == 'pdfa-2':
+        report = validate_written(outpdf, output_type_to_flavour(output_type))
+        assert report.verdict == 'pass', report.summary()
+
+
+def test_oversample_deskew_userunit(outdir, monkeypatch):
+    """The visible-image hook gets the ordinary page DPI even with /UserUnit."""
+    scan = outdir / 'userunit.png'
+    image = Image.new('L', (600, 360), 255)
+    draw = ImageDraw.Draw(image)
+    draw.text((50, 100), 'QUARTZ SAMPLE', fill=0, font=ImageFont.load_default(size=48))
+    image.save(scan, dpi=(120, 120))
+    source = outdir / 'userunit.pdf'
+    with pikepdf.Pdf.open(BytesIO(img2pdf.convert(str(scan)))) as pdf:
+        pdf.pages[0].obj.UserUnit = 2
+        pdf.save(source, min_version='1.6')
+
+    for oversample, ocr_size in [(0, (300, 180)), (360, (1800, 1080))]:
+        output = outdir / f'userunit-{oversample}.pdf'
+        ocr_log = output.with_suffix('.ocr.log')
+        visible_log = output.with_suffix('.visible.log')
+        monkeypatch.setenv('OCRMYPDF_TEST_OCR_IMAGE_LOG', str(ocr_log))
+        monkeypatch.setenv('OCRMYPDF_TEST_PAGE_IMAGE_LOG', str(visible_log))
+        proc = run_ocrmypdf(
+            source,
+            output,
+            '--deskew',
+            '--oversample',
+            str(oversample),
+            '--plugin',
+            'tests/plugins/ocr_image_recorder.py',
+            '--output-type',
+            'pdf',
+            '-O0',
+            '-j1',
+        )
+        assert proc.returncode == 0, proc.stderr
+        assert tuple(map(int, ocr_log.read_text().split()[:2])) == ocr_size
+        width, height, dpi_x, dpi_y = map(float, visible_log.read_text().split())
+        assert (width, height) == (300, 180)
+        assert (dpi_x, dpi_y) == pytest.approx((120, 120), abs=0.05)
+        page = PdfInfo(output)[0]
+        assert (float(page.width_inches), float(page.height_inches)) == (10, 6)
+        assert (page.images[0].width, page.images[0].height) == (300, 180)
 
 
 def test_very_high_dpi(resources, outpdf):

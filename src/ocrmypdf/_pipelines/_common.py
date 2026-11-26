@@ -47,6 +47,7 @@ from ocrmypdf._pipeline import (
     rasterize,
     rasterize_preview,
     should_visible_page_image_use_jpg,
+    undo_visible_page_oversampling,
 )
 from ocrmypdf._plugin_manager import OcrmypdfPluginManager
 from ocrmypdf._validation import (
@@ -513,7 +514,7 @@ def process_page(page_context: PageContext) -> PageImages:
     pdf_page_from_image_out = None
     if not page_is_lossless(page_context):
         assert preprocess_out
-        visible_image_out = preprocess_out
+        visible_image_out = undo_visible_page_oversampling(preprocess_out, page_context)
         if should_visible_page_image_use_jpg(page_context.pageinfo):
             visible_image_out = create_visible_page_jpg(visible_image_out, page_context)
         filtered_image = page_context.plugin_manager.filter_page_image(
