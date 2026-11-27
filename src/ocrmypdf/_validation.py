@@ -131,9 +131,11 @@ def check_options_sidecar(options: OcrOptions) -> None:
                 "--sidecar filename needed when output file is not a path."
             )
         options.sidecar = os.fspath(options.output_file) + '.txt'
-    if _same_target(options.sidecar, options.input_file) or _same_target(
-        options.sidecar, options.output_file
-    ):
+    # stdin ('-') and stdout ('-') are distinct streams even though both share
+    # the '-' sentinel
+    if (
+        _same_target(options.sidecar, options.input_file) and options.sidecar != '-'
+    ) or _same_target(options.sidecar, options.output_file):
         raise BadArgsError(
             "--sidecar file must be different from the input and output files"
         )
