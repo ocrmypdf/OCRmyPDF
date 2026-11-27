@@ -13,6 +13,23 @@
   unless a force mode is flattening the form on purpose. An explicit
   `--output-type pdfa` still produces PDF/A, with the fields' current values
   drawn on the page, and now warns that the form was removed. {issue}`1790`
+  Thanks @mvanhorn.
+- `--pages` now warns when it names pages beyond the end of the input file,
+  and stops with an error if none of the pages it names exist. Previously
+  such pages were ignored silently, and a run that processed no pages at all
+  still succeeded. Thanks @RavSinghChandan.
+
+**Fixes**
+
+- Fixed internal links being disabled when their destination is an explicit
+  page reference rather than a named destination. Such links were wrongly
+  treated as pointing to a missing named destination. Thanks @bbmedia.
+
+**Other**
+
+- Release process improvements: release sdists now carry the release
+  commit's date as their file timestamps, instead of a fixed date in 2020.
+  {issue}`1789` Thanks @mahmoudsegni.
 
 ## v17.14.2
 
