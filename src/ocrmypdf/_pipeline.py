@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: 2018-2022 James R. Barlow
 # SPDX-FileCopyrightText: 2019 Martin Wind
+# SPDX-FileCopyrightText: 2026 Surfire
 # SPDX-License-Identifier: MPL-2.0
 
 """OCRmyPDF page processing pipeline functions."""
@@ -409,32 +410,38 @@ def _vector_page_dpi(pageinfo: PageInfo) -> int:
 
 
 def get_page_square_dpi(
-    page_context: PageContext, image_dpi: Resolution | None = None
+    page_context: PageContext,
+    image_dpi: Resolution | None = None,
+    *,
+    include_oversample: bool = True,
 ) -> Resolution:
     """Get the DPI when we require xres == yres, scaled to physical units.
 
     Page DPI includes UserUnit scaling.
     """
     pageinfo = page_context.pageinfo
-    options = page_context.options
     if not image_dpi:
         image_dpi = pageinfo.dpi
     xres = image_dpi.x or 0.0
     yres = image_dpi.y or 0.0
     userunit = float(pageinfo.userunit) or 1.0
+    oversample = page_context.options.oversample if include_oversample else 0
     units = float(
         max(
             (xres * userunit) or VECTOR_PAGE_DPI,
             (yres * userunit) or VECTOR_PAGE_DPI,
             _vector_page_dpi(pageinfo),
-            options.oversample or 0.0,
+            oversample or 0.0,
         )
     )
     return Resolution(units, units)
 
 
 def get_canvas_square_dpi(
-    page_context: PageContext, image_dpi: Resolution | None = None
+    page_context: PageContext,
+    image_dpi: Resolution | None = None,
+    *,
+    include_oversample: bool = True,
 ) -> Resolution:
     """Get the DPI when we require xres == yres, in Postscript units.
 
@@ -443,15 +450,15 @@ def get_canvas_square_dpi(
     the physical units of the page.
     """
     pageinfo = page_context.pageinfo
-    options = page_context.options
     if not image_dpi:
         image_dpi = pageinfo.dpi
+    oversample = page_context.options.oversample if include_oversample else 0
     units = float(
         max(
             image_dpi.x or VECTOR_PAGE_DPI,
             image_dpi.y or VECTOR_PAGE_DPI,
             _vector_page_dpi(pageinfo),
-            options.oversample or 0.0,
+            oversample or 0.0,
         )
     )
     return Resolution(units, units)
@@ -982,6 +989,32 @@ def should_visible_page_image_use_jpg(pageinfo: PageInfo) -> bool:
     return bool(pageinfo.images) and all(
         im.enc in (Encoding.jpeg, Encoding.flate_jpeg) for im in pageinfo.images
     )
+
+
+def undo_visible_page_oversampling(image: Path, page_context: PageContext) -> Path:
+    """Restore the visible image to its normal rasterization resolution."""
+    options = page_context.options
+    if not options.oversample or options.is_force_mode:
+        return image
+
+    image_dpi = calculate_image_dpi(page_context)
+    canvas_dpi = get_canvas_square_dpi(
+        page_context, image_dpi, include_oversample=False
+    ).to_scalar()
+    page_dpi = get_page_square_dpi(page_context, image_dpi, include_oversample=False)
+    if options.oversample <= min(canvas_dpi, page_dpi.to_scalar()):
+        return image
+
+    # The canvas controls the pixel dimensions. Use the normal page DPI for
+    # the image metadata, since /UserUnit can scale it independently.
+    scale = min(1.0, canvas_dpi / options.oversample)
+    with Image.open(image) as original:
+        width, height = original.size
+        size = max(1, round(width * scale)), max(1, round(height * scale))
+        reduced = downsample_image(original, size)
+        output_file = page_context.get_path('visible.png')
+        reduced.save(output_file, dpi=page_dpi)
+    return output_file
 
 
 def create_visible_page_jpg(image: Path, page_context: PageContext) -> Path:

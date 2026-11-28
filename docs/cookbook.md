@@ -543,7 +543,10 @@ Rotating pages and deskewing helps to ensure that the page orientation
 is correct before OCR begins. Removing the background and/or cleaning
 the page can also improve results. The `--oversample DPI` argument can
 be specified to resample images to higher resolution before attempting
-OCR; this can improve results as well.
+OCR; this can improve results as well. If deskewing or final cleaning
+rebuilds the visible page, its image returns to the resolution OCRmyPDF
+would use without oversampling. With `--mode force` (`--force-ocr`), the
+oversampled image is also used in the output.
 
 OCR quality will suffer if the resolution of input images is not correct
 (since the range of pixel sizes that will be checked for possible fonts
